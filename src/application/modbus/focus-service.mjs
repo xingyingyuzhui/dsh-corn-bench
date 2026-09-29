@@ -1,5 +1,4 @@
 // @ts-check
-import { originOf } from '../../domain/modbus/journal-model.mjs'
 import { requireWorkspaceCwd } from '../../shared/workspace-paths.mjs'
 import { recordBenchEvent } from '../../infrastructure/store/journal-store.mjs'
 import { normalizeFocusRequest } from '../../infrastructure/store/focus-store.mjs'
@@ -12,6 +11,8 @@ import { anonymousLegacyCompat, focusOwnership, resolveEvidenceBatch } from './e
 /**
  * @typedef {import('../../types/modbus.js').ModbusCommandBody} ModbusCommandBody
  */
+
+const FOCUS_EVIDENCE_MAX = 20
 
 /**
  * @param {any} rt
@@ -37,14 +38,27 @@ function targetFailure(rt) {
  * @param {string} home
  * @param {string} cwd
  * @param {ModbusCommandBody} body
- * @param {{ source?: string, sessionId?: string }} [origin]
+ * @param {{ source?: string, sessionId?: string }} [origin] omitted = anonymous legacy caller;
+ *   `body.source` / `body.sessionId` are never read as identity
  */
-export const requestFocus = async (home, cwd, body, origin = originOf(body)) => {
+export const requestFocus = async (home, cwd, body, origin = { source: 'user', sessionId: '' }) => {
   const room = /** @type {{ cwd: string, error?: string }} */ (requireWorkspaceCwd(cwd))
   if (room.error) return { ok: false, error: room.error, errorCode: ERROR_CODES.TARGET_REQUIRED }
   const source = origin?.source === 'agent' ? 'agent' : 'user'
   const sessionId = String(origin?.sessionId || '').trim()
-  const rawEvidence = Array.isArray(body?.evidence) ? body.evidence.slice(0, 20) : []
+  const rawEvidence = body?.evidence === undefined ? [] : body.evidence
+  if (!Array.isArray(rawEvidence)) {
+    return { ok: false, errorCode: ERROR_CODES.INVALID_FIELD, error: 'evidence 必须是数组', retryable: false }
+  }
+  if (rawEvidence.length > FOCUS_EVIDENCE_MAX) {
+    return {
+      ok: false,
+      errorCode: ERROR_CODES.INVALID_FIELD,
+      error: `evidence 最多 ${FOCUS_EVIDENCE_MAX} 条`,
+      retryable: false,
+      details: { field: 'evidence', maxItems: FOCUS_EVIDENCE_MAX },
+    }
+  }
   const tempWatchIds = (Array.isArray(body?.tempWatchIds) ? body.tempWatchIds : Array.isArray(body?.tempWatch) ? body.tempWatch : [])
     .map((/** @type {unknown} */ x) => String(x).trim())
     .filter(Boolean)

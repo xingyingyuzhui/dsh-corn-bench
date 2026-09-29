@@ -39,12 +39,12 @@ test('Task14: Agent focus 只有 foreground=true 才抢焦点 badgeOnly=true 不
     }
     saveWorkspace(home, cwd, { modbus: { version: 3, connections: [c1], devices: [d1], points: [p1] } })
     const agentFocus = (extra) =>
-      requestFocus(home, cwd, {
-        source: 'agent',
-        sessionId: 's-focus',
-        target: { connectionId: 'c1', deviceId: 'd1', pointId: 'p1' },
-        ...extra,
-      })
+      requestFocus(
+        home,
+        cwd,
+        { target: { connectionId: 'c1', deviceId: 'd1', pointId: 'p1' }, ...extra },
+        { source: 'agent', sessionId: 's-focus' },
+      )
     // Agent focus without explicit foreground -> should be badgeOnly
     const noFg = await agentFocus({})
     assert.equal(noFg.ok, true)
@@ -90,20 +90,22 @@ test('Task14: 返回原焦点 与 无效组合不产生半完成跳转', async (
       address: 0,
     }
     saveWorkspace(home, cwd, { modbus: { version: 3, connections: [c1, c2], devices: [d1, d2], points: [p1] } })
-    const first = await requestFocus(home, cwd, {
-      source: 'agent',
-      target: { connectionId: 'c1', pointId: 'p1' },
-      foreground: true,
-    })
+    const first = await requestFocus(
+      home,
+      cwd,
+      { target: { connectionId: 'c1', pointId: 'p1' }, foreground: true },
+      { source: 'agent', sessionId: '' },
+    )
     assert.equal(first.ok, true)
     const ws1 = loadWorkspace(home, cwd)
     assert.equal(ws1.focus.request.pointId, 'p1')
     assert.equal(ws1.focus.prev, null)
-    const second = await requestFocus(home, cwd, {
-      source: 'agent',
-      target: { connectionId: 'c2', pointId: 'p1' },
-      foreground: true,
-    })
+    const second = await requestFocus(
+      home,
+      cwd,
+      { target: { connectionId: 'c2', pointId: 'p1' }, foreground: true },
+      { source: 'agent', sessionId: '' },
+    )
     // p1 belongs to c1, asking c2 + p1 should be TARGET_MISMATCH and not change focus
     assert.equal(second.ok, false)
     const ws2 = loadWorkspace(home, cwd)
@@ -111,7 +113,7 @@ test('Task14: 返回原焦点 与 无效组合不产生半完成跳转', async (
     assert.equal(ws2.focus.request.pointId, 'p1', 'invalid combo must not produce half jump')
     assert.equal(ws2.focus.request.connectionId, 'c1')
     // valid second focus to c2 pointless but with valid device? use without pointId
-    const valid2 = await requestFocus(home, cwd, { source: 'agent', target: { connectionId: 'c2' }, foreground: true })
+    const valid2 = await requestFocus(home, cwd, { target: { connectionId: 'c2' }, foreground: true }, { source: 'agent', sessionId: '' })
     assert.equal(valid2.ok, true)
     assert.equal(valid2.prev.pointId, 'p1', 'prev should be preserved')
     const ws3 = loadWorkspace(home, cwd)
