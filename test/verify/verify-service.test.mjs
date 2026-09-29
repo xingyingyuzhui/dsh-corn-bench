@@ -141,6 +141,12 @@ test('VerifyService: orchestrates verification loop with debug and telemetry', a
       }
       return {}
     },
+    resolveOwnedSnapshotRef: (/** @type {any} */ scope) =>
+      scope.ownerSessionId === 'agent_session_1' &&
+      scope.workspaceCwd === '/workspaces/proj' &&
+      scope.snapshotId === 'snap_verify_1'
+        ? { kind: 'debug_snapshot', id: 'snap_verify_1', snapshotId: 'snap_verify_1', debugSessionId: 'ds_test_123', reason: 'verify' }
+        : null,
     getEvents: () => ({
       events: [{ type: 'debug.session.ready' }, { type: 'debug.paused', payload: { reason: 'step' } }],
     }),
@@ -154,6 +160,8 @@ test('VerifyService: orchestrates verification loop with debug and telemetry', a
       ],
     },
     alarms: [],
+    tasks: [{ id: 'build_42', type: 'build', status: 'ok', sessionId: 'agent_session_1', startedAt: 1, endedAt: 2 }],
+    timeline: [{ id: 'log_99', at: 1, kind: 'read', source: 'agent', sessionId: 'agent_session_1', ok: true, summary: '' }],
   })
 
   const mockEvidenceBuilder = () => [

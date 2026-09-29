@@ -1,12 +1,10 @@
 // @ts-check
-import { isScopePartitioned, normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
 import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
-import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
 import { workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
 import { requireWorkspaceCwd } from '../../shared/workspace-paths.mjs'
 import { hostDebugSnapshotResolver } from './evidence-service.mjs'
 import { anonymousLegacyCompat, focusOwnership, ownedBy, resolveEvidenceBatch } from './evidence-scope.mjs'
-import { claimWorkspaceSync, modbusForSession } from './workspace-session-view.mjs'
+import { evidenceScopeFromWorkspace } from './evidence-scope-factory.mjs'
 
 const EVIDENCE_KEEP = 20
 
@@ -20,21 +18,11 @@ const EVIDENCE_KEEP = 20
  * @returns {{ ok: true, scope: import('./evidence-scope.mjs').EvidenceScope } | { ok: false, errorCode: string, error: string }}
  */
 export function lockedEvidenceScope(current, sessionId, cwd) {
-  const sid = normalizeScopeSessionId(sessionId)
-  if (!sid) {
-    if (isScopePartitioned(current?.modbus)) {
-      return { ok: false, errorCode: ERROR_CODES.SESSION_REQUIRED, error: '该工作区已按会话隔离，必须携带 sessionId' }
-    }
-    return {
-      ok: true,
-      scope: { workspace: current, pack: normalizeModbus(current?.modbus), sessionId: '', cwd, debug: hostDebugSnapshotResolver() },
-    }
+  const scope = evidenceScopeFromWorkspace({ workspace: current, sessionId, cwd, debug: hostDebugSnapshotResolver() })
+  if (!scope) {
+    return { ok: false, errorCode: ERROR_CODES.SESSION_REQUIRED, error: '该工作区已按会话隔离，必须携带 sessionId' }
   }
-  const view = claimWorkspaceSync(current, sid).workspace
-  return {
-    ok: true,
-    scope: { workspace: view, pack: modbusForSession(view, sid), sessionId: sid, cwd, debug: hostDebugSnapshotResolver() },
-  }
+  return { ok: true, scope }
 }
 
 /**

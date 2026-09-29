@@ -2,6 +2,8 @@
 
 import { evaluateAssertion } from '../../domain/verify/assertion.mjs'
 import { createVerifyResult } from '../../domain/verify/result.mjs'
+import { resolveEvidenceRef } from '../modbus/evidence-scope.mjs'
+import { evidenceScopeFromWorkspace } from '../modbus/evidence-scope-factory.mjs'
 import { createScenario } from '../../domain/verify/scenario.mjs'
 import { abortableDelay, composeAbortSignals } from './abort-signals.mjs'
 import { createTelemetryReader } from './telemetry-reader.mjs'
@@ -26,8 +28,34 @@ export function createVerifyService(deps = {}) {
   const evidenceBuilder = deps.evidenceBuilder || (() => [])
   const onJournalEvent = deps.onJournalEvent || null
 
-  /** @param {any} ev */
-  const isSnapshotRef = (ev) => Boolean(ev && (ev.kind === 'debug_snapshot' || ev.snapshotId))
+  /** Owned snapshot lookup; a runtime without it can never supply snapshot evidence. */
+  const resolveOwnedSnapshotRef =
+    typeof debugRuntime?.resolveOwnedSnapshotRef === 'function' ? debugRuntime.resolveOwnedSnapshotRef : null
+
+  /**
+   * Builder candidates must resolve for this owner against one loaded workspace;
+   * anything unverifiable is dropped, never passed through.
+   * @param {string} workspaceCwd
+   * @param {string} ownerSessionId
+   */
+  const verifiedCandidates = (workspaceCwd, ownerSessionId) => {
+    const candidates = evidenceBuilder(workspaceCwd, ownerSessionId) || []
+    if (!candidates.length) return []
+    let loaded = null
+    try {
+      loaded = workspaceLoader(workspaceCwd)
+    } catch {
+      loaded = null
+    }
+    const scope = evidenceScopeFromWorkspace({
+      workspace: loaded,
+      sessionId: ownerSessionId,
+      cwd: workspaceCwd,
+      debug: resolveOwnedSnapshotRef ? { resolveOwnedSnapshotRef } : null,
+    })
+    if (!scope) return []
+    return candidates.filter((/** @type {any} */ ev) => resolveEvidenceRef(scope, ev).ok)
+  }
 
   return {
     /**
@@ -52,26 +80,6 @@ export function createVerifyService(deps = {}) {
     async runVerification(options) {
       const startTime = Date.now()
       const { scenario: rawScenario, workspaceCwd, ownerSessionId, signal } = options
-      /**
-       * Snapshot evidence must belong to this owner and workspace. Runtimes without the
-       * owned lookup (older fakes) keep the caller's own debug session only.
-       * @param {any} ev
-       */
-      const ownsSnapshot = (ev) => {
-        const snapshotId = String(ev?.snapshotId || ev?.id || '')
-        if (!snapshotId) return false
-        if (typeof debugRuntime?.resolveOwnedSnapshotRef === 'function') {
-          return Boolean(
-            debugRuntime.resolveOwnedSnapshotRef({
-              ownerSessionId,
-              workspaceCwd,
-              debugSessionId: ev?.debugSessionId || undefined,
-              snapshotId,
-            }),
-          )
-        }
-        return Boolean(ownerSessionId)
-      }
       const scenario = createScenario(rawScenario)
       const timeoutMs = options.timeoutMs || scenario.timeoutMs || 60000
 
@@ -211,9 +219,7 @@ export function createVerifyService(deps = {}) {
           assertionResults.push(evaluateAssertion(spec, actualValue))
         }
 
-        const evidence = (evidenceBuilder(workspaceCwd, ownerSessionId) || []).filter(
-          (/** @type {any} */ ev) => !isSnapshotRef(ev) || ownsSnapshot(ev),
-        )
+        const evidence = verifiedCandidates(workspaceCwd, ownerSessionId)
 
         if (debugRuntime && debugSessionId) {
           try {
@@ -226,12 +232,23 @@ export function createVerifyService(deps = {}) {
               combinedSignal,
             )
             checkDeadline()
-            if (snapRes?.snapshot?.id && ownsSnapshot({ snapshotId: snapRes.snapshot.id, debugSessionId })) {
+            const ref =
+              snapRes?.snapshot?.id && resolveOwnedSnapshotRef
+                ? resolveOwnedSnapshotRef({
+                    ownerSessionId,
+                    workspaceCwd,
+                    debugSessionId,
+                    snapshotId: snapRes.snapshot.id,
+                  })
+                : null
+            if (ref) {
               evidence.push({
                 kind: 'debug_snapshot',
-                id: snapRes.snapshot.id,
+                id: ref.id,
+                snapshotId: ref.snapshotId,
+                debugSessionId: ref.debugSessionId,
                 scenarioId: scenario.id,
-                reason: snapRes.snapshot.reason,
+                reason: ref.reason || snapRes.snapshot.reason,
               })
             }
           } catch (e) {

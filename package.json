@@ -358,6 +358,7 @@
     "src/application/modbus/focus-service.mjs",
     "src/application/modbus/evidence-service.mjs",
     "src/application/modbus/evidence-scope.mjs",
+    "src/application/modbus/evidence-scope-factory.mjs",
     "src/application/modbus/evidence-append-service.mjs",
     "src/application/modbus/config-scope-service.mjs",
     "src/application/modbus/config-scope-claim.mjs",
