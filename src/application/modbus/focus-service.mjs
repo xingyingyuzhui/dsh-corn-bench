@@ -7,8 +7,8 @@ import { workspaceRepository } from '../../infrastructure/store/workspace-store.
 import { TARGET_CODES, resolveTarget as resolveUnifiedTarget } from '../../domain/modbus/target-resolver-service.mjs'
 import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
 import { deviceDisabledOf } from '../../domain/modbus/validation.mjs'
-import { focusOwnerConflict, lockedEvidenceScope } from './evidence-append-service.mjs'
-import { resolveEvidenceBatch } from './evidence-scope.mjs'
+import { focusWriteAccess, lockedEvidenceScope } from './evidence-append-service.mjs'
+import { anonymousLegacyCompat, focusOwnership, resolveEvidenceBatch } from './evidence-scope.mjs'
 /**
  * @typedef {import('../../types/modbus.js').ModbusCommandBody} ModbusCommandBody
  */
@@ -57,8 +57,10 @@ export const requestFocus = async (home, cwd, body, origin = originOf(body)) => 
   const saved = await workspaceRepository(home).updateRuntime(room.cwd, async (/** @type {any} */ current) => {
     const built = lockedEvidenceScope(current, sessionId, room.cwd)
     if (!built.ok) return built
-    const conflict = focusOwnerConflict(current.focus, sessionId)
-    if (conflict) return conflict
+    const ownership = focusOwnership(current.focus, sessionId)
+    if (ownership === 'foreign') {
+      return focusWriteAccess(current.focus, built.scope)
+    }
     const pack = built.scope.pack
     const rawTarget = body && (body.target || body.focus || body) ? body.target || body.focus || body : {}
     const target =
@@ -88,8 +90,10 @@ export const requestFocus = async (home, cwd, body, origin = originOf(body)) => 
       return { ok: false, error: '设备已禁用', errorCode: ERROR_CODES.DEVICE_DISABLED }
     }
     const batch = resolveEvidenceBatch(built.scope, rawEvidence)
-    if (!batch.ok) return { ok: false, errorCode: batch.errorCode, error: batch.error }
-    const prev = current.focus ? current.focus.request : null
+    if (!batch.ok) return batch
+    // An explicit new focus replaces ownerless leftovers without inheriting them.
+    const inherits = ownership === 'owned' || (ownership === 'unowned-legacy' && anonymousLegacyCompat(built.scope))
+    const prev = inherits && current.focus ? current.focus.request : null
     const nextReq = {
       connectionId: target.connectionId || '',
       deviceId: target.deviceId || '',
@@ -120,7 +124,12 @@ export const requestFocus = async (home, cwd, body, origin = originOf(body)) => 
     }
   })
   if (!saved || saved.ok === false || !outcome) {
-    return { ok: false, error: saved?.error || '聚焦失败', errorCode: saved?.errorCode }
+    return {
+      ok: false,
+      error: saved?.error || '聚焦失败',
+      errorCode: saved?.errorCode,
+      ...(saved?.details ? { details: saved.details } : {}),
+    }
   }
   const { nextReq, prev, evidence, rt, configVersion } = outcome
   try {

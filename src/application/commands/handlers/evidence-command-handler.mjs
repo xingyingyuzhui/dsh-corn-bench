@@ -93,7 +93,7 @@ export async function handleEvidenceCommand(home, args, room, origin, _opts) {
     }
     if (Array.isArray(raw) && raw.length) {
       const appended = await appendEvidence(home, room.cwd, raw, origin.sessionId)
-      if (!appended.ok) return { ok: false, action, error: appended.error, errorCode: appended.errorCode }
+      if (!appended.ok) return { action, ...appended }
     }
     const listed = buildEvidenceRefs(home, room.cwd, origin.sessionId)
     if (!listed.ok) return { action, ...listed }

@@ -7,6 +7,7 @@
  * an anonymous caller sees only unattributed legacy rows. Debug snapshots need an
  * owner + workspace match through the injected debug resolver.
  */
+import { isScopePartitioned } from '../../domain/modbus/config-scope.mjs'
 import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
 import { resolveTarget } from '../../domain/modbus/target-resolver-service.mjs'
 import {
@@ -75,10 +76,44 @@ export function evidenceKindOf(ev) {
 /**
  * @param {string} errorCode
  * @param {string} error
+ * @param {Record<string, unknown>} [details]
  */
-const deny = (errorCode, error) => ({ ok: /** @type {const} */ (false), errorCode, error })
+const deny = (errorCode, error, details) => ({
+  ok: /** @type {const} */ (false),
+  errorCode,
+  error,
+  ...(details ? { details } : {}),
+})
 
 const hidden = () => deny(ERROR_CODES.TARGET_MISMATCH, HIDDEN_ERROR)
+
+/**
+ * @param {any} focus
+ * @returns {'owned' | 'foreign' | 'unowned-empty' | 'unowned-legacy'}
+ *   An ownerless focus is empty only if it carries no request, prev, watch ids,
+ *   evidence or badge; anything left over is legacy state of unknown owner.
+ * @param {string} sessionId
+ */
+export function focusOwnership(focus, sessionId) {
+  const f = focus && typeof focus === 'object' ? focus : {}
+  const owner = text(f.sessionId)
+  if (owner) return owner === text(sessionId) ? 'owned' : 'foreign'
+  const empty =
+    f.request == null &&
+    f.prev == null &&
+    !(Array.isArray(f.tempWatchIds) && f.tempWatchIds.length) &&
+    !(Array.isArray(f.evidence) && f.evidence.length) &&
+    f.badgeOnly !== true
+  return empty ? 'unowned-empty' : 'unowned-legacy'
+}
+
+/**
+ * Old anonymous callers on a never-partitioned workspace keep using ownerless state.
+ * @param {EvidenceScope} scope
+ */
+export function anonymousLegacyCompat(scope) {
+  return !text(scope.sessionId) && !isScopePartitioned(scope.workspace?.modbus)
+}
 
 /**
  * @param {EvidenceScope} scope
@@ -281,15 +316,15 @@ export function collectVisibleEvidenceRefs(scope) {
 export function projectVisibleFocus(workspace, scope) {
   const focus = workspace?.focus && typeof workspace.focus === 'object' ? workspace.focus : {}
   const empty = { sessionId: '', request: null, prev: null, tempWatchIds: [], badgeOnly: false, evidence: [] }
-  if (!ownedBy(focus, scope.sessionId) && text(focus.sessionId)) {
-    return { ...empty, evidenceHiddenCount: 0 }
-  }
+  const ownership = focusOwnership(focus, scope.sessionId)
+  const visible = ownership === 'owned' || (ownership === 'unowned-legacy' && anonymousLegacyCompat(scope))
+  if (!visible) return { ...empty, evidenceHiddenCount: 0 }
   const rows = Array.isArray(focus.evidence) ? focus.evidence : []
   /** @type {any[]} */
-  const visible = []
+  const kept = []
   let hiddenCount = 0
   for (const row of rows) {
-    if (row && resolveEvidenceRef(scope, row, { checkVersion: false }).ok) visible.push(row)
+    if (row && resolveEvidenceRef(scope, row, { checkVersion: false }).ok) kept.push(row)
     else hiddenCount += 1
   }
   return {
@@ -298,7 +333,7 @@ export function projectVisibleFocus(workspace, scope) {
     prev: focus.prev || null,
     tempWatchIds: Array.isArray(focus.tempWatchIds) ? focus.tempWatchIds : [],
     badgeOnly: focus.badgeOnly === true,
-    evidence: visible,
+    evidence: kept,
     evidenceHiddenCount: hiddenCount,
   }
 }
