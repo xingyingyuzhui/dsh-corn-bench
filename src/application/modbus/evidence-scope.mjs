@@ -169,23 +169,47 @@ function resolveConfigRef(scope, ev, kind) {
 }
 
 /**
+ * `log` rows live in the timeline, `build` rows in build tasks.
+ * @param {any} workspace
+ * @param {'build' | 'log'} kind
+ */
+function journalRows(workspace, kind) {
+  if (kind === 'build') {
+    return (Array.isArray(workspace?.tasks) ? workspace.tasks : []).filter((/** @type {any} */ t) => t && t.type === 'build')
+  }
+  return Array.isArray(workspace?.timeline) ? workspace.timeline : []
+}
+
+/**
+ * Match on kind + id + owner in one pass. Another owner's row with the same id is a
+ * different record; two rows for the same owner and id cannot be cited unambiguously.
+ *
+ * @param {any[]} rows rows of one kind
+ * @param {{ id: string, sessionId: string }} key
+ * @returns {{ status: 'found', row: any } | { status: 'missing' } | { status: 'ambiguous' }}
+ */
+export function findOwnedJournalRow(rows, key) {
+  const id = text(key.id)
+  /** @type {any[]} */
+  const hits = []
+  for (const r of rows) {
+    if (r && text(r.id) === id && ownedBy(r, key.sessionId)) hits.push(r)
+    if (hits.length > 1) return { status: 'ambiguous' }
+  }
+  return hits.length ? { status: 'found', row: hits[0] } : { status: 'missing' }
+}
+
+/**
  * @param {EvidenceScope} scope
  * @param {any} ev
- * @param {string} kind
+ * @param {'build' | 'log'} kind
  */
 function resolveJournalRef(scope, ev, kind) {
   const id = text(ev.id)
   if (!id) return deny(ERROR_CODES.TARGET_REQUIRED, '证据缺少 ID')
-  const rows =
-    kind === 'build'
-      ? (Array.isArray(scope.workspace?.tasks) ? scope.workspace.tasks : []).filter(
-          (/** @type {any} */ t) => t && t.type === 'build',
-        )
-      : Array.isArray(scope.workspace?.timeline)
-        ? scope.workspace.timeline
-        : []
-  const hit = rows.find((/** @type {any} */ r) => r && text(r.id) === id)
-  if (!hit || !ownedBy(hit, scope.sessionId)) return hidden()
+  const hit = findOwnedJournalRow(journalRows(scope.workspace, kind), { id, sessionId: scope.sessionId })
+  if (hit.status === 'ambiguous') return deny(ERROR_CODES.TARGET_MISMATCH, HIDDEN_ERROR, { reason: 'AMBIGUOUS_ID' })
+  if (hit.status !== 'found') return hidden()
   return { ok: /** @type {const} */ (true) }
 }
 
@@ -219,7 +243,7 @@ function resolveSnapshotRef(scope, ev) {
  * @param {EvidenceScope} scope
  * @param {any} ev
  * @param {{ checkVersion?: boolean }} [opts]
- * @returns {{ ok: true, kind: string, ref?: any } | { ok: false, errorCode: string, error: string }}
+ * @returns {{ ok: true, kind: string, ref?: any } | { ok: false, errorCode: string, error: string, details?: Record<string, unknown> }}
  */
 export function resolveEvidenceRef(scope, ev, opts = {}) {
   if (!ev || typeof ev !== 'object' || Array.isArray(ev)) {
@@ -234,7 +258,7 @@ export function resolveEvidenceRef(scope, ev, opts = {}) {
   /** @type {any} */
   let resolved
   if (CONFIG_KINDS.has(kind)) resolved = resolveConfigRef(scope, ev, kind)
-  else if (JOURNAL_KINDS.has(kind)) resolved = resolveJournalRef(scope, ev, kind)
+  else if (JOURNAL_KINDS.has(kind)) resolved = resolveJournalRef(scope, ev, /** @type {'build' | 'log'} */ (kind))
   else resolved = resolveSnapshotRef(scope, ev)
   if (!resolved.ok) return resolved
 
@@ -254,7 +278,7 @@ export function resolveEvidenceRef(scope, ev, opts = {}) {
  *
  * @param {EvidenceScope} scope
  * @param {any[]} list
- * @returns {{ ok: true, rows: any[] } | { ok: false, errorCode: string, error: string, index: number }}
+ * @returns {{ ok: true, rows: any[] } | { ok: false, errorCode: string, error: string, details?: Record<string, unknown>, index: number }}
  */
 export function resolveEvidenceBatch(scope, list) {
   const sid = text(scope.sessionId)
@@ -279,14 +303,13 @@ export function collectVisibleEvidenceRefs(scope) {
   const version = Number(scope.pack?.configVersion) || 1
   /** @type {any[]} */
   const refs = []
-  const tasks = Array.isArray(scope.workspace?.tasks) ? scope.workspace.tasks : []
-  const latestBuild = tasks.find((/** @type {any} */ t) => t && t.type === 'build' && ownedBy(t, scope.sessionId))
-  if (latestBuild) {
-    refs.push({ kind: 'build', id: latestBuild.id, at: latestBuild.endedAt || latestBuild.startedAt, version })
+  for (const kind of /** @type {const} */ (['build', 'log'])) {
+    const rows = journalRows(scope.workspace, kind)
+    const latest = rows.find((/** @type {any} */ r) => r && ownedBy(r, scope.sessionId))
+    // Only offer an id that the append path will accept for this caller.
+    if (!latest || findOwnedJournalRow(rows, { id: latest.id, sessionId: scope.sessionId }).status !== 'found') continue
+    refs.push({ kind, id: latest.id, at: kind === 'build' ? latest.endedAt || latest.startedAt : latest.at, version })
   }
-  const timeline = Array.isArray(scope.workspace?.timeline) ? scope.workspace.timeline : []
-  const lastLog = timeline.find((/** @type {any} */ e) => e && ownedBy(e, scope.sessionId))
-  if (lastLog) refs.push({ kind: 'log', id: lastLog.id, at: lastLog.at, version })
 
   const sid = text(scope.sessionId)
   const latest = sid && typeof scope.debug?.latestOwnedSnapshotRef === 'function'
