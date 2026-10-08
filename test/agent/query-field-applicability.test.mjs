@@ -5,6 +5,7 @@ import { saveWorkspace } from '../../bench-store.mjs'
 import { visionBenchTool } from '../../bench-tool.mjs'
 import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
 import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
+import { validateAgentToolArgs } from '../../src/interfaces/agent/agent-tool-preflight.mjs'
 import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
@@ -124,6 +125,7 @@ test('evidence top-level kind/id and timeline kind are rejected with the same co
   assert.equal(evidenceKind.details.field, 'kind')
   assert.equal(evidenceKind.details.reason, 'UNSUPPORTED_FIELD')
   assert.ok(evidenceKind.commandId)
+  assert.match(evidenceKind.hint, /timeline\.list/)
 
   const evidenceId = await run({ action: 'evidence', id: 'e1' })
   assert.equal(evidenceId.details.field, 'id')
@@ -133,8 +135,163 @@ test('evidence top-level kind/id and timeline kind are rejected with the same co
   assert.equal(timelineKind.ok, false)
   assert.equal(timelineKind.details.field, 'kind')
   assert.ok(timelineKind.commandId)
+  assert.match(timelineKind.hint, /focus/)
+  assert.doesNotMatch(timelineKind.hint, /points list/)
 
   const timelineOk = await run({ action: 'timeline.list' })
   assert.equal(timelineOk.ok, true, timelineOk.error)
   assert.equal(timelineOk.returned, 1)
+})
+
+/**
+ * @param {any} result
+ * @param {string} field
+ */
+function assertFieldReject(result, field) {
+  assert.equal(result.ok, false)
+  assert.equal(result.errorCode, 'INVALID_FIELD')
+  assert.equal(result.details.field, field)
+  assert.equal(result.details.reason, 'UNSUPPORTED_FIELD')
+  assert.ok(result.details.supportedBy?.length)
+}
+
+test('status and trend reject kind/id on Host and preflight with commandId', async (t) => {
+  const { home, cwd, run } = await pointsBench(t)
+
+  for (const action of /** @type {const} */ (['status', 'trend'])) {
+    const kindArgs =
+      action === 'trend'
+        ? { action, connectionId: 'c1', kind: 'point' }
+        : { action, kind: 'point' }
+    const idArgs =
+      action === 'trend'
+        ? { action, connectionId: 'c1', id: 'c1:d1:p00' }
+        : { action, id: 'c1:d1:p00' }
+
+    const preflightKind = validateAgentToolArgs(kindArgs, { pack: null })
+    assertFieldReject(preflightKind, 'kind')
+    assert.match(preflightKind.hint, /focus/)
+    assert.match(preflightKind.hint, /evidence\[\]\.kind/)
+    assert.doesNotMatch(preflightKind.hint, /points list/)
+    assert.ok(preflightKind.details.supportedBy.includes('focus'))
+    assert.ok(preflightKind.details.supportedBy.includes('evidence[].kind'))
+
+    const preflightId = validateAgentToolArgs(idArgs, { pack: null })
+    assertFieldReject(preflightId, 'id')
+    assert.match(preflightId.hint, /points get\/remove\/update/)
+    assert.doesNotMatch(preflightId.hint, /trendKey/)
+
+    const toolKind = await run(kindArgs)
+    assertFieldReject(toolKind, 'kind')
+    assert.ok(toolKind.commandId)
+    assert.equal(toolKind.errorCode, preflightKind.errorCode)
+    assert.equal(toolKind.details.reason, preflightKind.details.reason)
+
+    const toolId = await run(idArgs)
+    assertFieldReject(toolId, 'id')
+    assert.ok(toolId.commandId)
+    assert.equal(toolId.errorCode, preflightId.errorCode)
+    assert.equal(toolId.details.reason, preflightId.details.reason)
+
+    const hostKind = await executeVisionCommand({
+      home,
+      cwd,
+      sessionId: 'session-a',
+      source: 'agent',
+      action,
+      payload: kindArgs,
+    })
+    assertFieldReject(hostKind, 'kind')
+    assert.ok(hostKind.commandId)
+    assert.equal(hostKind.errorCode, preflightKind.errorCode)
+    assert.equal(hostKind.details.reason, preflightKind.details.reason)
+
+    const hostId = await executeVisionCommand({
+      home,
+      cwd,
+      sessionId: 'session-a',
+      source: 'agent',
+      action,
+      payload: idArgs,
+    })
+    assertFieldReject(hostId, 'id')
+    assert.ok(hostId.commandId)
+    assert.equal(hostId.errorCode, preflightId.errorCode)
+    assert.equal(hostId.details.reason, preflightId.details.reason)
+  }
+
+  const statusOk = await run({ action: 'status' })
+  assert.equal(statusOk.ok, true, statusOk.error)
+  assert.ok(statusOk.commandId)
+
+  const uiStatusKind = await executeVisionCommand({
+    home,
+    cwd,
+    sessionId: 'session-a',
+    source: 'ui',
+    action: 'status',
+    payload: { action: 'status', kind: 'point' },
+  })
+  assert.equal(uiStatusKind.ok, true, uiStatusKind.error)
+})
+
+test('trend keeps legal filters; id is not a trendKey alias', async (t) => {
+  const { home, cwd, run } = await pointsBench(t)
+  const now = Date.now()
+
+  const byTrendKey = await run({
+    action: 'trend',
+    trendKey: 'c1:d1:p00',
+    start: now - 60_000,
+    end: now,
+    limit: 5,
+  })
+  assert.equal(byTrendKey.ok, true, byTrendKey.error)
+  assert.notEqual(byTrendKey.details?.field, 'id')
+
+  const byPoint = await run({
+    action: 'trend',
+    connectionId: 'c1',
+    deviceId: 'd1',
+    pointId: 'p00',
+    start: now - 60_000,
+    end: now,
+    limit: 5,
+  })
+  assert.equal(byPoint.ok, true, byPoint.error)
+
+  const byPointIds = await run({
+    action: 'trend',
+    connectionId: 'c1',
+    pointIds: ['p00', 'p01'],
+    start: now - 60_000,
+    end: now,
+    limit: 5,
+  })
+  assert.equal(byPointIds.ok, true, byPointIds.error)
+
+  const idAsKey = await run({
+    action: 'trend',
+    connectionId: 'c1',
+    id: 'c1:d1:p00',
+    start: now - 60_000,
+    end: now,
+  })
+  assertFieldReject(idAsKey, 'id')
+  assert.ok(idAsKey.commandId)
+
+  const hostTrend = await executeVisionCommand({
+    home,
+    cwd,
+    sessionId: 'session-a',
+    source: 'agent',
+    action: 'trend',
+    payload: { action: 'trend', trendKey: 'c1:d1:p00', start: now - 60_000, end: now, limit: 5 },
+  })
+  assert.equal(hostTrend.ok, true, hostTrend.error)
+
+  const alarmId = await run({ action: 'alarm', connectionId: 'c1', id: 'not-an-alarm' })
+  assertFieldReject(alarmId, 'id')
+  assert.match(alarmId.hint, /alarmId/)
+  assert.doesNotMatch(alarmId.hint, /points list/)
 })

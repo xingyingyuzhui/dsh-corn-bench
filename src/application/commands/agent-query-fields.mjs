@@ -99,7 +99,9 @@ function inFieldTable(args) {
     action === 'evidence' ||
     action === 'frames' ||
     action === 'alarm' ||
-    action === 'visualization'
+    action === 'visualization' ||
+    action === 'status' ||
+    action === 'trend'
   )
 }
 
@@ -210,20 +212,22 @@ export function rejectUnsupportedQueryField(args) {
     if (!VIEW_VALUES.includes(view)) return invalidValue(action, 'view', VIEW_SUPPORTED, view, VIEW_VALUES)
   }
   if (supplied(args, 'kind') && inFieldTable(args) && !kindAllowed(args)) {
+    const supportedBy = [...KIND_SUPPORTED, 'evidence[].kind']
     const hint =
       action === 'evidence'
         ? '查事件用 timeline.list；追加证据用 evidence:[{kind,id,...}]；不带 evidence 为只读列出引用。顶层 kind 只用于 focus 目标。'
-        : 'kind 只用于 focus 目标类型；evidence 条目用 evidence[].kind。points list 的 kind 不是过滤器。'
-    return unsupportedField(action, 'kind', [...KIND_SUPPORTED, 'evidence[].kind'], hint)
+        : 'kind 只用于 focus 目标类型；证据条目请使用 evidence[].kind。'
+    return unsupportedField(action, 'kind', supportedBy, hint)
   }
   if (supplied(args, 'id') && inFieldTable(args) && !idAllowed(args)) {
+    const supportedBy = [...ID_SUPPORTED, 'evidence[].id']
     const hint =
       action === 'evidence'
         ? '查事件用 timeline.list；追加证据用 evidence:[{kind,id,...}]；不带 evidence 为只读列出引用。'
         : action === 'alarm'
-          ? 'alarm 用 alarmId（不是 id）；frames 可用 id 作 frameId 别名；points get/remove/update 可用 id。'
-          : 'id 只用于 points get/remove/update、frames（frameId 别名）与 visualization；points list 与 timeline.list 不要传 id。'
-    return unsupportedField(action, 'id', [...ID_SUPPORTED, 'evidence[].id'], hint)
+          ? 'alarm 用 alarmId（不是 id）；顶层 id 适用于 points get/remove/update、frames（frameId 别名）与 visualization；证据条目请使用 evidence[].id。'
+          : 'id 只用于 points get/remove/update、frames（frameId 别名）与 visualization；证据条目请使用 evidence[].id。'
+    return unsupportedField(action, 'id', supportedBy, hint)
   }
   return null
 }
