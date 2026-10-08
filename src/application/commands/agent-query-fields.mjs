@@ -4,6 +4,13 @@ import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
 const CURSOR_SUPPORTED = ['points op=list', 'timeline.list']
 const VIEW_SUPPORTED = ['points op=list']
 const VIEW_VALUES = ['full', 'summary']
+/** Real call sites that read top-level `kind` (not nested evidence[].kind). */
+const KIND_SUPPORTED = ['focus']
+/**
+ * Real call sites that read top-level `id` as an alias.
+ * alarm uses `alarmId` only — not listed here.
+ */
+const ID_SUPPORTED = ['points op=get', 'points op=remove', 'points op=update', 'frames', 'visualization']
 const ECHO_MAX = 32
 
 /**
@@ -34,8 +41,23 @@ function actionOf(args) {
 /**
  * @param {any} args
  */
+function opOf(args) {
+  return typeof args?.op === 'string' ? args.op : ''
+}
+
+/**
+ * @param {any} args
+ */
 function isPointsList(args) {
-  return actionOf(args) === 'points' && args?.op === 'list'
+  return actionOf(args) === 'points' && opOf(args) === 'list'
+}
+
+/**
+ * @param {any} args
+ * @param {string} op
+ */
+function isPointsOp(args, op) {
+  return actionOf(args) === 'points' && opOf(args) === op
 }
 
 /**
@@ -43,6 +65,42 @@ function isPointsList(args) {
  */
 function cursorAllowed(args) {
   return actionOf(args) === 'timeline.list' || isPointsList(args)
+}
+
+/**
+ * Top-level `kind` is only a focus target discriminator.
+ * @param {any} args
+ */
+function kindAllowed(args) {
+  return actionOf(args) === 'focus'
+}
+
+/**
+ * Top-level `id` aliases that handlers actually read.
+ * @param {any} args
+ */
+function idAllowed(args) {
+  const action = actionOf(args)
+  if (action === 'frames' || action === 'visualization') return true
+  return isPointsOp(args, 'get') || isPointsOp(args, 'remove') || isPointsOp(args, 'update')
+}
+
+/**
+ * Actions in this round's applicability table. Unknown actions are left alone
+ * so we do not invent a global blacklist.
+ * @param {any} args
+ */
+function inFieldTable(args) {
+  const action = actionOf(args)
+  return (
+    action === 'points' ||
+    action === 'timeline.list' ||
+    action === 'focus' ||
+    action === 'evidence' ||
+    action === 'frames' ||
+    action === 'alarm' ||
+    action === 'visualization'
+  )
 }
 
 /**
@@ -126,8 +184,9 @@ function invalidType(action, field, supportedBy, value) {
 }
 
 /**
- * Agent-source validation of cursor/view. Host and preflight share this function;
- * `offset` stays the numeric pager for frames/alarm and is not a cursor.
+ * Agent-source validation of kind/id/cursor/view. Host and preflight share this
+ * function; `offset` stays the numeric pager for frames/alarm and is not a cursor.
+ * Only Agent callers invoke this — non-Agent/UI loose aliases stay untouched.
  *
  * @param {any} args
  * @returns {QueryFieldError | null}
@@ -149,6 +208,22 @@ export function rejectUnsupportedQueryField(args) {
     }
     if (typeof view !== 'string') return invalidType(action, 'view', VIEW_SUPPORTED, view)
     if (!VIEW_VALUES.includes(view)) return invalidValue(action, 'view', VIEW_SUPPORTED, view, VIEW_VALUES)
+  }
+  if (supplied(args, 'kind') && inFieldTable(args) && !kindAllowed(args)) {
+    const hint =
+      action === 'evidence'
+        ? '查事件用 timeline.list；追加证据用 evidence:[{kind,id,...}]；不带 evidence 为只读列出引用。顶层 kind 只用于 focus 目标。'
+        : 'kind 只用于 focus 目标类型；evidence 条目用 evidence[].kind。points list 的 kind 不是过滤器。'
+    return unsupportedField(action, 'kind', [...KIND_SUPPORTED, 'evidence[].kind'], hint)
+  }
+  if (supplied(args, 'id') && inFieldTable(args) && !idAllowed(args)) {
+    const hint =
+      action === 'evidence'
+        ? '查事件用 timeline.list；追加证据用 evidence:[{kind,id,...}]；不带 evidence 为只读列出引用。'
+        : action === 'alarm'
+          ? 'alarm 用 alarmId（不是 id）；frames 可用 id 作 frameId 别名；points get/remove/update 可用 id。'
+          : 'id 只用于 points get/remove/update、frames（frameId 别名）与 visualization；points list 与 timeline.list 不要传 id。'
+    return unsupportedField(action, 'id', [...ID_SUPPORTED, 'evidence[].id'], hint)
   }
   return null
 }

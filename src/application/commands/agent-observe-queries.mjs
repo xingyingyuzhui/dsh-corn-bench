@@ -79,6 +79,7 @@ export async function focusGet(home, cwd, origin) {
  */
 function projectTimelineEvent(event) {
   const e = event && typeof event === 'object' ? event : {}
+  const full = String(e.summary || '')
   return {
     id: String(e.id || ''),
     at: Number(e.at) || 0,
@@ -87,7 +88,8 @@ function projectTimelineEvent(event) {
     sessionId: String(e.sessionId || ''),
     taskId: String(e.taskId || ''),
     ok: e.ok !== false,
-    summary: String(e.summary || '').slice(0, 180),
+    summary: full.slice(0, 180),
+    summaryTruncated: full.length > 180,
   }
 }
 

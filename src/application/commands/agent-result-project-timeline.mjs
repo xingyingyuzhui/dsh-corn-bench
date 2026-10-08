@@ -31,6 +31,8 @@ export function projectTimelineList(result) {
     const moreInPage = k < events.length
     const lastId = String(kept[k - 1]?.id || '')
     const nextCursor = moreInPage ? lastId || null : hostCursor
+    // Keep legacy truncated (true when more pages remain). budgetTruncated is
+    // only true when this Agent projection dropped events from the Host page.
     const truncated = moreInPage || nextCursor != null
     const projected = {
       ...stripWorkspace(result),
@@ -38,6 +40,7 @@ export function projectTimelineList(result) {
       returned: kept.length,
       nextCursor,
       truncated,
+      budgetTruncated: moreInPage,
     }
     if (utf8ByteLength(projected) <= cap) return projected
   }
