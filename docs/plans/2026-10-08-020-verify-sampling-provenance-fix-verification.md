@@ -64,5 +64,6 @@ Harness（`dsh-vision-harness`）`npm test` → **25 pass / 0 fail**。
 
 - **R5/R6** 焦点迁移；**R8** 幂等失败终态
 - **未推送** remote；**未** registry `name@version` 正式产品安装
-- Desktop lab / Web 真实 Agent fiber 验收：门禁后另行记录；失败或受阻标未验证，不桥接 Web 端口、不强杀 Harness
+- Desktop lab：`node scripts/probes/install-desktop-local.mjs` 因 DeepSeek Harness Desktop 仍在运行而拒绝安装（按约定不 Cmd+Q / 不强杀）。**Desktop lab 未验证**。请用户完整退出后可再跑安装，并以 client `buildId=5baff237…` / ping `gitSha` 核对
+- Web 真实 Agent fiber 验收未在本轮跑
 - 无物理硬件写入验收
