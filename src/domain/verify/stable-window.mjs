@@ -110,7 +110,7 @@ export function createStableWindow(opts) {
       // Caller should keep waiting; if forced to finish early treat as insufficient.
       return unavailable(
         UNAVAILABLE_REASONS.INSUFFICIENT_SAMPLES,
-        `采样不足 (稳定窗口尚未结束)`,
+        '采样不足 (稳定窗口尚未结束)',
       )
     }
     if (accepted.length < 2) {

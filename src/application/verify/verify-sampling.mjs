@@ -175,7 +175,9 @@ export async function sampleStableDuration(ctx, spec) {
     }
     // Still waiting for the first in-window sample.
     if (t >= firstDeadline) {
-      return window.finish(t)
+      const finished = window.finish(t)
+      if ('availability' in finished) return finished
+      return finished.values
     }
     const wait = Math.min(intervalMs, firstDeadline - t)
     await delay(Math.max(0, wait), combinedSignal)

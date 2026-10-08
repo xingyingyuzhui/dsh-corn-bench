@@ -141,14 +141,18 @@ export function createScopedPointReader(deps = {}) {
   async function readPoint(scopeIn, pointId, options = {}) {
     const scope = scopeOf(scopeIn)
     if (!scope) return unavailable(UNAVAILABLE_REASONS.TARGET_UNAVAILABLE, NO_SCOPE)
-    const target = locate(scope, String(pointId || '').trim())
-    if (isUnavailable(target)) return target
+    const located = locate(scope, String(pointId || '').trim())
+    if (isUnavailable(located)) return located
+    /** @type {ResolvedPoint} */
+    const target = located
+    /** @type {ResolvedScope} */
+    const resolvedScope = scope
     const maxAgeMs =
       typeof options.maxAgeMs === 'number' && Number.isFinite(options.maxAgeMs) ? options.maxAgeMs : Number.POSITIVE_INFINITY
     const allowDirect = options.allowDirectRead !== false
     const activeBudget = options.directReadBudget || budget
-    const key = scopeKey(scope.cwd, scope.sid, target.point.id)
-    const budgetKey = JSON.stringify([normalizeCwd(scope.cwd), scope.sid, target.point.id, target.generation || ''])
+    const key = scopeKey(resolvedScope.cwd, resolvedScope.sid, target.point.id)
+    const budgetKey = JSON.stringify([normalizeCwd(resolvedScope.cwd), resolvedScope.sid, target.point.id, target.generation || ''])
 
     const cachedRaw = liveCache.get(key)
     const cached =
@@ -177,9 +181,9 @@ export function createScopedPointReader(deps = {}) {
       if (!(allowDirect && directRead && (!activeBudget || activeBudget.tryConsume(budgetKey)))) {
         return null
       }
-      const direct = await directRead(scope, target, options.signal)
+      const direct = await directRead(resolvedScope, target, options.signal)
       // Re-resolve after I/O — revoke/rebind must not keep a stale stamp.
-      const fresh = locate(scope, String(pointId || '').trim())
+      const fresh = locate(resolvedScope, String(pointId || '').trim())
       if (isUnavailable(fresh)) return fresh
       // Cold-start: mutating read may initialize missing generations during I/O.
       // Empty→token with the same fingerprint is not a geometry/owner change.
@@ -198,7 +202,7 @@ export function createScopedPointReader(deps = {}) {
     if (latestIsBad && latest && (!best || latest.timestamp >= best.timestamp)) {
       const recovered = await tryDirect('READ_FAILED')
       if (recovered) return recovered
-      return unavailable(UNAVAILABLE_REASONS.BAD_QUALITY, latest.value == null ? '最新采样失败' : `采样质量为 error`)
+      return unavailable(UNAVAILABLE_REASONS.BAD_QUALITY, latest.value == null ? '最新采样失败' : '采样质量为 error')
     }
 
     if (best) {
