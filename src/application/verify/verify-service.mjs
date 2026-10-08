@@ -4,7 +4,12 @@ import { evaluateAssertion } from '../../domain/verify/assertion.mjs'
 import { createVerifyResult } from '../../domain/verify/result.mjs'
 import { resolveEvidenceRef } from '../modbus/evidence-scope.mjs'
 import { evidenceScopeFromWorkspace } from '../modbus/evidence-scope-factory.mjs'
-import { assertScenarioBudget, createScenario, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
+import {
+  assertChangedBaselines,
+  assertScenarioBudget,
+  createScenario,
+  effectiveTimeoutMs,
+} from '../../domain/verify/scenario.mjs'
 import { abortableDelay, composeAbortSignals } from './abort-signals.mjs'
 import { createDirectReadBudget } from './scoped-point-reader.mjs'
 import { createTelemetryReader } from './telemetry-reader.mjs'
@@ -82,6 +87,8 @@ export function createVerifyService(deps = {}) {
     async runVerification(options) {
       const startTime = Date.now()
       const { scenario: rawScenario, workspaceCwd, ownerSessionId, signal } = options
+      // Raw scenario: preserve value vs expected field for INVALID_FIELD details.
+      assertChangedBaselines(rawScenario)
       const scenario = createScenario(rawScenario)
       const timeoutMs = effectiveTimeoutMs(scenario, options.timeoutMs)
       assertScenarioBudget(scenario, timeoutMs)

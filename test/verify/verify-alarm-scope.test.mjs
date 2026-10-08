@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
+import { countSessionAlarms } from '../../src/application/verify/verify-alarm-scope.mjs'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { A, B, point } from '../agent/evidence-scope-fixtures.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
@@ -174,4 +175,113 @@ test('no.alarm: an ambiguously owned polling connection cannot support a pass', 
   const r = await noAlarm(() => loadWorkspace(home, cwd), A)
   assert.equal(r.status, 'error')
   assert.equal(r.reason, 'AMBIGUOUS_OWNER')
+})
+
+/** Partitioned workspace where A owns alarmPoint p1 (migrated from top-level). */
+function partitionedCallerOwnsP1(/** @type {any[]} */ alarms = []) {
+  const ws = flatWorkspace({ points: [alarmPoint('p1')], alarms })
+  ws.modbus.sessionConfigs = {
+    a: { connections: ws.modbus.connections, devices: ws.modbus.devices, points: ws.modbus.points },
+    b: { connections: [], devices: [], points: [] },
+  }
+  ws.modbus.connections = []
+  ws.modbus.devices = []
+  ws.modbus.points = []
+  ws.modbus.share = { enabled: false, connections: false, points: false }
+  return ws
+}
+
+test('no.alarm: a foreign attributed legacy alarm must not enter the callers count', () => {
+  const ws = partitionedCallerOwnsP1([
+    { id: 'old-b-alarm', pointId: 'p1', sessionId: 'b', active: true },
+  ])
+  assert.equal(countSessionAlarms(ws, 'a'), 0)
+})
+
+test('no.alarm: partitioned ownerless legacy is hidden; unpartitioned ownerless stays compatible', () => {
+  const partitioned = partitionedCallerOwnsP1([{ id: 'p1', pointId: 'p1', active: true }])
+  assert.equal(countSessionAlarms(partitioned, 'a'), 0)
+
+  const flat = flatWorkspace({
+    points: [alarmPoint('p1')],
+    alarms: [{ id: 'p1', pointId: 'p1', active: true }],
+  })
+  assert.equal(countSessionAlarms(flat, 's'), 1)
+})
+
+test('no.alarm: explicit foreign owner does not degrade to ownerless on an unpartitioned workspace', () => {
+  const ws = flatWorkspace({
+    points: [alarmPoint('p1')],
+    alarms: [{ id: 'p1', pointId: 'p1', sessionId: 'other', active: true }],
+  })
+  assert.equal(countSessionAlarms(ws, 's'), 0)
+})
+
+test('no.alarm: same-ID legacy rows with two owners — caller wins in both orders', () => {
+  const foreignThenOwn = partitionedCallerOwnsP1([
+    { id: 'p1', pointId: 'p1', sessionId: 'b', active: true },
+    { id: 'p1', pointId: 'p1', sessionId: 'a', active: true },
+  ])
+  const ownThenForeign = partitionedCallerOwnsP1([
+    { id: 'p1', pointId: 'p1', sessionId: 'a', active: true },
+    { id: 'p1', pointId: 'p1', sessionId: 'b', active: true },
+  ])
+  assert.equal(countSessionAlarms(foreignThenOwn, 'a'), 1)
+  assert.equal(countSessionAlarms(ownThenForeign, 'a'), 1)
+})
+
+test('no.alarm: conflicting sessionId and ownerSessionId are not attributable', () => {
+  const ws = partitionedCallerOwnsP1([
+    { id: 'p1', pointId: 'p1', sessionId: 'a', ownerSessionId: 'b', active: true },
+  ])
+  assert.equal(countSessionAlarms(ws, 'a'), 0)
+})
+
+test('no.alarm: current alarmState with explicit foreign owner is hidden; ownerless current still uses target rules', () => {
+  const foreignCurrent = partitionedCallerOwnsP1()
+  foreignCurrent.modbus.alarmState = {
+    p1: activeRow({ id: 'p1', pointId: 'p1', sessionId: 'b' }),
+  }
+  assert.equal(countSessionAlarms(foreignCurrent, 'a'), 0)
+
+  const ownerlessCurrent = partitionedCallerOwnsP1()
+  ownerlessCurrent.modbus.alarmState = { p1: activeRow({ id: 'p1', pointId: 'p1' }) }
+  assert.equal(countSessionAlarms(ownerlessCurrent, 'a'), 1)
+})
+
+test('no.alarm: only foreign legacy and no caller source is unverifiable', () => {
+  const ws = partitionedCallerOwnsP1([
+    { id: 'old-b-alarm', pointId: 'orphan', sessionId: 'b', active: true },
+  ])
+  for (const cfg of Object.values(ws.modbus.sessionConfigs)) /** @type {any} */ (cfg).points = []
+  const r = countSessionAlarms(ws, 'a')
+  assert.equal(typeof r, 'object')
+  assert.equal(/** @type {any} */ (r).reason, 'NO_ALARM_SOURCE')
+})
+
+test('no.alarm: rules with no active alarm yield zero; session active still counts after poll stops', async () => {
+  const zero = await noAlarm(fixed(flatWorkspace({ points: [alarmPoint('p1')] })), 's')
+  assert.deepEqual(zero, { status: 'pass', outcome: 'pass', reason: undefined, actual: 0 })
+
+  const ws = flatWorkspace({
+    points: [alarmPoint('p1')],
+    pollingByConnection: { c1: polled({ enabled: false }) },
+    alarmState: { p1: activeRow({ id: 'p1', pointId: 'p1' }) },
+  })
+  const stopped = await noAlarm(fixed(ws), 's')
+  assert.equal(stopped.status, 'fail')
+  assert.equal(stopped.actual, 1)
+})
+
+test('no.alarm: diagnostics do not leak foreign owner or alarm ids', async () => {
+  const ws = partitionedCallerOwnsP1([
+    { id: 'old-b-alarm', pointId: 'orphan', sessionId: 'b', ownerSessionId: 'b', active: true },
+  ])
+  for (const cfg of Object.values(ws.modbus.sessionConfigs)) /** @type {any} */ (cfg).points = []
+  const r = await noAlarm(fixed(ws), 'a')
+  assert.equal(r.reason, 'NO_ALARM_SOURCE')
+  const blob = JSON.stringify(r)
+  assert.equal(blob.includes('old-b-alarm'), false)
+  assert.equal(blob.includes('"b"'), false)
+  assert.equal(blob.includes('ownerSessionId'), false)
 })

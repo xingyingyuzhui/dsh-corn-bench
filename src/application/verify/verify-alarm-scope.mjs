@@ -6,6 +6,7 @@
  */
 import { ALARM_GROUP, COND_ACTIVE } from '../../domain/modbus/alarm-constants.mjs'
 import { pointAlarmRuleEnabled } from '../../domain/modbus/alarm-evaluate.mjs'
+import { isScopePartitioned, normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
 import { deviceDisabledOf } from '../../domain/modbus/validation.mjs'
 import { unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 import {
@@ -44,13 +45,70 @@ function alarmIdentity(id, row) {
 }
 
 /**
- * Legacy `alarms[]` rows, keyed so the session filter can prove their owner and
- * target; rows it cannot attribute are dropped.
+ * Explicit owner fields that appear on historic alarm rows. Two non-empty
+ * conflicting values are not attributable; an explicit foreign owner never
+ * counts as the caller (and never degrades to ownerless).
  *
- * @param {any} workspace
+ * @param {any} row
+ * @param {string} callerSid
+ * @returns {'match' | 'foreign' | 'ownerless' | 'conflict'}
+ */
+export function alarmOwnerRelation(row, callerSid) {
+  const sid = normalizeScopeSessionId(callerSid)
+  const a = normalizeScopeSessionId(row?.sessionId)
+  const b = normalizeScopeSessionId(row?.ownerSessionId)
+  if (a && b && a !== b) return 'conflict'
+  const owner = a || b
+  if (!owner) return 'ownerless'
+  if (!sid || owner !== sid) return 'foreign'
+  return 'match'
+}
+
+/**
+ * @param {any} row
+ * @param {string} callerSid
+ * @param {boolean} allowOwnerless
+ */
+function alarmRowAcceptedForCaller(row, callerSid, allowOwnerless) {
+  const rel = alarmOwnerRelation(row, callerSid)
+  if (rel === 'conflict' || rel === 'foreign') return false
+  if (rel === 'ownerless') return allowOwnerless
+  return true
+}
+
+/**
+ * Drop rows whose explicit owner is foreign/conflict before target visibility.
+ * Ownerless current state from verified sampling keeps effective-target rules.
+ *
+ * @param {Record<string, any> | null | undefined} src
+ * @param {string} callerSid
+ * @param {boolean} allowOwnerless
  * @returns {Record<string, any>}
  */
-function legacyAlarmState(workspace) {
+function filterAlarmDictByOwner(src, callerSid, allowOwnerless) {
+  const input = src && typeof src === 'object' && !Array.isArray(src) ? src : {}
+  /** @type {Record<string, any>} */
+  const out = {}
+  for (const [id, row] of Object.entries(input)) {
+    if (!row || typeof row !== 'object') continue
+    if (!alarmRowAcceptedForCaller(row, callerSid, allowOwnerless)) continue
+    out[id] = row
+  }
+  return out
+}
+
+/**
+ * Legacy `alarms[]` rows, keyed so the session filter can prove their target.
+ * Owner is checked before the ID dictionary so a foreign same-ID row cannot
+ * block or replace a caller-attributable row.
+ *
+ * @param {any} workspace
+ * @param {{ sid: string, partitioned: boolean }} scope
+ * @returns {Record<string, any>}
+ */
+function legacyAlarmState(workspace, scope) {
+  const sid = String(scope?.sid || '')
+  const allowOwnerless = !scope?.partitioned
   const rows = [
     ...(Array.isArray(workspace?.alarms) ? workspace.alarms : []),
     ...(Array.isArray(workspace?.modbus?.alarms) ? workspace.modbus.alarms : []),
@@ -59,8 +117,10 @@ function legacyAlarmState(workspace) {
   const out = {}
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue
+    if (!alarmRowAcceptedForCaller(row, sid, allowOwnerless)) continue
     const key = String(row.id || row.pointId || '')
-    if (key) out[key] = row
+    if (!key || Object.prototype.hasOwnProperty.call(out, key)) continue
+    out[key] = row
   }
   return out
 }
@@ -87,10 +147,13 @@ export function countSessionAlarms(workspace, sessionId, pointId) {
   const view = sessionView(workspace, sessionId)
   if (!view) return unavailable(UNAVAILABLE_REASONS.TARGET_UNAVAILABLE)
   const { layered, pack, sid } = view
+  const partitioned = isScopePartitioned(workspace.modbus)
 
   /** @type {Set<string>} */
   const active = new Set()
-  for (const src of [workspace.modbus?.alarmState, legacyAlarmState(workspace)]) {
+  const current = filterAlarmDictByOwner(workspace.modbus?.alarmState, sid, true)
+  const legacy = legacyAlarmState(workspace, { sid, partitioned })
+  for (const src of [current, legacy]) {
     for (const [id, row] of Object.entries(filterAlarmStateForSession(layered, sid, pack, src))) {
       if (isActive(row)) active.add(alarmIdentity(id, row))
     }

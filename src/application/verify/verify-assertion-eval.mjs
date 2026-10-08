@@ -1,6 +1,6 @@
 // @ts-check
 
-import { unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import { scalarProblem, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 import { countSessionAlarms } from './verify-alarm-scope.mjs'
 import { evaluateDebugExpression, readTelemetryPoint, sampleStableDuration } from './verify-sampling.mjs'
 
@@ -47,6 +47,9 @@ export async function resolveAssertionActual(ctx, spec) {
 
     case 'changed': {
       if (spec.value === undefined || spec.value === null) return unavailable(UNAVAILABLE_REASONS.BASELINE_MISSING)
+      // Domain fallback: illegal baselines never become a "from Infinity" pass.
+      const baselineProblem = scalarProblem(spec.value)
+      if (baselineProblem) return baselineProblem
       return { initial: spec.value, current: await sampleOnce() }
     }
 

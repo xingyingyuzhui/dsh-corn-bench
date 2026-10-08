@@ -1,6 +1,13 @@
 // @ts-check
 
-import { isUnavailable, numericSample, scalarProblem, unavailable, UNAVAILABLE_REASONS } from './observation.mjs'
+import {
+  formatComparableScalar,
+  isUnavailable,
+  numericSample,
+  scalarProblem,
+  unavailable,
+  UNAVAILABLE_REASONS,
+} from './observation.mjs'
 
 /**
  * @typedef {import('../../types/verify.d.ts').AssertionResult} AssertionResult
@@ -130,7 +137,7 @@ function expectedOf(spec) {
     case 'range':
       return `[${spec.min ?? '-inf'}, ${spec.max ?? '+inf'}]`
     case 'changed':
-      return `changed (from ${spec.value})`
+      return `changed (from ${formatComparableScalar(spec.value)})`
     default:
       return spec.value
   }
@@ -187,14 +194,16 @@ function judgeComparison(spec, actual) {
   if (problem) return problem
   const pass = evaluateOperator(value, op, spec.value)
   const desc = targetName(spec)
+  const actualText = formatComparableScalar(value)
+  const expectedText = formatComparableScalar(spec.value)
   return {
     pass,
     actual: value,
     expected: spec.value,
     op,
     message: pass
-      ? `${desc} 断言通过 (${value} ${op} ${spec.value})`
-      : `${desc} 断言失败: 实际值 ${JSON.stringify(value)} 不满足 ${op} ${JSON.stringify(spec.value)}`,
+      ? `${desc} 断言通过 (${actualText} ${op} ${expectedText})`
+      : `${desc} 断言失败: 实际值 ${actualText} 不满足 ${op} ${expectedText}`,
   }
 }
 
@@ -287,16 +296,21 @@ function judgeChanged(spec, actual) {
   }
   const initial = actual.initial
   if (initial === undefined || initial === null) return unavailable(UNAVAILABLE_REASONS.BASELINE_MISSING)
+  const baselineProblem = scalarProblem(initial)
+  if (baselineProblem) return baselineProblem
   if (isUnavailable(actual.current)) return actual.current
   const problem = scalarProblem(actual.current)
   if (problem) return problem
   const current = actual.current
+  // Compare raw scalars; do not coerce via String/Number before difference.
   const pass = evaluateOperator(current, '!=', initial)
+  const fromText = formatComparableScalar(initial)
+  const toText = formatComparableScalar(current)
   return {
     pass,
     actual: current,
-    expected: `changed (from ${initial})`,
-    message: pass ? `${name} 发生状态变化 (${initial} -> ${current})` : `${name} 未发生预期变化 (仍为 ${initial})`,
+    expected: `changed (from ${fromText})`,
+    message: pass ? `${name} 发生状态变化 (${fromText} -> ${toText})` : `${name} 未发生预期变化 (仍为 ${fromText})`,
   }
 }
 

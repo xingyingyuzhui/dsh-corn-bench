@@ -55,15 +55,46 @@ export function isUnavailable(value) {
   return Boolean(value && typeof value === 'object' && /** @type {any} */ (value).availability === 'unavailable')
 }
 
+/** Trimmed case-insensitive spellings that must not be compared as scalars. */
+const NONFINITE_SPELLINGS = new Set(['nan', 'infinity', '+infinity', '-infinity'])
+
 /**
- * A comparable scalar: present, and finite when numeric. `0` and `false` are valid.
+ * Safe text for logs/messages. Avoids `JSON.stringify(NaN) → null` rewriting the reason.
+ *
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function formatComparableScalar(value) {
+  if (typeof value === 'number') {
+    if (Number.isNaN(value)) return 'NaN'
+    if (value === Number.POSITIVE_INFINITY) return 'Infinity'
+    if (value === Number.NEGATIVE_INFINITY) return '-Infinity'
+  }
+  if (typeof value === 'string') return value
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  try {
+    return JSON.stringify(value) ?? String(value)
+  } catch {
+    return String(value)
+  }
+}
+
+/**
+ * A comparable scalar: present, finite when numeric, and not a non-finite spelling
+ * string (`NaN` / `Infinity` / `±Infinity`, trim + case-insensitive). `0` and
+ * `false` and ordinary strings stay valid.
  *
  * @param {unknown} value
  * @returns {UnavailableObservation | null}
  */
 export function scalarProblem(value) {
   if (value === undefined || value === null) return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
-  if (typeof value === 'number' && !Number.isFinite(value)) return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE)
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE)
+  }
+  if (typeof value === 'string' && NONFINITE_SPELLINGS.has(value.trim().toLowerCase())) {
+    return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE)
+  }
   return null
 }
 

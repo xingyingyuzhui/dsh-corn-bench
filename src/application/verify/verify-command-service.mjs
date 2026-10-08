@@ -2,7 +2,7 @@
 
 import { isScopePartitioned, normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
 import { VerifyRequestError } from '../../domain/verify/errors.mjs'
-import { assertScenarioBudget, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
+import { assertChangedBaselines, assertScenarioBudget, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
 import { normalizeCwd } from '../../shared/path-normalize.mjs'
 import { createVerifyRunRegistry } from './verify-run-registry.mjs'
 import { createVerifyService } from './verify-service.mjs'
@@ -111,6 +111,7 @@ export function createVerifyCommandService(deps = {}) {
     const scope = resolveScope(options.workspaceCwd, options.ownerSessionId)
     const { scenario } = options
     assertScenarioBudget(scenario, effectiveTimeoutMs(scenario, options.timeoutMs))
+    assertChangedBaselines(scenario)
     const scenarioId = scenario.id || `scenario_${Date.now()}`
     const external = String(options.verificationRunId || '').trim()
     if (external && registry.has(external)) {

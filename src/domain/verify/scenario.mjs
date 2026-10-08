@@ -1,6 +1,7 @@
 // @ts-check
 
 import { VerifyRequestError } from './errors.mjs'
+import { formatComparableScalar, scalarProblem, UNAVAILABLE_REASONS } from './observation.mjs'
 
 export const DEFAULT_SCENARIO_TIMEOUT_MS = 60000
 export const DEFAULT_STABLE_DURATION_MS = 1000
@@ -29,6 +30,19 @@ export function stableDurationMs(spec) {
 }
 
 /**
+ * Same alias priority as `createScenario`: `value` when not undefined, else `expected`.
+ *
+ * @param {any} spec
+ * @returns {{ field: 'value' | 'expected', baseline: unknown } | null}
+ */
+export function resolveChangedBaseline(spec) {
+  if (!spec || typeof spec !== 'object') return null
+  if (spec.value !== undefined) return { field: 'value', baseline: spec.value }
+  if (spec.expected !== undefined) return { field: 'expected', baseline: spec.expected }
+  return null
+}
+
+/**
  * Reject stable windows that cannot fit the run's total budget, before anything
  * is registered or sampled. Shortening the window would let it "pass" on less
  * evidence than requested.
@@ -52,6 +66,35 @@ export function assertScenarioBudget(scenario, timeoutMs) {
         reason: 'INVALID_VALUE',
         durationMs: spec.durationMs,
         timeoutMs,
+        ...(spec.id ? { assertionId: spec.id } : {}),
+      },
+    )
+  }
+}
+
+/**
+ * Reject `changed` assertions whose baseline is not a comparable scalar, before
+ * a run is registered or sampled. Missing baseline stays a runtime
+ * BASELINE_MISSING; non-finite numbers/spellings are INVALID_FIELD.
+ *
+ * @param {any} scenario
+ */
+export function assertChangedBaselines(scenario) {
+  const assertions = Array.isArray(scenario?.assertions) ? scenario.assertions : []
+  for (const spec of assertions) {
+    if (!spec || spec.type !== 'changed') continue
+    const resolved = resolveChangedBaseline(spec)
+    if (!resolved) continue
+    const { field, baseline } = resolved
+    if (baseline === null) continue
+    const problem = scalarProblem(baseline)
+    if (!problem || problem.reason !== UNAVAILABLE_REASONS.INVALID_SAMPLE) continue
+    throw new VerifyRequestError(
+      'INVALID_FIELD',
+      `changed 的初值 (${formatComparableScalar(baseline)}) 不是有效可比较标量`,
+      {
+        field,
+        reason: 'INVALID_VALUE',
         ...(spec.id ? { assertionId: spec.id } : {}),
       },
     )
