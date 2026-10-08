@@ -65,7 +65,11 @@ export function visionDebugTool(home) {
       'evaluate: evaluate C expression in current scope. ' +
       'snapshot: capture forensic snapshot of current target state. ' +
       'reset: reset target CPU and halt. ' +
-      'verify: execute closed-loop verification scenario against target firmware and Modbus telemetry.',
+      'verify: execute closed-loop verification scenario against target firmware and Modbus telemetry. ' +
+      'ok is true only when status=pass. status=fail means valid data did not meet an expectation; ' +
+      'status=error with errorCode=VERIFY_UNVERIFIABLE means some assertions had no trustworthy data ' +
+      '(assertions[].outcome=unverifiable with reason, counted in unverifiableCount) and must not be read as pass. ' +
+      'A stable-for-duration durationMs longer than the effective timeoutMs is rejected with INVALID_FIELD.',
     parameters: {
       type: 'object',
       additionalProperties: false,

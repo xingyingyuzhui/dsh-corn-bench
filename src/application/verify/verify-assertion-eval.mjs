@@ -1,11 +1,13 @@
 // @ts-check
 
-import { withTimeoutSignal } from './verify-timeout.mjs'
-import { readTelemetryPoint, sampleStableDuration } from './verify-sampling.mjs'
+import { unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import { evaluateDebugExpression, readTelemetryPoint, sampleStableDuration } from './verify-sampling.mjs'
 
 /**
  * Resolve the actual value for one assertion spec (sampling + domain reads).
- * Domain `evaluateAssertion` is applied by the caller.
+ * Returns either the value to compare or an unavailable observation carrying
+ * the reason; domain `evaluateAssertion` turns the latter into `unverifiable`.
+ * Only timeout/cancellation and unexpected internal faults throw.
  *
  * @param {import('./verify-sampling.mjs').VerifySampleContext & {
  *   workspaceLoader?: (cwd: string) => any,
@@ -14,50 +16,47 @@ import { readTelemetryPoint, sampleStableDuration } from './verify-sampling.mjs'
  * @returns {Promise<any>}
  */
 export async function resolveAssertionActual(ctx, spec) {
-  const {
-    debugRuntime,
-    debugSessionId,
-    ownerSessionId,
-    workspaceCwd,
-    workspaceLoader,
-    combinedSignal,
-    checkDeadline,
-    telemetrySamples,
-  } = ctx
+  const { debugRuntime, debugSessionId, ownerSessionId, workspaceCwd, workspaceLoader, checkDeadline } = ctx
+  const expr = spec.expr || spec.expression || spec.source?.expr || spec.source?.expression
+  const pointId = spec.pointId || spec.source?.pointId
+  const maxAgeMs = typeof spec.maxAgeMs === 'number' ? spec.maxAgeMs : undefined
+  const hasDebug = Boolean(debugRuntime && debugSessionId)
+
+  /** Current value of the assertion's expression or point, as value-or-unavailable. */
+  const sampleOnce = async () => {
+    if (expr && hasDebug) {
+      const observed = await evaluateDebugExpression(ctx, expr)
+      checkDeadline()
+      return observed.availability === 'available' ? observed.value : observed
+    }
+    if (pointId && spec.type !== 'debug.expression') {
+      const observed = await readTelemetryPoint(ctx, pointId, { maxAgeMs })
+      checkDeadline()
+      return observed.availability === 'available' ? observed.reading.value : observed
+    }
+    if (expr) return unavailable(UNAVAILABLE_REASONS.NO_DEBUG_SESSION)
+    return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
+  }
 
   switch (spec.type) {
-    case 'debug.expression': {
-      const expr = spec.expr || spec.expression || ''
-      if (debugRuntime && debugSessionId) {
-        const res = await withTimeoutSignal(
-          debugRuntime.command({ debugSessionId, ownerSessionId }, { type: 'evaluate', expression: expr }),
-          combinedSignal,
-        )
-        checkDeadline()
-        const actualValue = res?.value
-        telemetrySamples.push({ expr, timestamp: Date.now(), value: actualValue })
-        return actualValue
-      }
-      return undefined
-    }
+    case 'debug.expression':
+    case 'modbus.point':
+    case 'range':
+      return sampleOnce()
 
-    case 'modbus.point': {
-      const pointId = spec.pointId || spec.source?.pointId || ''
-      const maxAgeMs = typeof spec.maxAgeMs === 'number' ? spec.maxAgeMs : undefined
-      const reading = await readTelemetryPoint(ctx, pointId, { maxAgeMs })
-      checkDeadline()
-      if (reading) {
-        const sampleVal = reading.value !== undefined ? reading.value : reading.rawValue
-        telemetrySamples.push({ pointId, timestamp: reading.timestamp || Date.now(), value: sampleVal })
-      }
-      return reading || undefined
+    case 'changed': {
+      if (spec.value === undefined || spec.value === null) return unavailable(UNAVAILABLE_REASONS.BASELINE_MISSING)
+      return { initial: spec.value, current: await sampleOnce() }
     }
 
     case 'no.exception': {
-      if (!debugRuntime || !debugSessionId) {
-        return { error: 'NO_DEBUG_SESSION', message: '未关联活跃调试会话，无法确认异常状态' }
+      if (!hasDebug) return unavailable(UNAVAILABLE_REASONS.NO_DEBUG_SESSION, '未关联活跃调试会话，无法确认异常状态')
+      let evData
+      try {
+        evData = debugRuntime.getEvents({ debugSessionId, ownerSessionId }, 0, 500)
+      } catch (err) {
+        return unavailable(UNAVAILABLE_REASONS.READ_FAILED, err instanceof Error ? err.message : String(err))
       }
-      const evData = debugRuntime.getEvents({ debugSessionId, ownerSessionId }, 0, 500)
       const events = evData?.events || []
       return events.some(
         (/** @type {any} */ e) =>
@@ -65,104 +64,8 @@ export async function resolveAssertionActual(ctx, spec) {
       )
     }
 
-    case 'no.alarm': {
-      const pointId = spec.pointId || spec.source?.pointId
-      const ws = workspaceLoader?.(workspaceCwd)
-      const modbus = ws?.modbus || ws
-      const points = Array.isArray(modbus?.points) ? modbus.points : []
-      const alarmState =
-        (modbus && typeof modbus === 'object' && modbus.alarmState) ||
-        (ws && typeof ws === 'object' && ws.alarmState) ||
-        {}
-      const legacyAlarms = (ws && Array.isArray(ws.alarms) ? ws.alarms : []).concat(
-        modbus && Array.isArray(modbus.alarms) ? modbus.alarms : [],
-      )
-
-      const hasAlarmSource = Boolean(
-        ws && (points.length > 0 || Object.keys(alarmState).length > 0 || legacyAlarms.length > 0),
-      )
-
-      if (pointId) {
-        const pointExists =
-          points.some((/** @type {any} */ p) => p && p.id === pointId) ||
-          alarmState[pointId] !== undefined ||
-          legacyAlarms.some((/** @type {any} */ a) => a && (a.pointId === pointId || a.id === pointId))
-        if (!hasAlarmSource) {
-          return { error: 'NO_ALARM_SOURCE', message: '工作区无有效点位或告警源' }
-        }
-        if (!pointExists && points.length > 0) {
-          return { error: 'NO_ALARM_SOURCE', message: `点位 [${pointId}] 不存在或未配置告警源` }
-        }
-        const alm = alarmState[pointId]
-        const isActiveState = alm && (alm.condition === 'active' || alm.status === 'active' || alm === true)
-        const isActiveLegacy = legacyAlarms.some(
-          (/** @type {any} */ a) =>
-            (a.pointId === pointId || a.id === pointId) && (a.active || a.condition === 'active'),
-        )
-        return isActiveState || isActiveLegacy ? 1 : 0
-      }
-      if (!hasAlarmSource) {
-        return { error: 'NO_ALARM_SOURCE', message: '工作区无有效点位或告警源' }
-      }
-      const activeStateCount = Object.values(alarmState).filter(
-        (/** @type {any} */ a) => a && (a.condition === 'active' || a.status === 'active' || a === true),
-      ).length
-      const activeLegacyCount = legacyAlarms.filter(
-        (/** @type {any} */ a) => a && (a.active || a.condition === 'active'),
-      ).length
-      return activeStateCount + activeLegacyCount
-    }
-
-    case 'range': {
-      const expr = spec.expr || spec.expression || spec.source?.expr || spec.source?.expression
-      const pointId = spec.pointId || spec.source?.pointId
-
-      if (expr && debugRuntime && debugSessionId) {
-        const res = await withTimeoutSignal(
-          debugRuntime.command({ debugSessionId, ownerSessionId }, { type: 'evaluate', expression: expr }),
-          combinedSignal,
-        )
-        checkDeadline()
-        const actualValue = res?.value
-        telemetrySamples.push({ expr, timestamp: Date.now(), value: actualValue })
-        return actualValue
-      }
-      if (pointId) {
-        const reading = await readTelemetryPoint(ctx, pointId)
-        checkDeadline()
-        const actualValue = reading ? (reading.value ?? reading.rawValue) : undefined
-        if (reading) {
-          telemetrySamples.push({ pointId, timestamp: reading.timestamp || Date.now(), value: actualValue })
-        }
-        return actualValue
-      }
-      return undefined
-    }
-
-    case 'changed': {
-      const expr = spec.expr || spec.expression || spec.source?.expr || spec.source?.expression
-      const pointId = spec.pointId || spec.source?.pointId
-
-      if (expr && debugRuntime && debugSessionId) {
-        const res = await withTimeoutSignal(
-          debugRuntime.command({ debugSessionId, ownerSessionId }, { type: 'evaluate', expression: expr }),
-          combinedSignal,
-        )
-        checkDeadline()
-        telemetrySamples.push({ expr, timestamp: Date.now(), value: res?.value })
-        return { initial: spec.value, current: res?.value }
-      }
-      if (pointId) {
-        const reading = await readTelemetryPoint(ctx, pointId)
-        checkDeadline()
-        const currentVal = reading ? (reading.value ?? reading.rawValue) : undefined
-        if (reading) {
-          telemetrySamples.push({ pointId, timestamp: reading.timestamp || Date.now(), value: currentVal })
-        }
-        return { initial: spec.value, current: currentVal }
-      }
-      return undefined
-    }
+    case 'no.alarm':
+      return countActiveAlarms(workspaceLoader?.(workspaceCwd), pointId)
 
     case 'stable-for-duration':
       return sampleStableDuration(ctx, spec)
@@ -170,4 +73,41 @@ export async function resolveAssertionActual(ctx, spec) {
     default:
       return undefined
   }
+}
+
+/**
+ * @param {any} ws
+ * @param {string | undefined} pointId
+ */
+function countActiveAlarms(ws, pointId) {
+  const modbus = ws?.modbus || ws
+  const points = Array.isArray(modbus?.points) ? modbus.points : []
+  const alarmState =
+    (modbus && typeof modbus === 'object' && modbus.alarmState) || (ws && typeof ws === 'object' && ws.alarmState) || {}
+  const legacyAlarms = (ws && Array.isArray(ws.alarms) ? ws.alarms : []).concat(
+    modbus && Array.isArray(modbus.alarms) ? modbus.alarms : [],
+  )
+  const hasAlarmSource = Boolean(
+    ws && (points.length > 0 || Object.keys(alarmState).length > 0 || legacyAlarms.length > 0),
+  )
+  if (!hasAlarmSource) return unavailable(UNAVAILABLE_REASONS.NO_ALARM_SOURCE, '工作区无有效点位或告警源')
+  /** @param {any} a */
+  const activeState = (a) => a && (a.condition === 'active' || a.status === 'active' || a === true)
+  /** @param {any} a */
+  const activeLegacy = (a) => a && (a.active || a.condition === 'active')
+
+  if (pointId) {
+    const pointExists =
+      points.some((/** @type {any} */ p) => p && p.id === pointId) ||
+      alarmState[pointId] !== undefined ||
+      legacyAlarms.some((/** @type {any} */ a) => a && (a.pointId === pointId || a.id === pointId))
+    if (!pointExists && points.length > 0) {
+      return unavailable(UNAVAILABLE_REASONS.TARGET_UNAVAILABLE, `点位 [${pointId}] 不存在或未配置告警源`)
+    }
+    const isActive =
+      activeState(alarmState[pointId]) ||
+      legacyAlarms.some((/** @type {any} */ a) => (a.pointId === pointId || a.id === pointId) && activeLegacy(a))
+    return isActive ? 1 : 0
+  }
+  return Object.values(alarmState).filter(activeState).length + legacyAlarms.filter(activeLegacy).length
 }

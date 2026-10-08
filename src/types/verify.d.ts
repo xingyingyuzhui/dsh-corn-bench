@@ -48,10 +48,15 @@ export interface ScenarioSpec {
   }
 }
 
+/** `unverifiable` means no trustworthy data to compare; it always has `pass: false` and a `reason`. */
+export type AssertionOutcome = 'pass' | 'fail' | 'unverifiable'
+
 export interface AssertionResult {
   id: string
   type: AssertionType
   pass: boolean
+  outcome: AssertionOutcome
+  reason?: string
   actual: any
   expected: any
   op?: string
@@ -67,8 +72,13 @@ export interface VerifyResult {
   scenarioName: string
   status: VerifyStatus
   passedCount: number
+  /** totalCount - passedCount; includes unverifiable assertions. */
   failedCount: number
+  /** Subset of failedCount that could not be judged. */
+  unverifiableCount: number
   totalCount: number
+  /** Set to VERIFY_UNVERIFIABLE when an otherwise normal run had unverifiable assertions. */
+  errorCode?: string
   durationMs: number
   assertions: AssertionResult[]
   evidence: Array<Record<string, any>>

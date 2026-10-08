@@ -1,5 +1,14 @@
 // @ts-check
 
+import { isUnavailable, numericSample, scalarProblem, unavailable, UNAVAILABLE_REASONS } from './observation.mjs'
+
+/**
+ * @typedef {import('../../types/verify.d.ts').AssertionResult} AssertionResult
+ * @typedef {import('../../types/verify.d.ts').AssertionSpec} AssertionSpec
+ * @typedef {import('./observation.mjs').UnavailableObservation} UnavailableObservation
+ * @typedef {Omit<AssertionResult, 'id' | 'type' | 'timestamp' | 'outcome'>} Judgement
+ */
+
 /**
  * Compares actual and expected values using the specified operator.
  * Performs numeric coercion when both operands are valid finite numbers.
@@ -54,309 +63,308 @@ export function evaluateOperator(actual, op, expected) {
 }
 
 /**
- * Evaluates a single assertion spec against actual collected data.
+ * Evaluates a single assertion spec against collected data. Data availability is
+ * checked first: missing, stale or invalid samples yield `outcome: 'unverifiable'`
+ * (still `pass: false`) instead of being compared as if they were real values.
  *
- * @param {import('../../types/verify.d.ts').AssertionSpec} spec
+ * @param {AssertionSpec} spec
  * @param {any} actualValue
- * @returns {import('../../types/verify.d.ts').AssertionResult}
+ * @returns {AssertionResult}
  */
 export function evaluateAssertion(spec, actualValue) {
   const id = spec.id || `${spec.type}_${Math.random().toString(36).slice(2, 7)}`
-  const now = Date.now()
+  const timestamp = Date.now()
+  const upfront = isUnavailable(actualValue) ? actualValue : legacyProblem(spec, actualValue)
+  const judged = upfront || judge(spec, actualValue)
+  if (isUnavailable(judged)) {
+    return {
+      id,
+      type: spec.type,
+      pass: false,
+      outcome: 'unverifiable',
+      reason: judged.reason,
+      actual: null,
+      expected: expectedOf(spec),
+      ...(spec.op ? { op: spec.op } : {}),
+      message: `${targetName(spec)} 无法验证: ${judged.message}`,
+      timestamp,
+    }
+  }
+  return { id, type: spec.type, ...judged, outcome: judged.pass ? 'pass' : 'fail', timestamp }
+}
 
+/**
+ * Older samplers report "no source" as `{ error, message }`; treat those as
+ * unverifiable rather than as a failed comparison.
+ *
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {UnavailableObservation | null}
+ */
+function legacyProblem(spec, actual) {
+  if (spec.type !== 'no.exception' && spec.type !== 'no.alarm') return null
+  if (actual && typeof actual === 'object' && !Array.isArray(actual) && actual.error) {
+    return unavailable(String(actual.error), actual.message)
+  }
+  if (actual === undefined || actual === null) return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
+  return null
+}
+
+/** @param {AssertionSpec} spec */
+function targetName(spec) {
+  if (spec.description) return spec.description
+  if (spec.type === 'no.exception') return '调试会话'
+  if (spec.type === 'no.alarm') return spec.pointId ? `点位 [${spec.pointId}]` : '本会话'
+  if (spec.type === 'debug.expression') return `Debug 表达式 [${spec.expr || ''}]`
+  if (spec.type === 'modbus.point') return `Modbus 点位 [${spec.pointId || ''}]`
+  return spec.expr ? `表达式 [${spec.expr}]` : `点位 [${spec.pointId || ''}]`
+}
+
+/** @param {AssertionSpec} spec */
+function expectedOf(spec) {
   switch (spec.type) {
-    case 'debug.expression': {
-      const op = spec.op || '=='
-      const pass = evaluateOperator(actualValue, op, spec.value)
-      const desc = spec.description || `Debug 表达式 [${spec.expr || ''}]`
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: actualValue,
-        expected: spec.value,
-        op,
-        message: pass
-          ? `${desc} 断言通过 (${actualValue} ${op} ${spec.value})`
-          : `${desc} 断言失败: 实际值 ${JSON.stringify(actualValue)} 不满足 ${op} ${JSON.stringify(spec.value)}`,
-        timestamp: now,
-      }
-    }
+    case 'no.exception':
+      return 'none'
+    case 'no.alarm':
+      return 0
+    case 'range':
+      return `[${spec.min ?? '-inf'}, ${spec.max ?? '+inf'}]`
+    case 'changed':
+      return `changed (from ${spec.value})`
+    default:
+      return spec.value
+  }
+}
 
-    case 'modbus.point': {
-      const op = spec.op || '=='
-      let effectiveVal = actualValue
-      let isStale = false
-      let staleFreshness = 0
-      if (actualValue && typeof actualValue === 'object') {
-        if (actualValue.quality === 'stale') {
-          isStale = true
-          staleFreshness = actualValue.freshnessMs || 0
-        }
-        effectiveVal = actualValue.value !== undefined ? actualValue.value : actualValue.rawValue
-      }
-      const desc = spec.description || `Modbus 点位 [${spec.pointId || ''}]`
-      if (isStale) {
-        return {
-          id,
-          type: spec.type,
-          pass: false,
-          actual: effectiveVal,
-          expected: spec.value,
-          op,
-          message: `${desc} 数据已过旧 (STALE: 采集延时 ${staleFreshness}ms > 允许最大延时 ${spec.maxAgeMs || 'unknown'}ms)`,
-          timestamp: now,
-        }
-      }
-      const pass = evaluateOperator(effectiveVal, op, spec.value)
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: effectiveVal,
-        expected: spec.value,
-        op,
-        message: pass
-          ? `${desc} 断言通过 (${effectiveVal} ${op} ${spec.value})`
-          : `${desc} 断言失败: 实际值 ${JSON.stringify(effectiveVal)} 不满足 ${op} ${JSON.stringify(spec.value)}`,
-        timestamp: now,
-      }
-    }
-
-    case 'no.exception': {
-      if (actualValue && typeof actualValue === 'object' && actualValue.error) {
-        return {
-          id,
-          type: spec.type,
-          pass: false,
-          actual: actualValue.error,
-          expected: 'none',
-          message: actualValue.message || '缺少调试会话或证据，无法断言无异常',
-          timestamp: now,
-        }
-      }
-      if (actualValue === undefined || actualValue === null) {
-        return {
-          id,
-          type: spec.type,
-          pass: false,
-          actual: 'no-data',
-          expected: 'none',
-          message: '无调试运行态数据，无法断言无异常',
-          timestamp: now,
-        }
-      }
-      let hasException = false
-      if (typeof actualValue === 'boolean') {
-        hasException = actualValue
-      } else if (Array.isArray(actualValue)) {
-        hasException = actualValue.length > 0
-      } else if (actualValue && typeof actualValue === 'object') {
-        hasException = Boolean(actualValue.hasException || actualValue.exception)
-      }
-      const pass = !hasException
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: hasException ? (Array.isArray(actualValue) ? actualValue : 'exception-detected') : 'none',
-        expected: 'none',
-        message: pass ? '无未捕获异常/故障停机' : '检测到异常/硬件故障停机',
-        timestamp: now,
-      }
-    }
-
-    case 'no.alarm': {
-      if (actualValue && typeof actualValue === 'object' && actualValue.error) {
-        const desc = spec.pointId ? `点位 [${spec.pointId}]` : '工作区'
-        return {
-          id,
-          type: spec.type,
-          pass: false,
-          actual: actualValue.error,
-          expected: 0,
-          op: '==',
-          message: actualValue.message || `${desc} 缺少告警数据源，无法断言无告警`,
-          timestamp: now,
-        }
-      }
-      if (actualValue === undefined || actualValue === null) {
-        const desc = spec.pointId ? `点位 [${spec.pointId}]` : '工作区'
-        return {
-          id,
-          type: spec.type,
-          pass: false,
-          actual: 'no-data',
-          expected: 0,
-          op: '==',
-          message: `${desc} 无告警数据源，无法断言无告警`,
-          timestamp: now,
-        }
-      }
-      let activeAlarms = 0
-      if (typeof actualValue === 'number') {
-        activeAlarms = actualValue
-      } else if (Array.isArray(actualValue)) {
-        activeAlarms = actualValue.length
-      } else if (actualValue && typeof actualValue === 'object') {
-        activeAlarms =
-          typeof actualValue.activeCount === 'number'
-            ? actualValue.activeCount
-            : Array.isArray(actualValue.alarms)
-              ? actualValue.alarms.length
-              : 0
-      }
-      const pass = activeAlarms === 0
-      const desc = spec.pointId ? `点位 [${spec.pointId}]` : '工作区'
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: activeAlarms,
-        expected: 0,
-        op: '==',
-        message: pass ? `${desc} 无活跃告警` : `${desc} 存在 ${activeAlarms} 项活跃告警`,
-        timestamp: now,
-      }
-    }
-
-    case 'range': {
-      const num = Number(actualValue)
-      const min = spec.min != null ? Number(spec.min) : Number.NEGATIVE_INFINITY
-      const max = spec.max != null ? Number(spec.max) : Number.POSITIVE_INFINITY
-      const pass = Number.isFinite(num) && num >= min && num <= max
-      const targetName = spec.expr ? `表达式 [${spec.expr}]` : `点位 [${spec.pointId || ''}]`
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: actualValue,
-        expected: `[${min}, ${max}]`,
-        message: pass
-          ? `${targetName} 数值 ${num} 在期望区间 [${min}, ${max}] 内`
-          : `${targetName} 数值 ${num} 超出期望区间 [${min}, ${max}]`,
-        timestamp: now,
-      }
-    }
-
-    case 'changed': {
-      let hasChanged = false
-      let initVal = undefined
-      let curVal = actualValue
-      if (actualValue && typeof actualValue === 'object' && 'initial' in actualValue && 'current' in actualValue) {
-        initVal = actualValue.initial
-        curVal = actualValue.current
-        hasChanged = initVal !== curVal
-      } else if (typeof actualValue === 'boolean') {
-        hasChanged = actualValue
-      }
-      const pass = hasChanged
-      const targetName = spec.expr ? `表达式 [${spec.expr}]` : `点位 [${spec.pointId || ''}]`
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: curVal,
-        expected: `changed (from ${initVal})`,
-        message: pass
-          ? `${targetName} 发生状态变化 (${initVal} -> ${curVal})`
-          : `${targetName} 未发生预期变化 (仍为 ${initVal})`,
-        timestamp: now,
-      }
-    }
-
-    case 'stable-for-duration': {
-      let isStable = true
-      let maxDelta = 0
-      const tolerance = spec.tolerance != null ? Number(spec.tolerance) : null
-      const minBound = spec.min != null ? Number(spec.min) : null
-      const maxBound = spec.max != null ? Number(spec.max) : null
-
-      let sampleCount = 0
-      let minSample = Number.POSITIVE_INFINITY
-      let maxSample = Number.NEGATIVE_INFINITY
-      let boundsOk = true
-      let hasEnoughSamples = false
-
-      if (Array.isArray(actualValue)) {
-        const nums = actualValue.map(Number).filter(Number.isFinite)
-        sampleCount = nums.length
-        if (sampleCount >= 2) {
-          hasEnoughSamples = true
-          minSample = Math.min(...nums)
-          maxSample = Math.max(...nums)
-          maxDelta = maxSample - minSample
-          if (tolerance != null && maxDelta > tolerance) {
-            isStable = false
-          }
-          if (minBound != null && minSample < minBound) {
-            isStable = false
-            boundsOk = false
-          }
-          if (maxBound != null && maxSample > maxBound) {
-            isStable = false
-            boundsOk = false
-          }
-        } else {
-          isStable = false
-          hasEnoughSamples = false
-        }
-      } else if (actualValue && typeof actualValue === 'object' && 'maxDelta' in actualValue) {
-        sampleCount = Number(actualValue.sampleCount) || 0
-        if (actualValue.sampleCount !== undefined && sampleCount < 2) {
-          isStable = false
-          hasEnoughSamples = false
-        } else {
-          hasEnoughSamples = true
-          maxDelta = Number(actualValue.maxDelta) || 0
-          if (tolerance != null && maxDelta > tolerance) isStable = false
-        }
-      } else {
-        isStable = false
-        hasEnoughSamples = false
-      }
-
-      const pass = isStable && hasEnoughSamples
-      const targetName = spec.expr ? `表达式 [${spec.expr}]` : `点位 [${spec.pointId || ''}]`
-
-      let expectedDesc = ''
-      if (tolerance != null) expectedDesc += `波动 <= ${tolerance} `
-      if (minBound != null) expectedDesc += `>= ${minBound} `
-      if (maxBound != null) expectedDesc += `<= ${maxBound} `
-      if (!expectedDesc) expectedDesc = '保持稳定'
-
-      let msg = ''
-      if (!hasEnoughSamples) {
-        msg = `${targetName} 采样不足 (有效采样数 ${sampleCount} < 2)，无法判定稳定性`
-      } else if (pass) {
-        msg = `${targetName} 在持续期间保持稳定 (${sampleCount} 采样, 范围 [${minSample}, ${maxSample}], 波动 ${maxDelta})`
-      } else if (!boundsOk) {
-        msg = `${targetName} 在持续期间数值超出限定范围 [${minBound ?? '-inf'}, ${maxBound ?? '+inf'}] (实际采样范围 [${minSample}, ${maxSample}])`
-      } else {
-        msg = `${targetName} 在持续期间波动过大 (波动 ${maxDelta} > 容差 ${tolerance})`
-      }
-
-      return {
-        id,
-        type: spec.type,
-        pass,
-        actual: { min: minSample, max: maxSample, maxDelta, sampleCount },
-        expected: expectedDesc.trim(),
-        op: '<=',
-        message: msg,
-        timestamp: now,
-      }
-    }
-
+/**
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judge(spec, actual) {
+  switch (spec.type) {
+    case 'debug.expression':
+    case 'modbus.point':
+      return judgeComparison(spec, actual)
+    case 'no.exception':
+      return judgeNoException(actual)
+    case 'no.alarm':
+      return judgeNoAlarm(spec, actual)
+    case 'range':
+      return judgeRange(spec, actual)
+    case 'changed':
+      return judgeChanged(spec, actual)
+    case 'stable-for-duration':
+      return judgeStable(spec, actual)
     default:
       return {
-        id,
-        type: spec.type,
         pass: false,
-        actual: actualValue,
+        actual,
         expected: spec.value,
         message: `不支持的断言类型: ${spec.type}`,
-        timestamp: now,
       }
+  }
+}
+
+/**
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judgeComparison(spec, actual) {
+  const op = spec.op || '=='
+  let value = actual
+  if (spec.type === 'modbus.point' && actual && typeof actual === 'object') {
+    if (actual.quality === 'stale') {
+      return unavailable(
+        UNAVAILABLE_REASONS.STALE_VALUE,
+        `数据已过旧 (采集延时 ${actual.freshnessMs || 0}ms > 允许最大延时 ${spec.maxAgeMs ?? 'unknown'}ms)`,
+      )
+    }
+    value = actual.value !== undefined ? actual.value : actual.rawValue
+  }
+  const problem = scalarProblem(value)
+  if (problem) return problem
+  const pass = evaluateOperator(value, op, spec.value)
+  const desc = targetName(spec)
+  return {
+    pass,
+    actual: value,
+    expected: spec.value,
+    op,
+    message: pass
+      ? `${desc} 断言通过 (${value} ${op} ${spec.value})`
+      : `${desc} 断言失败: 实际值 ${JSON.stringify(value)} 不满足 ${op} ${JSON.stringify(spec.value)}`,
+  }
+}
+
+/**
+ * @param {any} actual
+ * @returns {Judgement}
+ */
+function judgeNoException(actual) {
+  let hasException = false
+  if (typeof actual === 'boolean') {
+    hasException = actual
+  } else if (Array.isArray(actual)) {
+    hasException = actual.length > 0
+  } else if (actual && typeof actual === 'object') {
+    hasException = Boolean(actual.hasException || actual.exception)
+  }
+  return {
+    pass: !hasException,
+    actual: hasException ? (Array.isArray(actual) ? actual : 'exception-detected') : 'none',
+    expected: 'none',
+    message: hasException ? '检测到异常/硬件故障停机' : '无未捕获异常/故障停机',
+  }
+}
+
+/**
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judgeNoAlarm(spec, actual) {
+  let activeAlarms = null
+  if (typeof actual === 'number') {
+    activeAlarms = actual
+  } else if (Array.isArray(actual)) {
+    activeAlarms = actual.length
+  } else if (actual && typeof actual === 'object') {
+    if (typeof actual.activeCount === 'number') activeAlarms = actual.activeCount
+    else if (Array.isArray(actual.alarms)) activeAlarms = actual.alarms.length
+  }
+  if (activeAlarms === null || !Number.isFinite(activeAlarms)) return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
+  const pass = activeAlarms === 0
+  const desc = targetName(spec)
+  return {
+    pass,
+    actual: activeAlarms,
+    expected: 0,
+    op: '==',
+    message: pass ? `${desc} 无活跃告警` : `${desc} 存在 ${activeAlarms} 项活跃告警`,
+  }
+}
+
+/**
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judgeRange(spec, actual) {
+  const sample = numericSample(actual)
+  if (!sample.ok) return sample.problem
+  const num = sample.num
+  const min = spec.min != null ? Number(spec.min) : Number.NEGATIVE_INFINITY
+  const max = spec.max != null ? Number(spec.max) : Number.POSITIVE_INFINITY
+  const pass = num >= min && num <= max
+  const name = targetName(spec)
+  return {
+    pass,
+    actual,
+    expected: `[${min}, ${max}]`,
+    message: pass ? `${name} 数值 ${num} 在期望区间 [${min}, ${max}] 内` : `${name} 数值 ${num} 超出期望区间 [${min}, ${max}]`,
+  }
+}
+
+/**
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judgeChanged(spec, actual) {
+  const name = targetName(spec)
+  if (typeof actual === 'boolean') {
+    return {
+      pass: actual,
+      actual,
+      expected: 'changed',
+      message: actual ? `${name} 发生状态变化` : `${name} 未发生预期变化`,
+    }
+  }
+  if (!actual || typeof actual !== 'object' || !('initial' in actual) || !('current' in actual)) {
+    return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
+  }
+  const initial = actual.initial
+  if (initial === undefined || initial === null) return unavailable(UNAVAILABLE_REASONS.BASELINE_MISSING)
+  if (isUnavailable(actual.current)) return actual.current
+  const problem = scalarProblem(actual.current)
+  if (problem) return problem
+  const current = actual.current
+  const pass = evaluateOperator(current, '!=', initial)
+  return {
+    pass,
+    actual: current,
+    expected: `changed (from ${initial})`,
+    message: pass ? `${name} 发生状态变化 (${initial} -> ${current})` : `${name} 未发生预期变化 (仍为 ${initial})`,
+  }
+}
+
+/**
+ * Every sample must be usable: one bad sample makes the whole window
+ * unverifiable instead of being dropped from the statistics.
+ *
+ * @param {AssertionSpec} spec
+ * @param {any} actual
+ * @returns {Judgement | UnavailableObservation}
+ */
+function judgeStable(spec, actual) {
+  const tolerance = spec.tolerance != null ? Number(spec.tolerance) : null
+  const minBound = spec.min != null ? Number(spec.min) : null
+  const maxBound = spec.max != null ? Number(spec.max) : null
+  const name = targetName(spec)
+  let expectedDesc = ''
+  if (tolerance != null) expectedDesc += `波动 <= ${tolerance} `
+  if (minBound != null) expectedDesc += `>= ${minBound} `
+  if (maxBound != null) expectedDesc += `<= ${maxBound} `
+  const expected = expectedDesc.trim() || '保持稳定'
+
+  if (actual && typeof actual === 'object' && !Array.isArray(actual) && 'maxDelta' in actual) {
+    const sampleCount = Number(actual.sampleCount)
+    if (actual.sampleCount !== undefined && !(sampleCount >= 2)) {
+      return unavailable(UNAVAILABLE_REASONS.INSUFFICIENT_SAMPLES, `采样不足 (有效采样数 ${sampleCount || 0} < 2)，无法判定稳定性`)
+    }
+    const delta = numericSample(actual.maxDelta)
+    if (!delta.ok) return delta.problem
+    const pass = tolerance == null || delta.num <= tolerance
+    return {
+      pass,
+      actual: { maxDelta: delta.num, sampleCount: actual.sampleCount },
+      expected,
+      op: '<=',
+      message: pass ? `${name} 在持续期间保持稳定 (波动 ${delta.num})` : `${name} 在持续期间波动过大 (波动 ${delta.num} > 容差 ${tolerance})`,
+    }
+  }
+  if (!Array.isArray(actual)) return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
+
+  /** @type {number[]} */
+  const nums = []
+  for (const raw of actual) {
+    if (isUnavailable(raw)) return raw
+    const sample = numericSample(raw)
+    if (!sample.ok) return sample.problem
+    nums.push(sample.num)
+  }
+  if (nums.length < 2) {
+    return unavailable(UNAVAILABLE_REASONS.INSUFFICIENT_SAMPLES, `采样不足 (有效采样数 ${nums.length} < 2)，无法判定稳定性`)
+  }
+  const minSample = Math.min(...nums)
+  const maxSample = Math.max(...nums)
+  const maxDelta = maxSample - minSample
+  const toleranceOk = tolerance == null || maxDelta <= tolerance
+  const boundsOk = (minBound == null || minSample >= minBound) && (maxBound == null || maxSample <= maxBound)
+  const pass = toleranceOk && boundsOk
+  let message = `${name} 在持续期间保持稳定 (${nums.length} 采样, 范围 [${minSample}, ${maxSample}], 波动 ${maxDelta})`
+  if (!boundsOk) {
+    message = `${name} 在持续期间数值超出限定范围 [${minBound ?? '-inf'}, ${maxBound ?? '+inf'}] (实际采样范围 [${minSample}, ${maxSample}])`
+  } else if (!toleranceOk) {
+    message = `${name} 在持续期间波动过大 (波动 ${maxDelta} > 容差 ${tolerance})`
+  }
+  return {
+    pass,
+    actual: { min: minSample, max: maxSample, maxDelta, sampleCount: nums.length },
+    expected,
+    op: '<=',
+    message,
   }
 }

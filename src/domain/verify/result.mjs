@@ -47,9 +47,14 @@ export function createVerifyResult(params) {
   const totalCount = assertions.length
   const passedCount = assertions.filter((a) => a.pass).length
   const failedCount = totalCount - passedCount
+  const unverifiable = assertions.filter((a) => a.outcome === 'unverifiable')
+  const unverifiableCount = unverifiable.length
+  const compareFailed = assertions.filter((a) => !a.pass && a.outcome !== 'unverifiable')
 
   /** @type {import('../../types/verify.d.ts').VerifyStatus} */
   let status = 'pass'
+  /** @type {string | undefined} */
+  let errorCode
   if (params.status) {
     status = params.status
   } else if (error) {
@@ -61,25 +66,31 @@ export function createVerifyResult(params) {
     } else {
       status = 'error'
     }
+  } else if (unverifiableCount > 0) {
+    status = 'error'
+    errorCode = 'VERIFY_UNVERIFIABLE'
   } else if (failedCount > 0) {
     status = 'fail'
   }
 
+  const counts =
+    `${passedCount}/${totalCount} 项断言通过` +
+    `，比较失败: [${compareFailed.map((a) => a.id).join(', ')}]` +
+    `，无法验证: [${unverifiable.map((a) => `${a.id}:${a.reason || 'UNKNOWN'}`).join(', ')}]`
   let summary = ''
   if (status === 'timeout') {
     summary = `验证场景 [${scenario.name}] 超时未完成 (TIMEOUT)`
   } else if (status === 'cancelled') {
     summary = `验证场景 [${scenario.name}] 已被取消 (CANCELLED)`
+  } else if (status === 'error' && errorCode) {
+    summary = `验证场景 [${scenario.name}]: ${counts}，存在无法验证项，不能判定通过 (ERROR)`
   } else if (status === 'error') {
-    summary = `验证场景 [${scenario.name}] 执行异常: ${error?.message || String(error)} (ERROR)`
+    const reason = error ? error?.message || String(error) : '未知错误'
+    summary = `验证场景 [${scenario.name}] 执行异常: ${reason} (ERROR)`
   } else if (status === 'pass') {
     summary = `验证场景 [${scenario.name}]: 全部 ${totalCount} 项断言通过 (PASS)`
   } else {
-    const failedNames = assertions
-      .filter((a) => !a.pass)
-      .map((a) => a.id)
-      .join(', ')
-    summary = `验证场景 [${scenario.name}]: ${passedCount}/${totalCount} 项断言通过，失败项: [${failedNames}] (FAIL)`
+    summary = `验证场景 [${scenario.name}]: ${counts} (FAIL)`
   }
 
   const startedAt = startAt || Date.now() - Math.max(0, Math.round(durationMs))
@@ -95,7 +106,9 @@ export function createVerifyResult(params) {
     status,
     passedCount,
     failedCount,
+    unverifiableCount,
     totalCount,
+    ...(errorCode ? { errorCode } : {}),
     durationMs: Math.max(0, Math.round(durationMs)),
     assertions,
     evidence,

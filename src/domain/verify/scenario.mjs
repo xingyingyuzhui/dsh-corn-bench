@@ -1,5 +1,63 @@
 // @ts-check
 
+import { VerifyRequestError } from './errors.mjs'
+
+export const DEFAULT_SCENARIO_TIMEOUT_MS = 60000
+export const DEFAULT_STABLE_DURATION_MS = 1000
+
+/**
+ * The timeout a run actually gets: caller override, then scenario, then default.
+ *
+ * @param {any} scenario
+ * @param {unknown} [override]
+ * @returns {number}
+ */
+export function effectiveTimeoutMs(scenario, override) {
+  return Number(override) || Number(scenario?.timeoutMs) || DEFAULT_SCENARIO_TIMEOUT_MS
+}
+
+/**
+ * `durationMs` of a stable-for-duration assertion; `null` when explicitly invalid.
+ *
+ * @param {any} spec
+ * @returns {number | null}
+ */
+export function stableDurationMs(spec) {
+  if (spec?.durationMs === undefined) return DEFAULT_STABLE_DURATION_MS
+  const ms = spec.durationMs
+  return typeof ms === 'number' && Number.isFinite(ms) && ms > 0 ? ms : null
+}
+
+/**
+ * Reject stable windows that cannot fit the run's total budget, before anything
+ * is registered or sampled. Shortening the window would let it "pass" on less
+ * evidence than requested.
+ *
+ * @param {any} scenario
+ * @param {number} timeoutMs
+ */
+export function assertScenarioBudget(scenario, timeoutMs) {
+  const assertions = Array.isArray(scenario?.assertions) ? scenario.assertions : []
+  for (const spec of assertions) {
+    if (!spec || spec.type !== 'stable-for-duration') continue
+    const durationMs = stableDurationMs(spec)
+    if (durationMs !== null && durationMs <= timeoutMs) continue
+    throw new VerifyRequestError(
+      'INVALID_FIELD',
+      durationMs === null
+        ? 'stable-for-duration 的 durationMs 必须是有限正数'
+        : `stable-for-duration 的 durationMs (${durationMs}ms) 超过验证总超时 (${timeoutMs}ms)`,
+      {
+        field: 'durationMs',
+        reason: 'INVALID_VALUE',
+        durationMs: spec.durationMs,
+        timeoutMs,
+        ...(spec.id ? { assertionId: spec.id } : {}),
+      },
+    )
+  }
+}
+
 export const VALID_ASSERTION_TYPES = new Set([
   'debug.expression',
   'modbus.point',
@@ -70,7 +128,8 @@ export function createScenario(spec) {
     id,
     name: normalizedSpec.name,
     description: normalizedSpec.description || '',
-    timeoutMs: typeof normalizedSpec.timeoutMs === 'number' ? normalizedSpec.timeoutMs : 60000,
+    timeoutMs:
+      typeof normalizedSpec.timeoutMs === 'number' ? normalizedSpec.timeoutMs : DEFAULT_SCENARIO_TIMEOUT_MS,
     assertions: normalizedSpec.assertions.map((a, index) => {
       const expr = a.expr || a.expression || a.source?.expr || a.source?.expression
       const pointId = a.pointId || a.source?.pointId

@@ -1,5 +1,6 @@
 // @ts-check
 
+import { assertScenarioBudget, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
 import { createVerifyService } from './verify-service.mjs'
 
 /**
@@ -62,6 +63,7 @@ export function createVerifyCommandService(deps = {}) {
    */
   async function execute(options) {
     const { workspaceCwd, ownerSessionId, scenario } = options
+    assertScenarioBudget(scenario, effectiveTimeoutMs(scenario, options.timeoutMs))
     const scenarioId = scenario.id || `scenario_${Date.now()}`
     const verificationRunId = options.verificationRunId || generateRunId()
     const sessionKey = `${ownerSessionId || 'anon'}:${scenarioId}`

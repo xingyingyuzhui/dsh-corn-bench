@@ -85,6 +85,7 @@ test('verify-service: runs scenario with unconstrained duration and rich evidenc
 
 test('verify-service: cancellation sets status to cancelled', async () => {
   const reader = createTelemetryReader()
+  reader.publishPointValue('level', 3.0)
   const verifyService = createVerifyService({ telemetryReader: reader })
 
   const abortController = new AbortController()

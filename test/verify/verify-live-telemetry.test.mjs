@@ -48,7 +48,7 @@ test('verify-telemetry-adapter: reads from active poll-cache and evaluates maxAg
   assert.ok(stale.freshnessMs >= 5000)
 })
 
-test('verify-service: fails assertion when telemetry is stale beyond maxAgeMs', async () => {
+test('verify-service: stale telemetry beyond maxAgeMs is unverifiable, not a pass', async () => {
   const now = Date.now()
   const adapter = createVerifyTelemetryAdapter({
     workspaceLoader: () => ({
@@ -81,7 +81,8 @@ test('verify-service: fails assertion when telemetry is stale beyond maxAgeMs', 
     ownerSessionId: 'sess-1',
   })
 
-  assert.equal(result.status, 'fail')
+  assert.equal(result.status, 'error')
   assert.equal(result.failedCount, 1)
-  assert.ok(result.assertions[0].message.includes('STALE'))
+  assert.equal(result.unverifiableCount, 1)
+  assert.equal(result.assertions[0].reason, 'STALE_VALUE')
 })

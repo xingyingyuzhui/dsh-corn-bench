@@ -4,7 +4,7 @@ import { evaluateAssertion } from '../../domain/verify/assertion.mjs'
 import { createVerifyResult } from '../../domain/verify/result.mjs'
 import { resolveEvidenceRef } from '../modbus/evidence-scope.mjs'
 import { evidenceScopeFromWorkspace } from '../modbus/evidence-scope-factory.mjs'
-import { createScenario } from '../../domain/verify/scenario.mjs'
+import { assertScenarioBudget, createScenario, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
 import { abortableDelay, composeAbortSignals } from './abort-signals.mjs'
 import { createTelemetryReader } from './telemetry-reader.mjs'
 import { resolveAssertionActual } from './verify-assertion-eval.mjs'
@@ -81,7 +81,8 @@ export function createVerifyService(deps = {}) {
       const startTime = Date.now()
       const { scenario: rawScenario, workspaceCwd, ownerSessionId, signal } = options
       const scenario = createScenario(rawScenario)
-      const timeoutMs = options.timeoutMs || scenario.timeoutMs || 60000
+      const timeoutMs = effectiveTimeoutMs(scenario, options.timeoutMs)
+      assertScenarioBudget(scenario, timeoutMs)
 
       const timeoutController = new AbortController()
       const timeoutTimer = setTimeout(() => {
@@ -190,32 +191,17 @@ export function createVerifyService(deps = {}) {
           workspaceLoader,
           combinedSignal,
           timeoutMs,
+          remainingMs: () => timeoutMs - (Date.now() - startTime),
           checkDeadline,
           telemetrySamples,
         }
 
+        // Sampling reports missing data as unavailable observations; anything
+        // that still throws here is timeout, cancellation or an internal fault,
+        // all handled by the outer catch.
         for (const spec of scenario.assertions) {
           checkDeadline()
-
-          let actualValue = undefined
-          try {
-            actualValue = await resolveAssertionActual(evalCtx, spec)
-          } catch (err) {
-            const errorObj = /** @type {any} */ (err)
-            if (timeoutController.signal.aborted || errorObj?.message === 'VERIFY_TIMEOUT') {
-              return earlyExit('timeout', err)
-            }
-            if (
-              signal?.aborted ||
-              combinedSignal.aborted ||
-              errorObj?.message === 'VERIFY_CANCELLED' ||
-              errorObj?.name === 'AbortError'
-            ) {
-              return earlyExit('cancelled')
-            }
-            actualValue = undefined
-          }
-
+          const actualValue = await resolveAssertionActual(evalCtx, spec)
           assertionResults.push(evaluateAssertion(spec, actualValue))
         }
 
@@ -314,6 +300,7 @@ export function createVerifyService(deps = {}) {
             scenarioId: scenario.id,
             status: verifyResult.status,
             passedCount: verifyResult.passedCount,
+            unverifiableCount: verifyResult.unverifiableCount,
             totalCount: verifyResult.totalCount,
           }).catch(() => {})
         }

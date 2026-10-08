@@ -1,6 +1,7 @@
 // @ts-check
 
 import { createVerifyCommandService } from '../../application/verify/verify-command-service.mjs'
+import { VerifyRequestError } from '../../domain/verify/errors.mjs'
 
 /**
  * Creates RPC handlers for closed-loop verification operations.
@@ -46,6 +47,9 @@ export function createVerifyRpcHandler(deps = {}) {
         result,
       }
     } catch (err) {
+      if (err instanceof VerifyRequestError) {
+        return { ok: false, errorCode: err.code, error: err.message, details: err.details }
+      }
       return {
         ok: false,
         error: err instanceof Error ? err.message : String(err),

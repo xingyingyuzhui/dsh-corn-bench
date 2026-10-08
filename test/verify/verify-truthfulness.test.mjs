@@ -4,7 +4,7 @@ import test from 'node:test'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { evaluateAssertion } from '../../src/domain/verify/assertion.mjs'
 
-test('verify-service: no.exception fails when no debug session is active', async () => {
+test('verify-service: no.exception is unverifiable when no debug session is active', async () => {
   const verifyService = createVerifyService({
     debugRuntime: {
       findSession: () => null,
@@ -28,13 +28,15 @@ test('verify-service: no.exception fails when no debug session is active', async
     ownerSessionId: 'sess-no-dbg',
   })
 
-  assert.equal(result.status, 'fail', 'Must fail when debug session is not active')
+  assert.equal(result.status, 'error', 'Must not pass when debug session is not active')
+  assert.equal(result.errorCode, 'VERIFY_UNVERIFIABLE')
   assert.equal(result.assertions.length, 1)
   assert.equal(result.assertions[0].pass, false)
-  assert.equal(result.assertions[0].actual, 'NO_DEBUG_SESSION')
+  assert.equal(result.assertions[0].outcome, 'unverifiable')
+  assert.equal(result.assertions[0].reason, 'NO_DEBUG_SESSION')
 })
 
-test('verify-service: no.alarm fails when no alarm source exists', async () => {
+test('verify-service: no.alarm is unverifiable when no alarm source exists', async () => {
   const verifyService = createVerifyService({
     workspaceLoader: () => ({
       modbus: {
@@ -58,9 +60,10 @@ test('verify-service: no.alarm fails when no alarm source exists', async () => {
     ownerSessionId: 'sess-test',
   })
 
-  assert.equal(result.status, 'fail')
+  assert.equal(result.status, 'error')
   assert.equal(result.assertions[0].pass, false)
-  assert.equal(result.assertions[0].actual, 'NO_ALARM_SOURCE')
+  assert.equal(result.assertions[0].outcome, 'unverifiable')
+  assert.equal(result.assertions[0].reason, 'NO_ALARM_SOURCE')
 })
 
 test('verify-service: no.alarm fails when active alarms are reported', async () => {
@@ -94,7 +97,7 @@ test('verify-service: no.alarm fails when active alarms are reported', async () 
   assert.equal(result.assertions[0].actual, 1)
 })
 
-test('evaluateAssertion: stable-for-duration fails on empty, single, or non-finite samples', () => {
+test('evaluateAssertion: stable-for-duration cannot pass on empty, single, or non-finite samples', () => {
   // Empty samples
   const emptyRes = evaluateAssertion({ type: 'stable-for-duration', durationMs: 500 }, [])
   assert.equal(emptyRes.pass, false)
@@ -108,6 +111,8 @@ test('evaluateAssertion: stable-for-duration fails on empty, single, or non-fini
   // Non-finite (NaN / null)
   const nanRes = evaluateAssertion({ type: 'stable-for-duration', durationMs: 500 }, [NaN, NaN])
   assert.equal(nanRes.pass, false)
+  assert.equal(nanRes.outcome, 'unverifiable')
+  assert.equal(nanRes.reason, 'INVALID_SAMPLE')
 
   // Valid finite samples within tolerance
   const validRes = evaluateAssertion(

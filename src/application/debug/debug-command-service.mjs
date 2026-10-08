@@ -1,6 +1,7 @@
 // @ts-check
 
 import { DEBUG_ERRORS, DebugError } from '../../domain/debug/errors.mjs'
+import { VerifyRequestError } from '../../domain/verify/errors.mjs'
 import { envelope, normalizeCommand } from '../commands/command-contract.mjs'
 import { globalCommandIdempotency } from '../commands/command-idempotency-cache.mjs'
 import { finalizeAgentCommandResult } from '../commands/lossless-json.mjs'
@@ -171,7 +172,10 @@ export async function executeDebugCommand(input, deps = {}) {
             status: verifyRes.status,
             summary: verifyRes.summary,
             passedCount: verifyRes.passedCount,
+            failedCount: verifyRes.failedCount,
+            unverifiableCount: verifyRes.unverifiableCount,
             totalCount: verifyRes.totalCount,
+            ...(verifyRes.errorCode ? { errorCode: verifyRes.errorCode } : {}),
           })
         }
 
@@ -299,7 +303,7 @@ export async function executeDebugCommand(input, deps = {}) {
         }
       }
     } catch (err) {
-      if (err instanceof DebugError) {
+      if (err instanceof DebugError || err instanceof VerifyRequestError) {
         return envelope(cmd, {
           ok: false,
           errorCode: err.code,
