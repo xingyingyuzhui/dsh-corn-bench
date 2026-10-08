@@ -3,14 +3,10 @@ import test from 'node:test'
 import { executeDebugCommand } from '../../src/application/debug/debug-command-service.mjs'
 import { createVerifyCommandService } from '../../src/application/verify/verify-command-service.mjs'
 import { createRouter } from '../helpers/rpc-factory.mjs'
+import { alarmPoint, flatWorkspace } from './verify-fixtures.mjs'
 
 test('host singleton: agent vision_debug verify and browser RPC share the same verifyCommandService instance', async () => {
-  const mockWorkspace = {
-    modbus: {
-      points: [{ id: 'p1', name: 'Pressure' }],
-      alarmState: {},
-    },
-  }
+  const mockWorkspace = flatWorkspace({ points: [alarmPoint('p1', { name: 'Pressure' })], alarmState: {} })
   const verifyCommandService = createVerifyCommandService({
     workspaceLoader: () => mockWorkspace,
   })

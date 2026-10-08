@@ -164,6 +164,7 @@ export async function executeDebugCommand(input, deps = {}) {
             debugSessionId: activeSession?.debugSessionId,
             timeoutMs: payload.timeoutMs,
             signal: cmd.signal,
+            source: cmd.source === 'agent' ? 'agent' : 'user',
           })
           return envelope(cmd, {
             ok: verifyRes.status === 'pass',

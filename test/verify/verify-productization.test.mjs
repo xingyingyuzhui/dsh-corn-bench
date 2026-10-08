@@ -6,42 +6,45 @@ import { createVerifyService } from '../../src/application/verify/verify-service
 import { createVerifyResult } from '../../src/domain/verify/result.mjs'
 import { visionDebugTool } from '../../src/interfaces/agent/vision-debug-tool.mjs'
 import { createVerifyRpcHandler } from '../../src/interfaces/rpc/verify-rpc-handler.mjs'
+import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+
+/** @param {string} sessionId */
+const wsScope = (sessionId) => ({ cwd: 'C:/ws', sessionId })
+/** @param {string} sessionId */
+const boundReader = (sessionId) => createTelemetryReader({ boundScope: wsScope(sessionId) })
 
 test('telemetry-reader: reads live values and dispatches to subscribers', async () => {
   const reader = createTelemetryReader({
-    workspaceCwd: 'C:/ws',
-    workspaceLoader: () => ({
-      modbus: {
-        values: { receiver_level: 42.5 },
-      },
-    }),
+    workspaceLoader: () =>
+      flatWorkspace({ points: [vpoint('receiver_level')], values: [liveValue('receiver_level', 42.5)] }),
   })
+  const scope = wsScope('sess-1')
 
-  // Read point from workspace values
-  const r1 = await reader.readPoint('receiver_level')
+  // Read point from workspace runtime values
+  const r1 = /** @type {any} */ (await reader.readPoint(scope, 'receiver_level'))
   assert.ok(r1)
   assert.equal(r1.value, 42.5)
 
   // Subscribe and publish new value
   let notified = null
-  const unsub = reader.subscribePoint('receiver_level', (reading) => {
+  const unsub = reader.subscribePoint(scope, 'receiver_level', (reading) => {
     notified = reading
   })
 
-  reader.publishPointValue('receiver_level', 45.0)
+  assert.equal(reader.publishPointValue(scope, 'receiver_level', 45.0), true)
   assert.ok(notified)
   assert.equal(notified.value, 45.0)
 
   // After publish, readPoint returns the cached live value
-  const r2 = await reader.readPoint('receiver_level')
-  assert.equal(r2?.value, 45.0)
+  const r2 = /** @type {any} */ (await reader.readPoint(scope, 'receiver_level'))
+  assert.equal(r2.value, 45.0)
 
   unsub()
 })
 
 test('verify-service: runs scenario with unconstrained duration and rich evidence', async () => {
-  const reader = createTelemetryReader()
-  reader.publishPointValue('receiver_level', 25.0)
+  const reader = boundReader('sess-1')
+  reader.publishPointValue(wsScope('sess-1'), 'receiver_level', 25.0)
 
   const verifyService = createVerifyService({
     telemetryReader: reader,
@@ -84,8 +87,8 @@ test('verify-service: runs scenario with unconstrained duration and rich evidenc
 })
 
 test('verify-service: cancellation sets status to cancelled', async () => {
-  const reader = createTelemetryReader()
-  reader.publishPointValue('level', 3.0)
+  const reader = boundReader('sess-cancel')
+  reader.publishPointValue(wsScope('sess-cancel'), 'level', 3.0)
   const verifyService = createVerifyService({ telemetryReader: reader })
 
   const abortController = new AbortController()
@@ -114,8 +117,8 @@ test('verify-service: cancellation sets status to cancelled', async () => {
 })
 
 test('verify-command-service and RPC handler: executes and manages verification runs', async () => {
-  const reader = createTelemetryReader()
-  reader.publishPointValue('pressure', 10.0)
+  const reader = boundReader('sess-rpc')
+  reader.publishPointValue(wsScope('sess-rpc'), 'pressure', 10.0)
 
   const verifyService = createVerifyService({ telemetryReader: reader })
   const cmdService = createVerifyCommandService({ verifyService })

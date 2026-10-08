@@ -48,6 +48,18 @@ function deadbandFor(point, kind, fromOpts) {
 }
 
 /**
+ * Task9/0.20.1: the alarm switch is the master switch (explicit alarmEnabled
+ * wins; undeclared infers from thresholds), and a rule needs a real threshold.
+ * @param {any} point
+ * @returns {boolean}
+ */
+export function pointAlarmRuleEnabled(point) {
+  if (!point) return false
+  const enabled = point.alarmEnabled === undefined ? point.alarmMin != null || point.alarmMax != null : point.alarmEnabled
+  return enabled === true && (point.alarmMin != null || point.alarmMax != null)
+}
+
+/**
  * @param {any} [arg0]
  * @returns {any}
  */
@@ -70,11 +82,8 @@ export function evaluateAlarms({ points, values, prevState, pollingByConnection,
   // process alarms with deadband and delay
   for (const p of Array.isArray(points) ? points : []) {
     if (!p || !p.id) continue
-    // Task9/0.20.1: 告警开关是真正的总开关（显式 alarmEnabled 优先；未声明按阈值推断）。
     // 关闭 → 不进入死区/breach；激活或 pending 告警立即转 recovered，清除 pendingSince。
-    const effAlarmEnabled = p.alarmEnabled === undefined ? p.alarmMin != null || p.alarmMax != null : p.alarmEnabled
-    const alarmDisabled = effAlarmEnabled !== true || (p.alarmMin == null && p.alarmMax == null)
-    if (alarmDisabled) {
+    if (!pointAlarmRuleEnabled(p)) {
       if (
         next[p.id] &&
         next[p.id].group === PROCESS &&

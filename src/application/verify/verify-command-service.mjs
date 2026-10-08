@@ -99,6 +99,7 @@ export function createVerifyCommandService(deps = {}) {
    *   debugSessionId?: string,
    *   timeoutMs?: number,
    *   signal?: AbortSignal,
+   *   source?: 'user' | 'agent',
    *   artifactPath?: string,
    *   artifactSha256?: string,
    *   firmwareHash?: string,

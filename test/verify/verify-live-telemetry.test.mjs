@@ -1,36 +1,28 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
-import { createVerifyTelemetryAdapter } from '../../src/infrastructure/modbus/verify-telemetry-adapter.mjs'
+import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
+import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
 
 test('verify-telemetry-adapter: strictly rejects static workspace points[].value as live data', async () => {
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => ({
-      modbus: {
-        points: [
-          { id: 'p_static', value: 99.9, rawValue: 99.9 }, // static point default, NOT live
-        ],
-        // modbus.values is empty (no live poll has run)
-      },
-    }),
+    // static point default, NOT live; no poll has produced a value record
+    workspaceLoader: () => flatWorkspace({ points: [vpoint('p_static', { value: 99.9, rawValue: 99.9 })] }),
   })
 
-  // Attempting to read p_static without live polling or direct read must return null (NO DATA)
-  const reading = await adapter.readPoint({ cwd: '/test/cwd' }, 'p_static')
-  assert.equal(reading, null)
+  const reading = /** @type {any} */ (await adapter.readPoint({ cwd: '/test/cwd' }, 'p_static'))
+  assert.equal(reading.availability, 'unavailable')
+  assert.equal(reading.reason, 'DATA_MISSING')
 })
 
 test('verify-telemetry-adapter: reads from active poll-cache and evaluates maxAgeMs freshness', async () => {
   const now = Date.now()
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => ({
-      modbus: {
-        values: [
-          { pointId: 'p_live_fresh', val: 12.5, at: now - 100 }, // 100ms ago
-          { pointId: 'p_live_old', val: 40.0, at: now - 5000 }, // 5000ms ago
-        ],
-      },
-    }),
+    workspaceLoader: () =>
+      flatWorkspace({
+        points: [vpoint('p_live_fresh'), vpoint('p_live_old', { address: 1 })],
+        values: [liveValue('p_live_fresh', 12.5, { ageMs: 100 }), liveValue('p_live_old', 40.0, { ageMs: 5000 })],
+      }),
   })
 
   // Fresh point with maxAgeMs = 1000 -> quality: good
@@ -51,13 +43,7 @@ test('verify-telemetry-adapter: reads from active poll-cache and evaluates maxAg
 test('verify-service: stale telemetry beyond maxAgeMs is unverifiable, not a pass', async () => {
   const now = Date.now()
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => ({
-      modbus: {
-        values: [
-          { pointId: 'temp_c', val: 25.0, at: now - 10000 }, // 10s old
-        ],
-      },
-    }),
+    workspaceLoader: () => flatWorkspace({ points: [vpoint('temp_c')], values: [liveValue('temp_c', 25.0, { ageMs: 10_000 })] }),
   })
 
   const verifyService = createVerifyService({

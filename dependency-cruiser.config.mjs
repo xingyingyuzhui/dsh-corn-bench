@@ -33,7 +33,7 @@ export default {
           '(^|/)test/',
           // Documented ledger / optional adapter kept for package consumers.
           '(^|/)src/ui/components/component-registry\\.mjs$',
-          '(^|/)src/infrastructure/modbus/verify-telemetry-adapter\\.mjs$',
+          '(^|/)src/application/verify/verify-telemetry-adapter\\.mjs$',
         ],
       },
       to: {},

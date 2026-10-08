@@ -70,6 +70,7 @@ export function createVerifyService(deps = {}) {
      *   timeoutMs?: number,
      *   signal?: AbortSignal,
      *   telemetryReader?: any,
+     *   source?: 'user' | 'agent',
      *   artifactPath?: string,
      *   artifactSha256?: string,
      *   firmwareHash?: string,
@@ -94,8 +95,7 @@ export function createVerifyService(deps = {}) {
 
       const combinedSignal = composeAbortSignals([signal, timeoutController.signal])
 
-      const telemetryReader =
-        options.telemetryReader || deps.telemetryReader || createTelemetryReader({ workspaceCwd, workspaceLoader })
+      const telemetryReader = options.telemetryReader || deps.telemetryReader || createTelemetryReader({ workspaceLoader })
 
       let debugSessionId = options.debugSessionId || ''
       let activeSession = null
@@ -187,6 +187,7 @@ export function createVerifyService(deps = {}) {
           debugSessionId,
           ownerSessionId,
           workspaceCwd,
+          source: /** @type {'agent' | 'user'} */ (options.source === 'agent' ? 'agent' : 'user'),
           telemetryReader,
           workspaceLoader,
           combinedSignal,

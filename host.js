@@ -25,7 +25,7 @@ import { clearFlashApprovals } from './src/application/flash/flash-approval-serv
 import { createVerifyCommandService } from './src/application/verify/verify-command-service.mjs'
 import { registerVisionHost } from './src/infrastructure/host/vision-host-client.mjs'
 import { createAgentPresetAttacher } from './src/infrastructure/host/vision-preset-attach.mjs'
-import { createVerifyTelemetryAdapter } from './src/infrastructure/modbus/verify-telemetry-adapter.mjs'
+import { createVerifyTelemetryAdapter } from './src/application/verify/verify-telemetry-adapter.mjs'
 import { registerVisionFetchDispatch } from './src/interfaces/fetch/vision-fetch-route.mjs'
 import { createVisionCommandDispatcher } from './src/interfaces/http/vision-command-routes.mjs'
 import { createVisionRpcRouter } from './src/interfaces/rpc/vision-rpc-router.mjs'

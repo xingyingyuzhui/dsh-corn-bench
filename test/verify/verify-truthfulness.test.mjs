@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { evaluateAssertion } from '../../src/domain/verify/assertion.mjs'
+import { alarmPoint, flatWorkspace } from './verify-fixtures.mjs'
 
 test('verify-service: no.exception is unverifiable when no debug session is active', async () => {
   const verifyService = createVerifyService({
@@ -68,13 +69,11 @@ test('verify-service: no.alarm is unverifiable when no alarm source exists', asy
 
 test('verify-service: no.alarm fails when active alarms are reported', async () => {
   const verifyService = createVerifyService({
-    workspaceLoader: () => ({
-      modbus: {
-        alarmState: {
-          'alm-1': { condition: 'active' },
-        },
-      },
-    }),
+    workspaceLoader: () =>
+      flatWorkspace({
+        points: [alarmPoint('tank_temp')],
+        alarmState: { tank_temp: { id: 'tank_temp', pointId: 'tank_temp', group: 'process', condition: 'active' } },
+      }),
   })
 
   const result = await verifyService.runVerification({

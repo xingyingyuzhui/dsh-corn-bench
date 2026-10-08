@@ -16,6 +16,7 @@ import { observeCall, observeDebugValue, observeReading } from './verify-observa
  *   debugSessionId?: string,
  *   ownerSessionId: string,
  *   workspaceCwd: string,
+ *   source?: 'user' | 'agent',
  *   telemetryReader?: any,
  *   combinedSignal: AbortSignal,
  *   timeoutMs: number,
@@ -36,17 +37,11 @@ export async function readTelemetryPoint(ctx, pointId, opts = {}) {
   if (!telemetryReader || typeof telemetryReader.readPoint !== 'function') {
     return unavailable(UNAVAILABLE_REASONS.DATA_MISSING, '没有可用的遥测读取器')
   }
-  let reading = await observeCall(
-    () =>
-      telemetryReader.readPoint({ cwd: workspaceCwd, sessionId: ownerSessionId }, pointId, {
-        ...opts,
-        signal: combinedSignal,
-      }),
+  const scope = { cwd: workspaceCwd, sessionId: ownerSessionId, source: ctx.source || 'user' }
+  const reading = await observeCall(
+    () => telemetryReader.readPoint(scope, pointId, { ...opts, signal: combinedSignal }),
     combinedSignal,
   )
-  if (!reading) {
-    reading = await observeCall(() => telemetryReader.readPoint(pointId, { signal: combinedSignal }), combinedSignal)
-  }
   const observed = observeReading(reading, { maxAgeMs: opts.maxAgeMs })
   if (observed.availability === 'available') {
     ctx.telemetrySamples.push({ pointId, timestamp: observed.reading.timestamp, value: observed.reading.value })

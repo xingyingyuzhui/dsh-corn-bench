@@ -69,7 +69,10 @@ export function visionDebugTool(home) {
       'ok is true only when status=pass. status=fail means valid data did not meet an expectation; ' +
       'status=error with errorCode=VERIFY_UNVERIFIABLE means some assertions had no trustworthy data ' +
       '(assertions[].outcome=unverifiable with reason, counted in unverifiableCount) and must not be read as pass. ' +
-      'A stable-for-duration durationMs longer than the effective timeoutMs is rejected with INVALID_FIELD.',
+      'A stable-for-duration durationMs longer than the effective timeoutMs is rejected with INVALID_FIELD. ' +
+      'Verify reads only points and alarms visible to this session; static point config values are never data. ' +
+      'When a visible point has no usable runtime value, verify performs one real Modbus read that leaves the ' +
+      'normal read trace (task, frames, values, journal); a busy or failed read is READ_FAILED, not retried.',
     parameters: {
       type: 'object',
       additionalProperties: false,

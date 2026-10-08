@@ -2,14 +2,10 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createVerifyCommandService } from '../../src/application/verify/verify-command-service.mjs'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
+import { alarmPoint, flatWorkspace } from './verify-fixtures.mjs'
 
 test('verify-command-service: generates unique verificationRunId and supports parallel runs of same scenario', async () => {
-  const mockWorkspace = {
-    modbus: {
-      points: [{ id: 'p1', name: 'Pressure' }],
-      alarmState: {},
-    },
-  }
+  const mockWorkspace = flatWorkspace({ points: [alarmPoint('p1', { name: 'Pressure' })], alarmState: {} })
   const verifyService = createVerifyService({
     workspaceLoader: () => mockWorkspace,
   })
@@ -59,12 +55,7 @@ test('verify-command-service: generates unique verificationRunId and supports pa
 })
 
 test('verify-command-service: cancellation by verificationRunId isolates target run', async () => {
-  const mockWorkspace = {
-    modbus: {
-      points: [{ id: 'p1', name: 'Pressure' }],
-      alarmState: {},
-    },
-  }
+  const mockWorkspace = flatWorkspace({ points: [alarmPoint('p1', { name: 'Pressure' })], alarmState: {} })
   const verifyService = createVerifyService({
     workspaceLoader: () => mockWorkspace,
   })
