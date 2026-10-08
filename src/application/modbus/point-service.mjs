@@ -95,7 +95,6 @@ export const pointsOp = async (home, cwd, body) => {
       workspaceModbus: viewSource.modbus,
       values: workspace.modbus?.values,
     }
-    const view = String(body?.view || '') === 'summary' ? 'summary' : 'full'
     const isAgent = body?.source === 'agent'
     const paged = pagePointsList({
       points: list,
@@ -103,7 +102,7 @@ export const pointsOp = async (home, cwd, body) => {
       sessionId,
       connectionId: cidArg,
       deviceId: didArg,
-      view,
+      view: typeof body?.view === 'string' ? body.view : undefined,
       limit: body?.limit,
       cursor: typeof body?.cursor === 'string' ? body.cursor : '',
       isAgent,

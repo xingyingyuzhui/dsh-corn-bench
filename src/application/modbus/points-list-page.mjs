@@ -63,27 +63,39 @@ export function decodeListCursor(cursor) {
  * @param {string} a
  * @param {string} b
  * @param {string} c
- * @param {string} d
  */
-function fingerprint(a, b, c, d) {
-  return `${a}|${b}|${c}|${d}`
+function fingerprint(a, b, c) {
+  return `${a}|${b}|${c}`
 }
 
+/** @param {unknown} v */
+const explicitView = (v) => (v == null || v === '' ? null : v === 'summary' ? 'summary' : 'full')
+
 /**
+ * @param {string} error
+ * @returns {{ ok: false, errorCode: string, error: string, refresh?: undefined }}
+ */
+const expired = (error) => ({ ok: false, errorCode: 'CURSOR_EXPIRED', error })
+
+/**
+ * `view` is resolved after the cursor is validated: no cursor defaults to full,
+ * an omitted view inherits the cursor's, and an explicit mismatch is expired.
+ *
  * @param {{
  *   points: any[],
  *   configVersion: number,
  *   sessionId: string,
  *   connectionId: string,
  *   deviceId: string,
- *   view: 'full' | 'summary',
+ *   view?: string,
  *   limit: number | undefined,
  *   cursor: string,
  *   isAgent: boolean,
  * }} input
  */
 export function pagePointsList(input) {
-  const view = input.view === 'summary' ? 'summary' : 'full'
+  const requested = explicitView(input.view)
+  let view = /** @type {'full' | 'summary'} */ (requested || 'full')
   const sorted = [...(Array.isArray(input.points) ? input.points : [])].sort(comparePointRows)
   const total = sorted.length
   const wantPaging = input.isAgent || input.limit != null || !!input.cursor
@@ -108,17 +120,11 @@ export function pagePointsList(input) {
   if (input.isAgent) limit = Math.min(AGENT_MAX_LIMIT, Math.max(1, limit))
   else limit = Math.max(1, limit)
 
-  const fp = fingerprint(input.sessionId, input.connectionId, input.deviceId, view)
+  const fp = fingerprint(input.sessionId, input.connectionId, input.deviceId)
   let start = 0
   if (input.cursor) {
     const decoded = decodeListCursor(input.cursor)
-    if (!decoded) {
-      return {
-        ok: false,
-        errorCode: 'CURSOR_EXPIRED',
-        error: 'points list 游标无效，请从第一页重读',
-      }
-    }
+    if (!decoded) return expired('points list 游标无效，请从第一页重读')
     if (Number(decoded.configVersion) !== Number(input.configVersion)) {
       return {
         ok: false,
@@ -131,24 +137,19 @@ export function pagePointsList(input) {
       String(decoded.sessionId || ''),
       String(decoded.connectionId || ''),
       String(decoded.deviceId || ''),
-      String(decoded.view || 'full'),
     )
     // Cursor must not retarget authorization — session comes from origin only.
     if (String(decoded.sessionId || '') !== String(input.sessionId || '') || cursorFp !== fp) {
-      return {
-        ok: false,
-        errorCode: 'CURSOR_EXPIRED',
-        error: 'points list 游标与当前会话/过滤器不匹配，请从第一页重读',
-      }
+      return expired('points list 游标与当前会话/过滤器不匹配，请从第一页重读')
     }
+    const cursorView = decoded.view == null || decoded.view === 'full' ? 'full' : decoded.view === 'summary' ? 'summary' : null
+    if (!cursorView) return expired('points list 游标无效，请从第一页重读')
+    if (requested && requested !== cursorView) {
+      return expired('points list 游标的 view 与本次 view 不一致；省略 view 即沿用游标的 view，或从第一页重读')
+    }
+    view = cursorView
     const last = Array.isArray(decoded.last) ? decoded.last.map(String) : null
-    if (!last || last.length !== 3) {
-      return {
-        ok: false,
-        errorCode: 'CURSOR_EXPIRED',
-        error: 'points list 游标无效，请从第一页重读',
-      }
-    }
+    if (!last || last.length !== 3) return expired('points list 游标无效，请从第一页重读')
     start = sorted.findIndex((p) => comparePointRows(p, { connectionId: last[0], deviceId: last[1], id: last[2] }) > 0)
     if (start < 0) start = sorted.length
   }
