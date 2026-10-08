@@ -3,7 +3,7 @@ import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
 import { workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
 import { requireWorkspaceCwd } from '../../shared/workspace-paths.mjs'
 import { hostDebugSnapshotResolver } from './evidence-service.mjs'
-import { anonymousLegacyCompat, focusOwnership, ownedBy, resolveEvidenceBatch } from './evidence-scope.mjs'
+import { anonymousLegacyCompat, focusOwnership, projectVisibleFocus, resolveEvidenceBatch } from './evidence-scope.mjs'
 import { evidenceScopeFromWorkspace } from './evidence-scope-factory.mjs'
 
 const EVIDENCE_KEEP = 20
@@ -76,6 +76,8 @@ export const appendEvidence = async (home, cwd, evidence, sessionId = '') => {
   if (!parsed.ok) return parsed
   if (!parsed.list.length) return { ok: false, error: '缺少 evidence', errorCode: ERROR_CODES.TARGET_REQUIRED }
   const sid = typeof sessionId === 'string' ? sessionId.trim() : ''
+  /** @type {any[]} */
+  let visible = []
   const saved = await workspaceRepository(home).updateRuntime(room.cwd, async (/** @type {any} */ current) => {
     const built = lockedEvidenceScope(current, sid, room.cwd)
     if (!built.ok) return built
@@ -85,17 +87,17 @@ export const appendEvidence = async (home, cwd, evidence, sessionId = '') => {
     if (!batch.ok) return batch
     const focus = current.focus && typeof current.focus === 'object' ? current.focus : {}
     const prevRows = Array.isArray(focus.evidence) ? focus.evidence : []
-    return {
-      ok: true,
-      workspace: {
-        ...current,
-        focus: {
-          ...focus,
-          sessionId: String(focus.sessionId || '').trim() || sid,
-          evidence: [...prevRows, ...batch.rows].slice(-EVIDENCE_KEEP),
-        },
+    const workspace = {
+      ...current,
+      focus: {
+        ...focus,
+        sessionId: String(focus.sessionId || '').trim() || sid,
+        evidence: [...prevRows, ...batch.rows].slice(-EVIDENCE_KEEP),
       },
     }
+    // Same projection as status: unverifiable history stays on disk, hidden here.
+    visible = projectVisibleFocus(workspace, built.scope).evidence
+    return { ok: true, workspace }
   })
   if (!saved || saved.ok === false) {
     return {
@@ -105,6 +107,5 @@ export const appendEvidence = async (home, cwd, evidence, sessionId = '') => {
       ...(saved?.details ? { details: saved.details } : {}),
     }
   }
-  const rows = Array.isArray(saved.workspace?.focus?.evidence) ? saved.workspace.focus.evidence : []
-  return { ok: true, evidence: rows.filter((/** @type {any} */ r) => ownedBy(r, sid)) }
+  return { ok: true, evidence: visible }
 }
