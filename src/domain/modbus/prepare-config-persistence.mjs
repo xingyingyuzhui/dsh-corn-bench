@@ -86,6 +86,10 @@ export function prepareConfigPersistence(currentWs, candidateWs) {
     currentMb.sampleGenerations && typeof currentMb.sampleGenerations === 'object'
       ? /** @type {Record<string, string>} */ ({ ...currentMb.sampleGenerations })
       : {}
+  const candidateGens =
+    candidateMb.sampleGenerations && typeof candidateMb.sampleGenerations === 'object'
+      ? /** @type {Record<string, string>} */ ({ ...candidateMb.sampleGenerations })
+      : {}
   const values = Array.isArray(candidateMb.values)
     ? candidateMb.values
     : Array.isArray(currentMb.values)
@@ -95,6 +99,7 @@ export function prepareConfigPersistence(currentWs, candidateWs) {
     prevIndex,
     nextIndex,
     prevGenerations: prevGens,
+    candidateGenerations: candidateGens,
     values,
   })
   return {

@@ -23,15 +23,23 @@ import {
  * Diff current vs candidate effective point maps; bump generations and drop
  * values for invalidated point ids.
  *
+ * Missing tokens are NOT invented here on every config write (Host session bind
+ * must not rewrite sampleGenerations). Cold-start allocation belongs to
+ * `ensureSampleGenerations` on mutating poll/read/write; those gens are kept
+ * when present on the candidate.
+ *
  * @param {{
  *   prevIndex: Map<string, EffectivePointEntry>,
  *   nextIndex: Map<string, EffectivePointEntry>,
  *   prevGenerations: Record<string, string>,
+ *   candidateGenerations?: Record<string, string>,
  *   values: any[],
  * }} input
  */
 export function diffSampleGenerations(input) {
   const { prevIndex, nextIndex, prevGenerations, values } = input
+  const candidateGenerations =
+    input.candidateGenerations && typeof input.candidateGenerations === 'object' ? input.candidateGenerations : {}
   /** @type {Record<string, string>} */
   const nextGens = {}
   /** @type {Set<string>} */
@@ -41,14 +49,8 @@ export function diffSampleGenerations(input) {
     const prev = prevIndex.get(pid)
     const prevGen = prevGenerations[pid]
     if (!prev) {
-      // New point: allocate a token. No prior runtime slot to invalidate.
-      nextGens[pid] = newSampleGeneration()
-      continue
-    }
-    if (!prevGen) {
-      // Cold-start / first token only. Keep unstamped rows for display;
-      // verify still rejects them until a producer writes a matching stamp.
-      nextGens[pid] = newSampleGeneration()
+      // New point: prefer an explicit candidate token, else allocate.
+      nextGens[pid] = candidateGenerations[pid] || newSampleGeneration()
       continue
     }
     const geoChanged = sampleGeometryChanged(
@@ -61,6 +63,17 @@ export function diffSampleGenerations(input) {
     )
     const ownerChanged =
       prev.layer !== next.layer || String(prev.ownerSessionId || '') !== String(next.ownerSessionId || '')
+    if (!prevGen) {
+      if (geoChanged || ownerChanged) {
+        nextGens[pid] = newSampleGeneration()
+        invalidated.add(pid)
+      } else if (candidateGenerations[pid]) {
+        // Explicit cold-start init from ensureSampleGenerations — keep display rows.
+        nextGens[pid] = candidateGenerations[pid]
+      }
+      // else: leave uninitialized (e.g. session bind / no-op config write)
+      continue
+    }
     if (geoChanged || ownerChanged) {
       nextGens[pid] = newSampleGeneration()
       invalidated.add(pid)
