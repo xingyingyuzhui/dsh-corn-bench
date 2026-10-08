@@ -241,7 +241,7 @@ test('durationMs over the effective timeout is rejected before any run is regist
   assert.equal(invalid.errorCode, 'INVALID_FIELD')
   assert.equal(invalid.details.reason, 'INVALID_VALUE')
   assert.equal(calls, 0)
-  assert.equal(cmd.isRunning(SID, 'sc-long'), false)
+  assert.deepEqual(cmd.registrySizes(), { active: 0, completed: 0, latestIndex: 0 })
 })
 
 test('RPC ok means "a result came back"; the Agent envelope ok means status=pass', async () => {

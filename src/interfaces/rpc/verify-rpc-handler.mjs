@@ -4,7 +4,40 @@ import { createVerifyCommandService } from '../../application/verify/verify-comm
 import { VerifyRequestError } from '../../domain/verify/errors.mjs'
 
 /**
- * Creates RPC handlers for closed-loop verification operations.
+ * @typedef {{
+ *   cwd?: string,
+ *   sessionId?: string,
+ *   verificationRunId?: string,
+ *   runId?: string,
+ *   scenarioId?: string,
+ * }} VerifyRunParams
+ */
+
+/**
+ * The page's cwd and sessionId are the caller scope; a run's own owner fields
+ * are never used to infer it.
+ *
+ * @param {VerifyRunParams} params
+ */
+const queryOf = (params) => ({
+  workspaceCwd: String(params?.cwd || ''),
+  ownerSessionId: String(params?.sessionId || ''),
+  verificationRunId: String(params?.verificationRunId || params?.runId || ''),
+  scenarioId: String(params?.scenarioId || ''),
+})
+
+/** @param {unknown} err */
+function failure(err) {
+  if (err instanceof VerifyRequestError) {
+    return { ok: false, errorCode: err.code, error: err.message, details: err.details }
+  }
+  return { ok: false, error: err instanceof Error ? err.message : String(err) }
+}
+
+/**
+ * Creates RPC handlers for closed-loop verification operations. `ok: true`
+ * means a result or status came back; whether verification passed is
+ * `result.status === 'pass'`.
  *
  * @param {{
  *   verifyCommandService?: ReturnType<typeof createVerifyCommandService>,
@@ -17,13 +50,8 @@ export function createVerifyRpcHandler(deps = {}) {
   const commandService = deps.verifyCommandService || createVerifyCommandService(deps)
 
   /**
-   * Runs a verification scenario.
-   *
-   * @param {{
-   *   cwd: string,
-   *   sessionId: string,
+   * @param {VerifyRunParams & {
    *   scenario: import('../../types/verify.d.ts').ScenarioSpec,
-   *   verificationRunId?: string,
    *   debugSessionId?: string,
    *   timeoutMs?: number,
    * }} params
@@ -33,67 +61,37 @@ export function createVerifyRpcHandler(deps = {}) {
       return { ok: false, error: '缺少 scenario 场景配置' }
     }
     try {
+      const query = queryOf(params)
       const result = await commandService.execute({
-        workspaceCwd: params.cwd,
-        ownerSessionId: params.sessionId,
+        workspaceCwd: query.workspaceCwd,
+        ownerSessionId: query.ownerSessionId,
         scenario: params.scenario,
-        verificationRunId: params.verificationRunId,
+        verificationRunId: query.verificationRunId || undefined,
         debugSessionId: params.debugSessionId,
         timeoutMs: params.timeoutMs,
       })
-      return {
-        ok: true,
-        verificationRunId: result.verificationRunId,
-        result,
-      }
+      return { ok: true, verificationRunId: result.verificationRunId, result }
     } catch (err) {
-      if (err instanceof VerifyRequestError) {
-        return { ok: false, errorCode: err.code, error: err.message, details: err.details }
-      }
-      return {
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      }
+      return failure(err)
     }
   }
 
-  /**
-   * Cancels an ongoing verification run.
-   *
-   * @param {{
-   *   verificationRunId?: string,
-   *   runId?: string,
-   *   sessionId?: string,
-   *   scenarioId?: string,
-   * }} params
-   */
+  /** @param {VerifyRunParams} params */
   async function handleCancel(params) {
-    const runId = params?.verificationRunId || params?.runId
-    const cancelled = runId
-      ? commandService.cancel(runId)
-      : commandService.cancel(String(params?.sessionId || ''), params?.scenarioId)
-    return { ok: true, cancelled }
+    try {
+      return { ok: true, ...commandService.cancel(queryOf(params)) }
+    } catch (err) {
+      return failure(err)
+    }
   }
 
-  /**
-   * Gets current status or result of a verification run.
-   *
-   * @param {{
-   *   verificationRunId?: string,
-   *   runId?: string,
-   *   sessionId?: string,
-   *   scenarioId?: string,
-   * }} params
-   */
+  /** @param {VerifyRunParams} params */
   async function handleStatus(params) {
-    const runId = params?.verificationRunId || params?.runId
-    const running = runId
-      ? commandService.isRunning(runId)
-      : commandService.isRunning(String(params?.sessionId || ''), params?.scenarioId)
-    const result = runId
-      ? commandService.getResult(runId)
-      : commandService.getResult(String(params?.sessionId || ''), params?.scenarioId)
-    return { ok: true, running, result: result || null }
+    try {
+      return { ok: true, ...commandService.status(queryOf(params)) }
+    } catch (err) {
+      return failure(err)
+    }
   }
 
   return {

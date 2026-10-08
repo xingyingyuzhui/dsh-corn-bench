@@ -1,11 +1,31 @@
 // @ts-check
 
+import { isScopePartitioned, normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
+import { VerifyRequestError } from '../../domain/verify/errors.mjs'
 import { assertScenarioBudget, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
+import { normalizeCwd } from '../../shared/path-normalize.mjs'
+import { createVerifyRunRegistry } from './verify-run-registry.mjs'
 import { createVerifyService } from './verify-service.mjs'
 
 /**
- * Creates the VerifyCommandService application service that handles
- * scenario execution, timeouts, cancellation tokens, and result tracking.
+ * @typedef {{
+ *   workspaceCwd: string,
+ *   ownerSessionId?: string,
+ *   verificationRunId?: string,
+ *   scenarioId?: string,
+ * }} VerifyRunQuery
+ */
+
+const RUN_NOT_VISIBLE = '验证运行不存在或不可见'
+
+/**
+ * Creates the VerifyCommandService application service that handles scenario
+ * execution, timeouts, cancellation and owner-scoped result tracking.
+ *
+ * Every run, status and cancel call carries the caller's scope (workspace cwd +
+ * owner session). Anonymous callers keep working on unpartitioned workspaces,
+ * but only see anonymous runs of the same cwd; once the workspace is
+ * partitioned they get SESSION_REQUIRED.
  *
  * @param {{
  *   verifyService?: any,
@@ -13,34 +33,59 @@ import { createVerifyService } from './verify-service.mjs'
  *   workspaceLoader?: (cwd: string) => any,
  *   telemetryReader?: any,
  *   onJournalEvent?: ((event: any) => Promise<void>) | null,
+ *   runRegistry?: { now?: () => number, maxCompleted?: number, completedTtlMs?: number },
  * }} [deps]
  */
 export function createVerifyCommandService(deps = {}) {
   const verifyService = deps.verifyService || createVerifyService(deps)
+  const workspaceLoader = deps.workspaceLoader || null
+  const registry = createVerifyRunRegistry(deps.runRegistry)
 
-  /**
-   * @type {Map<string, {
-   *   verificationRunId: string,
-   *   abortController: AbortController,
-   *   startedAt: number,
-   *   scenarioId: string,
-   *   ownerSessionId: string,
-   * }>}
-   */
-  const activeVerifications = new Map()
-
-  /** @type {Map<string, string>} Mapping from `${ownerSessionId}:${scenarioId}` to current verificationRunId */
-  const sessionScenarioIndex = new Map()
-
-  /** @type {Map<string, import('../../types/verify.d.ts').VerifyResult>} */
-  const pastResults = new Map()
-
-  /**
-   * Generates a unique verification run ID.
-   * @returns {string}
-   */
   function generateRunId() {
     return `vr_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+  }
+
+  /** @param {string} cwd */
+  function partitioned(cwd) {
+    if (!workspaceLoader) return false
+    try {
+      return isScopePartitioned(workspaceLoader(cwd)?.modbus)
+    } catch {
+      return true
+    }
+  }
+
+  /**
+   * @param {string | undefined} workspaceCwd
+   * @param {string | undefined} ownerSessionId
+   * @returns {import('./verify-run-registry.mjs').RunScope}
+   */
+  function resolveScope(workspaceCwd, ownerSessionId) {
+    const cwd = normalizeCwd(workspaceCwd)
+    if (!cwd) throw new VerifyRequestError('INVALID_FIELD', '验证请求缺少 cwd', { field: 'cwd', reason: 'REQUIRED' })
+    const sid = normalizeScopeSessionId(ownerSessionId)
+    if (!sid && partitioned(String(workspaceCwd))) {
+      throw new VerifyRequestError('SESSION_REQUIRED', '工作区已按会话分区，验证必须带 sessionId')
+    }
+    return { cwd, sid }
+  }
+
+  /**
+   * @param {VerifyRunQuery} query
+   */
+  function locate(query) {
+    const scope = resolveScope(query?.workspaceCwd, query?.ownerSessionId)
+    const runId = String(query?.verificationRunId || '').trim()
+    const scenarioId = String(query?.scenarioId || '').trim()
+    if (!runId && !scenarioId) {
+      throw new VerifyRequestError('INVALID_FIELD', '需要 verificationRunId 或 scenarioId', {
+        field: 'verificationRunId',
+        reason: 'REQUIRED',
+      })
+    }
+    const found = registry.find(scope, { runId, scenarioId })
+    if (!found) throw new VerifyRequestError('TARGET_MISMATCH', RUN_NOT_VISIBLE)
+    return found
   }
 
   /**
@@ -62,150 +107,73 @@ export function createVerifyCommandService(deps = {}) {
    * @returns {Promise<import('../../types/verify.d.ts').VerifyResult>}
    */
   async function execute(options) {
-    const { workspaceCwd, ownerSessionId, scenario } = options
+    const scope = resolveScope(options.workspaceCwd, options.ownerSessionId)
+    const { scenario } = options
     assertScenarioBudget(scenario, effectiveTimeoutMs(scenario, options.timeoutMs))
     const scenarioId = scenario.id || `scenario_${Date.now()}`
-    const verificationRunId = options.verificationRunId || generateRunId()
-    const sessionKey = `${ownerSessionId || 'anon'}:${scenarioId}`
+    const external = String(options.verificationRunId || '').trim()
+    if (external && registry.has(external)) {
+      throw new VerifyRequestError('CONFLICT', `验证运行 ID 已被使用: ${external}`, {
+        reason: 'RUN_ID_REUSE',
+        verificationRunId: external,
+      })
+    }
+    const verificationRunId = external || generateRunId()
 
     const abortController = new AbortController()
-    const activeEntry = {
-      verificationRunId,
-      abortController,
-      startedAt: Date.now(),
-      scenarioId,
-      ownerSessionId: ownerSessionId || 'anon',
-    }
+    registry.register({ runId: verificationRunId, scope, scenarioId, abortController, startedAt: Date.now() })
 
-    activeVerifications.set(verificationRunId, activeEntry)
-    sessionScenarioIndex.set(sessionKey, verificationRunId)
-
-    // If caller provided an external AbortSignal, link it
-    if (options.signal) {
-      if (options.signal.aborted) {
-        abortController.abort()
-      } else {
-        options.signal.addEventListener('abort', () => abortController.abort(), { once: true })
-      }
+    const externalSignal = options.signal
+    const onExternalAbort = () => abortController.abort()
+    if (externalSignal) {
+      if (externalSignal.aborted) abortController.abort()
+      else externalSignal.addEventListener('abort', onExternalAbort, { once: true })
     }
 
     try {
       const result = await verifyService.runVerification({
         ...options,
+        ownerSessionId: scope.sid,
         verificationRunId,
         scenario: { ...scenario, id: scenarioId },
         signal: abortController.signal,
       })
-
-      pastResults.set(verificationRunId, result)
-      pastResults.set(sessionKey, result)
-      if (result.scenarioId && result.scenarioId !== scenarioId) {
-        pastResults.set(`${ownerSessionId || 'anon'}:${result.scenarioId}`, result)
-      }
+      registry.complete(verificationRunId, scope, [scenarioId, result.scenarioId], result)
       return result
     } finally {
-      activeVerifications.delete(verificationRunId)
-      if (sessionScenarioIndex.get(sessionKey) === verificationRunId) {
-        sessionScenarioIndex.delete(sessionKey)
-      }
+      externalSignal?.removeEventListener('abort', onExternalAbort)
+      registry.release(verificationRunId)
     }
   }
 
   /**
-   * Cancels an active verification run.
+   * Requests cancellation of a run visible to the caller. Only aborts; the run
+   * keeps its ID until execution unwinds.
    *
-   * @param {string} runIdOrOwnerSessionId
-   * @param {string} [maybeScenarioId]
-   * @returns {boolean} True if an active run was found and cancelled
+   * @param {VerifyRunQuery} query
+   * @returns {{ cancelled: boolean }}
    */
-  function cancel(runIdOrOwnerSessionId, maybeScenarioId) {
-    if (!runIdOrOwnerSessionId) return false
-
-    // 1. Try by verificationRunId directly
-    if (activeVerifications.has(runIdOrOwnerSessionId)) {
-      const active = activeVerifications.get(runIdOrOwnerSessionId)
-      if (active) {
-        active.abortController.abort()
-        activeVerifications.delete(runIdOrOwnerSessionId)
-        const sessionKey = `${active.ownerSessionId}:${active.scenarioId}`
-        if (sessionScenarioIndex.get(sessionKey) === runIdOrOwnerSessionId) {
-          sessionScenarioIndex.delete(sessionKey)
-        }
-        return true
-      }
-    }
-
-    // 2. Try by sessionKey `${ownerSessionId}:${scenarioId}`
-    if (maybeScenarioId) {
-      const sessionKey = `${runIdOrOwnerSessionId || 'anon'}:${maybeScenarioId}`
-      const runId = sessionScenarioIndex.get(sessionKey)
-      if (runId && activeVerifications.has(runId)) {
-        const active = activeVerifications.get(runId)
-        if (active) {
-          active.abortController.abort()
-          activeVerifications.delete(runId)
-          sessionScenarioIndex.delete(sessionKey)
-          return true
-        }
-      }
-    }
-
-    return false
+  function cancel(query) {
+    const found = locate(query)
+    if (!found.active) return { cancelled: false }
+    found.active.abortController.abort()
+    return { cancelled: true }
   }
 
   /**
-   * Retrieves the latest verify result for a given run ID or (session, scenario).
-   *
-   * @param {string} runIdOrOwnerSessionId
-   * @param {string} [maybeScenarioId]
-   * @returns {import('../../types/verify.d.ts').VerifyResult | undefined}
+   * @param {VerifyRunQuery} query
+   * @returns {{ running: boolean, result: import('../../types/verify.d.ts').VerifyResult | null }}
    */
-  function getResult(runIdOrOwnerSessionId, maybeScenarioId) {
-    if (!runIdOrOwnerSessionId) return undefined
-
-    // 1. Direct lookup by verificationRunId
-    if (pastResults.has(runIdOrOwnerSessionId)) {
-      return pastResults.get(runIdOrOwnerSessionId)
-    }
-
-    // 2. Lookup by sessionKey `${ownerSessionId}:${scenarioId}`
-    if (maybeScenarioId) {
-      const sessionKey = `${runIdOrOwnerSessionId || 'anon'}:${maybeScenarioId}`
-      return pastResults.get(sessionKey)
-    }
-
-    return undefined
-  }
-
-  /**
-   * Checks if a verification scenario is currently executing.
-   *
-   * @param {string} runIdOrOwnerSessionId
-   * @param {string} [maybeScenarioId]
-   * @returns {boolean}
-   */
-  function isRunning(runIdOrOwnerSessionId, maybeScenarioId) {
-    if (!runIdOrOwnerSessionId) return false
-
-    // 1. Check by verificationRunId
-    if (activeVerifications.has(runIdOrOwnerSessionId)) {
-      return true
-    }
-
-    // 2. Check by sessionKey `${ownerSessionId}:${scenarioId}`
-    if (maybeScenarioId) {
-      const sessionKey = `${runIdOrOwnerSessionId || 'anon'}:${maybeScenarioId}`
-      const runId = sessionScenarioIndex.get(sessionKey)
-      return Boolean(runId && activeVerifications.has(runId))
-    }
-
-    return false
+  function status(query) {
+    const found = locate(query)
+    return { running: Boolean(found.active), result: found.completed?.result || null }
   }
 
   return {
     execute,
     cancel,
-    getResult,
-    isRunning,
+    status,
+    /** Bounded store sizes, for diagnostics and tests. */
+    registrySizes: () => registry.sizes(),
   }
 }

@@ -51,8 +51,9 @@ test('verify-command-service: generates unique verificationRunId and supports pa
   assert.equal(res2.status, 'pass')
 
   // Both results must be retrievable by their respective verificationRunId
-  const retrieved1 = cmdService.getResult(res1.verificationRunId)
-  const retrieved2 = cmdService.getResult(res2.verificationRunId)
+  const owner = { workspaceCwd: '/test/cwd', ownerSessionId: 'sess-1' }
+  const retrieved1 = cmdService.status({ ...owner, verificationRunId: res1.verificationRunId }).result
+  const retrieved2 = cmdService.status({ ...owner, verificationRunId: res2.verificationRunId }).result
   assert.equal(retrieved1?.verificationRunId, res1.verificationRunId)
   assert.equal(retrieved2?.verificationRunId, res2.verificationRunId)
 })
@@ -97,7 +98,11 @@ test('verify-command-service: cancellation by verificationRunId isolates target 
   })
 
   // Cancel only run 1 by its verificationRunId
-  const cancelled = cmdService.cancel('vr_run_1')
+  const { cancelled } = cmdService.cancel({
+    workspaceCwd: '/test/cwd',
+    ownerSessionId: 'sess-1',
+    verificationRunId: 'vr_run_1',
+  })
   assert.equal(cancelled, true)
 
   const [res1, res2] = await Promise.all([run1Promise, run2Promise])

@@ -42,6 +42,8 @@ test('host singleton: agent vision_debug verify and browser RPC share the same v
 
   const statusRes = /** @type {any} */ (
     await router.dispatch('verify/status', {
+      cwd: '/test/cwd',
+      sessionId: 'sess-host',
       verificationRunId: runId,
     })
   )

@@ -371,6 +371,7 @@
     "src/application/verify/verify-observation.mjs",
     "src/application/verify/verify-timeout.mjs",
     "src/application/verify/verify-command-service.mjs",
+    "src/application/verify/verify-run-registry.mjs",
     "src/application/verify/telemetry-reader.mjs",
     "src/application/verify/abort-signals.mjs",
     "src/interfaces/rpc/verify-rpc-handler.mjs",

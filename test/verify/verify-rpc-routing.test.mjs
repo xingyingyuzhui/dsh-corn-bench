@@ -36,6 +36,8 @@ test('vision-rpc-router: dispatches verify/run, verify/status, and verify/cancel
   // 2. Query status via canonical endpoint `verify/status`
   const statusRes = /** @type {any} */ (
     await router.dispatch('verify/status', {
+      cwd: '/test/cwd',
+      sessionId: 'sess-verify-rpc',
       verificationRunId: runRes.verificationRunId,
     })
   )
@@ -47,6 +49,8 @@ test('vision-rpc-router: dispatches verify/run, verify/status, and verify/cancel
   // 3. Test backward compatibility alias `vision.verify.status`
   const compatStatusRes = /** @type {any} */ (
     await router.dispatch('vision.verify.status', {
+      cwd: '/test/cwd',
+      sessionId: 'sess-verify-rpc',
       verificationRunId: runRes.verificationRunId,
     })
   )

@@ -143,6 +143,7 @@ test('verify-command-service and RPC handler: executes and manages verification 
   assert.equal(runRes.result.status, 'pass')
 
   const statusRes = await rpcHandler['vision.verify.status']({
+    cwd: 'C:/ws',
     sessionId: 'sess-rpc',
     scenarioId: runRes.result.scenarioId,
   })
