@@ -4,6 +4,7 @@ import { normalizeTimelineEvent, prepend, trimTimeline } from '../../domain/modb
 import { notifyConnectionRelease } from '../../infrastructure/modbus/modbus-transport.mjs'
 import { requireWorkspaceCwd } from '../../shared/workspace-paths.mjs'
 import { listConnectionStates } from '../../infrastructure/modbus/serial-monitor.mjs'
+import { prepareConfigPersistence } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { normalizeWorkspace, workspaceKey } from '../../infrastructure/store/workspace-store.mjs'
 import { CONFIG_OPERATIONS, SESSION_SCOPED_SCOPES, parseOperation } from '../../domain/config/config-operation.mjs'
 import { isScopePartitioned, isCategoryShared, normalizeScopeSessionId, omitSessionConfigs } from '../../domain/modbus/config-scope.mjs'
@@ -74,7 +75,14 @@ function deviceWriteTarget(base, sessionId) {
  */
 export function createConfigMutationService(deps = {}) {
   const repositoryFactory =
-    deps.repositoryFactory || ((home) => createWorkspaceRepository({ home, keyOf: workspaceKey, normalizeWorkspace }))
+    deps.repositoryFactory ||
+    ((home) =>
+      createWorkspaceRepository({
+        home,
+        keyOf: workspaceKey,
+        normalizeWorkspace,
+        prepareConfigPersistence,
+      }))
   const releaseConnections = deps.releaseConnections || notifyConnectionRelease
   const listStates = deps.listConnectionStates || listConnectionStates
 

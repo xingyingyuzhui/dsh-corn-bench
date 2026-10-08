@@ -2,7 +2,7 @@
 
 import { selectPointQueryValue } from '../modbus/point-query-value.mjs'
 import { createScopedPointReader } from './scoped-point-reader.mjs'
-import { readingFromRecord, usableReading } from './verify-point-scope.mjs'
+import { readingFromRecord } from './verify-point-scope.mjs'
 import { unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 
 /**
@@ -73,8 +73,25 @@ function readServiceDirectRead(modbusReadFn, getHome) {
     const selected = selectPointQueryValue({ workspaceModbus: target.view?.layered, point, values: rows })
     if (selected.status !== 'available') return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果来源与点位不符')
     const reading = readingFromRecord(rows[0], point, 'direct-read')
-    if (!usableReading(reading) || reading.timestamp < startedAt) {
+    if (
+      !reading ||
+      reading.quality !== 'good' ||
+      !(reading.timestamp > 0) ||
+      reading.value == null ||
+      reading.timestamp < startedAt
+    ) {
       return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果没有本次有效采样')
+    }
+    // Stamp must match the target captured before I/O when the target already
+    // had a generation. Cold-start (empty target.generation) initializes tokens
+    // during I/O; finalizeDirect re-binds the post-locate identity afterwards.
+    if (
+      reading.fingerprint &&
+      reading.generation &&
+      target.generation &&
+      (reading.fingerprint !== target.fingerprint || reading.generation !== target.generation)
+    ) {
+      return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, '读取结果采样身份已失效')
     }
     return reading
   }
@@ -90,6 +107,7 @@ function readServiceDirectRead(modbusReadFn, getHome) {
  *   workspaceLoader?: (cwd: string) => any,
  *   modbusReadFn?: (home: string, cwd: string, body: any, opts?: any) => Promise<any>,
  *   liveCache?: Map<string, LiveTelemetryReading>,
+ *   directReadBudget?: import('./scoped-point-reader.mjs').DirectReadBudget | null,
  * }} [deps]
  */
 export function createVerifyTelemetryAdapter(deps = {}) {
@@ -97,6 +115,7 @@ export function createVerifyTelemetryAdapter(deps = {}) {
   return createScopedPointReader({
     workspaceLoader: deps.workspaceLoader || null,
     liveCache: deps.liveCache,
+    directReadBudget: deps.directReadBudget || null,
     directRead: deps.modbusReadFn ? readServiceDirectRead(deps.modbusReadFn, getHome) : null,
   })
 }

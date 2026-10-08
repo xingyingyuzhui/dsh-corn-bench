@@ -6,6 +6,10 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { commitReadResult, commitWriteResult } from '../../bench-modbus-commit.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerations,
+} from '../../src/domain/modbus/prepare-config-persistence.mjs'
 
 test('commit merges point values incrementally and keeps drifted frames', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-commit-'))
@@ -23,15 +27,40 @@ test('commit merges point values incrementally and keeps drifted frames', async 
         configVersion: 3,
       },
     })
-    let ws = loadWorkspace(home, cwd)
+    let ws = ensureSampleGenerations(loadWorkspace(home, cwd)).workspace
+    saveWorkspace(home, cwd, ws)
+    ws = loadWorkspace(home, cwd)
     const id0 = ws.modbus.points.find((p) => p.address === 0).id
     const id1 = ws.modbus.points.find((p) => p.address === 1).id
-    saveWorkspace(home, cwd, { modbus: { values: [{ key: id0, pointId: id0, raw: 1, value: 1, ok: true }] } })
+    const { sampleIdentityByPointId } = buildSampleIdentityByPointId(ws.modbus, ws.modbus.points)
+    saveWorkspace(home, cwd, {
+      modbus: {
+        values: [
+          {
+            key: id0,
+            pointId: id0,
+            raw: 1,
+            value: 1,
+            ok: true,
+            sampleIdentity: sampleIdentityByPointId[id0],
+          },
+        ],
+      },
+    })
     await commitReadResult(home, cwd, {
       baseConfigVersion: ws.modbus.configVersion,
       connectionId: 'c1',
       deviceId: 'd1',
-      pointValues: [{ key: id1, pointId: id1, raw: 9, value: 9, ok: true }],
+      pointValues: [
+        {
+          key: id1,
+          pointId: id1,
+          raw: 9,
+          value: 9,
+          ok: true,
+          sampleIdentity: sampleIdentityByPointId[id1],
+        },
+      ],
       frame: { id: 't1', frameId: 't1', transactionId: 't1', connectionId: 'c1' },
     })
     ws = loadWorkspace(home, cwd)

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
-import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 test('verify-telemetry-adapter: strictly rejects static workspace points[].value as live data', async () => {
   const adapter = createVerifyTelemetryAdapter({
@@ -16,13 +16,14 @@ test('verify-telemetry-adapter: strictly rejects static workspace points[].value
 })
 
 test('verify-telemetry-adapter: reads from active poll-cache and evaluates maxAgeMs freshness', async () => {
-  const now = Date.now()
   const adapter = createVerifyTelemetryAdapter({
     workspaceLoader: () =>
-      flatWorkspace({
-        points: [vpoint('p_live_fresh'), vpoint('p_live_old', { address: 1 })],
-        values: [liveValue('p_live_fresh', 12.5, { ageMs: 100 }), liveValue('p_live_old', 40.0, { ageMs: 5000 })],
-      }),
+      stampWorkspace(
+        flatWorkspace({
+          points: [vpoint('p_live_fresh'), vpoint('p_live_old', { address: 1 })],
+          values: [liveValue('p_live_fresh', 12.5, { ageMs: 100 }), liveValue('p_live_old', 40.0, { ageMs: 5000 })],
+        }),
+      ),
   })
 
   // Fresh point with maxAgeMs = 1000 -> quality: good
@@ -41,9 +42,12 @@ test('verify-telemetry-adapter: reads from active poll-cache and evaluates maxAg
 })
 
 test('verify-service: stale telemetry beyond maxAgeMs is unverifiable, not a pass', async () => {
-  const now = Date.now()
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => flatWorkspace({ points: [vpoint('temp_c')], values: [liveValue('temp_c', 25.0, { ageMs: 10_000 })] }),
+    workspaceLoader: () =>
+      stampWorkspace(
+        flatWorkspace({ points: [vpoint('temp_c')], values: [liveValue('temp_c', 25.0, { ageMs: 10_000 })] }),
+        { sessionId: 'sess-1' },
+      ),
   })
 
   const verifyService = createVerifyService({

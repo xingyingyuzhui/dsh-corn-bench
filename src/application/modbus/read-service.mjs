@@ -50,6 +50,10 @@ import {
   runReadTx,
   transportOf,
 } from './modbus-runtime-context.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerationsPersisted,
+} from './sample-identity-producer.mjs'
 /**
  * @typedef {import('../../types/modbus.js').ModbusCommandBody} ModbusCommandBody
  * @typedef {import('../../types/modbus.js').ModbusOperationOptions} ModbusOperationOptions
@@ -197,6 +201,10 @@ export const modbusRead = async (home, cwd, body, opts = {}) => {
     summary: labels.length === 1 ? labels[0] : `读点表 ${batches.length} 批`,
   })
 
+  const gensReady = await ensureSampleGenerationsPersisted(home, room.cwd)
+  const layeredMb = gensReady.ok ? gensReady.workspace?.modbus || workspace.modbus : workspace.modbus
+  const { sampleIdentityByPointId } = buildSampleIdentityByPointId(layeredMb, pack.points)
+
   let values = pack.values
   let okCount = 0
   let lastError = ''
@@ -255,7 +263,9 @@ export const modbusRead = async (home, cwd, body, opts = {}) => {
     }
     const raw =
       ran.ok && ran.result && ran.result.details && Array.isArray(ran.result.details.raw) ? ran.result.details.raw : []
-    values = scatterBatch(values, pack.points, batch, raw, !!ran.ok, ran.ok ? '' : ran.error || '')
+    values = scatterBatch(values, pack.points, batch, raw, !!ran.ok, ran.ok ? '' : ran.error || '', Date.now(), {
+      sampleIdentityByPointId,
+    })
     let f = ran.frames || framesOf(ran)
     if (!f && batchSim) {
       f = {

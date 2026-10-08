@@ -4,6 +4,9 @@ import { evaluateAlarms } from '../../domain/modbus/alarm-model.mjs'
 import { COND_ACTIVE, PROCESS } from '../../domain/modbus/alarm-constants.mjs'
 import { normalizePolling } from '../../domain/modbus/frames-buffer.mjs'
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
+import { normalizeSampleIdentity } from '../../domain/modbus/point-sample-identity.mjs'
+import { buildEffectivePointIndex } from '../../domain/modbus/prepare-config-persistence.mjs'
+import { stampForEntry } from '../../domain/modbus/sample-generation.mjs'
 import { workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
 import { sampleTrendValues } from './trend-store.mjs'
 import {
@@ -12,6 +15,41 @@ import {
   unionScopedDevices,
   unionScopedPoints,
 } from '../../domain/modbus/config-scope.mjs'
+
+/**
+ * Keep only pointValues whose sampleIdentity matches the current effective
+ * fingerprint+generation. Missing/late stamps are rejected (values, trend,
+ * and alarm eval from those rows).
+ *
+ * @param {any} layeredModbus
+ * @param {any[]} incoming
+ * @param {Set<string>} allowedPointIds
+ * @returns {any[]}
+ */
+const acceptStampedPointValues = (layeredModbus, incoming, allowedPointIds) => {
+  const index = buildEffectivePointIndex(layeredModbus)
+  const gens =
+    layeredModbus?.sampleGenerations && typeof layeredModbus.sampleGenerations === 'object'
+      ? /** @type {Record<string, string>} */ (layeredModbus.sampleGenerations)
+      : {}
+  /** @type {any[]} */
+  const accepted = []
+  for (const rec of Array.isArray(incoming) ? incoming : []) {
+    if (!rec || typeof rec !== 'object') continue
+    const pid = String(rec.pointId || rec.key || '')
+    if (!pid || !allowedPointIds.has(pid)) continue
+    const got = normalizeSampleIdentity(rec.sampleIdentity)
+    if (!got) continue
+    const entry = index.get(pid)
+    const gen = gens[pid]
+    if (!entry || !gen) continue
+    const expected = stampForEntry(entry, gen)
+    if (!expected) continue
+    if (got.fingerprint !== expected.fingerprint || got.generation !== expected.generation) continue
+    accepted.push(rec)
+  }
+  return accepted
+}
 
 /**
  * @param {any} [current]
@@ -174,11 +212,16 @@ const commit = (home, cwd, input, kind) =>
         Number(input.baseConfigVersion) !== Number(pack.configVersion)) ||
       !connOk ||
       !devOk
+    const allowed = new Set(points.map((/** @type {any} */ p) => p.id))
+    // Same accepted set for values merge AND trend — late/mismatched stamps
+    // must not write values, trend, or drive alarm transitions from those rows.
+    const acceptedPointValues =
+      !drift && input && Array.isArray(input.pointValues) && input.pointValues.length
+        ? acceptStampedPointValues(pack, input.pointValues, allowed)
+        : []
     let values = pack.values
-    if (!drift && input && Array.isArray(input.pointValues) && input.pointValues.length) {
-      const allowed = new Set(points.map((/** @type {any} */ p) => p.id))
-      const incoming = input.pointValues.filter((/** @type {any} */ rec) => rec && allowed.has(rec.pointId || rec.key))
-      values = mergePointValues(pack.values, incoming)
+    if (acceptedPointValues.length) {
+      values = mergePointValues(pack.values, acceptedPointValues)
     }
     let framesByConnection = pack.framesByConnection
     if (input && Array.isArray(input.frames) && input.frames.length) {
@@ -219,7 +262,7 @@ const commit = (home, cwd, input, kind) =>
     })
     // Task3/0.19.3: 采样发生在提交阶段 — 与页面是否打开无关
     const pointsById = Object.fromEntries((points || []).map((/** @type {any} */ p) => [p.id, p]))
-    const trend = sampleTrendValues(pack.trend || {}, !drift && input ? input.pointValues : [], pointsById)
+    const trend = sampleTrendValues(pack.trend || {}, acceptedPointValues, pointsById)
     const patch = /** @type {Record<string, any>} */ ({
       values,
       framesByConnection,

@@ -37,6 +37,10 @@ import {
   prepareReadTargets,
   prepareTargetViews,
 } from './poll-target-preparation.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerationsPersisted,
+} from './sample-identity-producer.mjs'
 export { resolvePollSessionOwnership, resolvePollTargets }
 import {
   isScopePartitioned,
@@ -226,6 +230,10 @@ export const modbusPoll = async (home, cwd, opts) => {
   let ok = true
   let timedOut = false
   try {
+    // Mutating path: init missing sampleGenerations on config (no configVersion bump)
+    // before I/O so success and failure rows share the pre-I/O stamp.
+    const gensReady = await ensureSampleGenerationsPersisted(home, room.cwd)
+    const layeredMb = gensReady.ok ? gensReady.workspace?.modbus || workspace.modbus : workspace.modbus
     let values = pack.values
     /** @type {Map<string, any>} */
     const changedById = new Map()
@@ -256,6 +264,7 @@ export const modbusPoll = async (home, cwd, opts) => {
       for (const scope of scopes) {
         const batchConnObj = scope.connection || connObj
         const batchDevice = scope.device
+        const { sampleIdentityByPointId } = buildSampleIdentityByPointId(layeredMb, scope.points)
         for (const batch of scope.batches) {
           if (aborted(signal)) {
             timedOut = true
@@ -291,7 +300,10 @@ export const modbusPoll = async (home, cwd, opts) => {
               ? ran.result.details.raw
               : []
           // Scope scatter to this device/connection's points only — never pack.points.
-          values = scatterBatch(values, scope.points, batch, raw, !!ran.ok, ran.ok ? '' : ran.error || '')
+          // Stamp captured before I/O — success and failure rows share it.
+          values = scatterBatch(values, scope.points, batch, raw, !!ran.ok, ran.ok ? '' : ran.error || '', Date.now(), {
+            sampleIdentityByPointId,
+          })
           for (const rec of pointValuesOfBatch(values, { points: scope.points }, batch)) {
             const id = rec && (rec.pointId || rec.key)
             if (id) changedById.set(id, rec)

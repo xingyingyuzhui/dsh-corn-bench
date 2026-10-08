@@ -128,6 +128,8 @@ export function normalizeModbus(input) {
       share,
       sessionConfigs,
       privateClaimSessionId,
+      sampleGenerations:
+        src.sampleGenerations && typeof src.sampleGenerations === 'object' ? { ...src.sampleGenerations } : {},
     }
     return attachLegacyCompatAccessors(ret, { includeExtended: true })
   }

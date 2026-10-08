@@ -15,6 +15,7 @@ import {
   runReadTx,
   transportOf,
 } from './modbus-runtime-context.mjs'
+import { capturePlanSampleIdentities } from './sample-identity-producer.mjs'
 
 /**
  * @typedef {import('../../types/modbus.js').ModbusOperationOptions} ModbusOperationOptions
@@ -181,6 +182,12 @@ export async function executeApprovedWrite(ctx) {
   }
 
   try {
+    const writePoints = targetPointIds
+      .map((id) => pack.points.find((/** @type {any} */ p) => p && p.id === id))
+      .filter(Boolean)
+    const stamped = await capturePlanSampleIdentities(home, roomCwd, pack, writePoints)
+    const sampleIdentityByPointId = stamped.sampleIdentityByPointId || {}
+
     if (conn.sim) {
       const at = Date.now()
       let vals = pack.values
@@ -196,7 +203,12 @@ export async function executeApprovedWrite(ctx) {
           connectionId: targetCid,
           deviceId: targetDid,
         }
-        vals = setPointValue(vals, target, writeValues[i], { ok: true, at })
+        const sampleIdentity = sampleIdentityByPointId[String(target.id)] || null
+        vals = setPointValue(vals, target, writeValues[i], {
+          ok: true,
+          at,
+          ...(sampleIdentity ? { sampleIdentity } : {}),
+        })
       }
       const nextConns = pack.connections.map((c) => (c.id === targetCid ? { ...c, conn: { ...c.conn, sim: false } } : c))
       const saved = await saveSessionModbusPatch(home, roomCwd, sessionId, {
@@ -319,9 +331,11 @@ export async function executeApprovedWrite(ctx) {
         connectionId: targetCid,
         deviceId: targetDid,
       }
+      const sampleIdentity = sampleIdentityByPointId[String(pseudo.id)] || null
       vals = setPointValue(vals, pseudo, raw[i] !== undefined ? raw[i] : null, {
         ok: readbackOk,
         error: readbackOk ? '' : readbackRan.error || '',
+        ...(sampleIdentity ? { sampleIdentity } : {}),
       })
     }
     const mismatch = readbackOk && raw.some((value, i) => Number(value) !== Number(writeValues[i]))

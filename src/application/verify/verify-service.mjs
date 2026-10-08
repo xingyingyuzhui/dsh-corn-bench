@@ -6,6 +6,7 @@ import { resolveEvidenceRef } from '../modbus/evidence-scope.mjs'
 import { evidenceScopeFromWorkspace } from '../modbus/evidence-scope-factory.mjs'
 import { assertScenarioBudget, createScenario, effectiveTimeoutMs } from '../../domain/verify/scenario.mjs'
 import { abortableDelay, composeAbortSignals } from './abort-signals.mjs'
+import { createDirectReadBudget } from './scoped-point-reader.mjs'
 import { createTelemetryReader } from './telemetry-reader.mjs'
 import { resolveAssertionActual } from './verify-assertion-eval.mjs'
 import { isTimeoutOrAborted, withTimeoutSignal } from './verify-timeout.mjs'
@@ -95,6 +96,7 @@ export function createVerifyService(deps = {}) {
 
       const combinedSignal = composeAbortSignals([signal, timeoutController.signal])
 
+      const directReadBudget = createDirectReadBudget()
       const telemetryReader = options.telemetryReader || deps.telemetryReader || createTelemetryReader({ workspaceLoader })
 
       let debugSessionId = options.debugSessionId || ''
@@ -195,6 +197,7 @@ export function createVerifyService(deps = {}) {
           remainingMs: () => timeoutMs - (Date.now() - startTime),
           checkDeadline,
           telemetrySamples,
+          directReadBudget,
         }
 
         // Sampling reports missing data as unavailable observations; anything

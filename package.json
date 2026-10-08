@@ -214,6 +214,9 @@
     "src/domain/modbus/modbus-migrate-steps.mjs",
     "src/domain/modbus/modbus-compat-accessors.mjs",
     "src/domain/modbus/trend-model.mjs",
+    "src/domain/modbus/point-sample-identity.mjs",
+    "src/domain/modbus/sample-generation.mjs",
+    "src/domain/modbus/prepare-config-persistence.mjs",
     "src/domain/keil/errors.mjs",
     "src/domain/keil/project-model.mjs",
     "src/domain/keil/build-result.mjs",
@@ -231,6 +234,7 @@
     "src/domain/verify/result.mjs",
     "src/domain/verify/observation.mjs",
     "src/domain/verify/errors.mjs",
+    "src/domain/verify/stable-window.mjs",
     "src/infrastructure/keil/uvprojx-parser.mjs",
     "src/infrastructure/keil/keil-project-scanner.mjs",
     "src/infrastructure/keil/uv4-env.mjs",
@@ -572,7 +576,8 @@
     "src/application/modbus/poll-runtime-identity.mjs",
     "src/application/modbus/agent-runtime-visibility.mjs",
     "src/application/modbus/points-list-page.mjs",
-    "src/application/modbus/poll-target-preparation.mjs"
+    "src/application/modbus/poll-target-preparation.mjs",
+    "src/application/modbus/sample-identity-producer.mjs"
   ],
   "repository": {
     "type": "git",

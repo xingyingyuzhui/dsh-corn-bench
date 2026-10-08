@@ -2,6 +2,7 @@
 
 import { isUnavailable, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 import { DEFAULT_STABLE_DURATION_MS, stableDurationMs } from '../../domain/verify/scenario.mjs'
+import { createStableWindow } from '../../domain/verify/stable-window.mjs'
 import { abortableDelay } from './abort-signals.mjs'
 import { observeCall, observeDebugValue, observeReading } from './verify-observation.mjs'
 
@@ -22,14 +23,17 @@ import { observeCall, observeDebugValue, observeReading } from './verify-observa
  *   timeoutMs: number,
  *   remainingMs: () => number,
  *   checkDeadline: () => void,
- *   telemetrySamples: Array<{ pointId?: string, expr?: string, timestamp: number, value: any }>,
+ *   telemetrySamples: Array<{ pointId?: string, expr?: string, timestamp: number, value: any, checkOnly?: boolean }>,
+ *   directReadBudget?: import('./scoped-point-reader.mjs').DirectReadBudget | null,
+ *   now?: () => number,
+ *   delay?: (ms: number, signal: AbortSignal) => Promise<void>,
  * }} VerifySampleContext
  */
 
 /**
  * @param {VerifySampleContext} ctx
  * @param {string} pointId
- * @param {{ maxAgeMs?: number }} [opts]
+ * @param {{ maxAgeMs?: number, allowDirectRead?: boolean }} [opts]
  * @returns {Promise<Observation>}
  */
 export async function readTelemetryPoint(ctx, pointId, opts = {}) {
@@ -39,12 +43,22 @@ export async function readTelemetryPoint(ctx, pointId, opts = {}) {
   }
   const scope = { cwd: workspaceCwd, sessionId: ownerSessionId, source: ctx.source || 'user' }
   const reading = await observeCall(
-    () => telemetryReader.readPoint(scope, pointId, { ...opts, signal: combinedSignal }),
+    () =>
+      telemetryReader.readPoint(scope, pointId, {
+        ...opts,
+        signal: combinedSignal,
+        allowDirectRead: opts.allowDirectRead,
+        directReadBudget: ctx.directReadBudget,
+      }),
     combinedSignal,
   )
-  const observed = observeReading(reading, { maxAgeMs: opts.maxAgeMs })
+  const observed = observeReading(reading, { maxAgeMs: opts.maxAgeMs, now: ctx.now?.() })
   if (observed.availability === 'available') {
-    ctx.telemetrySamples.push({ pointId, timestamp: observed.reading.timestamp, value: observed.reading.value })
+    ctx.telemetrySamples.push({
+      pointId,
+      timestamp: observed.reading.timestamp,
+      value: observed.reading.value,
+    })
   }
   return observed
 }
@@ -56,23 +70,23 @@ export async function readTelemetryPoint(ctx, pointId, opts = {}) {
  */
 export async function evaluateDebugExpression(ctx, expr) {
   const { debugRuntime, debugSessionId, ownerSessionId, combinedSignal } = ctx
+  const now = ctx.now || Date.now
   const res = await observeCall(
     () => debugRuntime.command({ debugSessionId, ownerSessionId }, { type: 'evaluate', expression: expr }),
     combinedSignal,
   )
   const observed = observeDebugValue(res)
   if (observed.availability === 'available') {
-    ctx.telemetrySamples.push({ expr, timestamp: Date.now(), value: observed.value })
+    ctx.telemetrySamples.push({ expr, timestamp: now(), value: observed.value })
   }
   return observed
 }
 
 /**
  * Sample a point or expression across the full requested window for
- * `stable-for-duration`. The window is never shortened: if the run cannot fit
- * it any more the whole run times out, and the last sample lands on or after
- * the window's end. The first unusable sample ends sampling, since the window
- * can no longer be judged.
+ * `stable-for-duration`. Point stable observes poll/publish progress only
+ * (`allowDirectRead=false`); coverage is proven by advancing sample timestamps,
+ * never by wall-clock alone or repeated cache hits of one historic record.
  *
  * @param {VerifySampleContext} ctx
  * @param {any} spec
@@ -80,6 +94,8 @@ export async function evaluateDebugExpression(ctx, expr) {
  */
 export async function sampleStableDuration(ctx, spec) {
   const { debugRuntime, debugSessionId, combinedSignal, checkDeadline } = ctx
+  const now = ctx.now || Date.now
+  const delay = ctx.delay || abortableDelay
   const duration = stableDurationMs(spec) ?? DEFAULT_STABLE_DURATION_MS
   if (ctx.remainingMs() < duration) {
     const err = new Error('VERIFY_TIMEOUT')
@@ -96,32 +112,72 @@ export async function sampleStableDuration(ctx, spec) {
   const expr = spec.expr || spec.expression || spec.source?.expr || spec.source?.expression
   const pointId = spec.pointId || spec.source?.pointId
   const maxAgeMs = typeof spec.maxAgeMs === 'number' ? spec.maxAgeMs : undefined
+  const startedAt = now()
+  const window = createStableWindow({ startedAt, durationMs: duration })
+  // Wait for the first in-window sample at most `duration`, then for coverage.
+  const firstDeadline = startedAt + duration
 
-  /** @type {any[]} */
-  const samples = []
-  const sampleStart = Date.now()
   for (;;) {
     checkDeadline()
     /** @type {any} */
-    let sample
+    let observed
     if (expr && debugRuntime && debugSessionId) {
-      const observed = await evaluateDebugExpression(ctx, expr)
-      sample = observed.availability === 'available' ? observed.value : observed
+      observed = await evaluateDebugExpression(ctx, expr)
+      if (observed.availability === 'available') {
+        const step = window.accept({
+          value: observed.value,
+          timestamp: now(),
+          identity: 'debug',
+          generation: 'debug',
+        })
+        if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
+      } else if (isUnavailable(observed)) {
+        const step = window.accept(observed)
+        if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
+      }
     } else if (pointId) {
-      const observed = await readTelemetryPoint(ctx, pointId, { maxAgeMs })
-      sample = observed.availability === 'available' ? observed.reading.value : observed
+      observed = await readTelemetryPoint(ctx, pointId, { maxAgeMs, allowDirectRead: false })
+      if (observed.availability === 'available') {
+        const reading = /** @type {any} */ (observed).reading
+        const step = window.accept({
+          value: reading.value,
+          timestamp: reading.timestamp,
+          identity: reading.fingerprint || reading.identity || '',
+          generation: reading.generation || '',
+        })
+        if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
+        // Cache rechecks of the same timestamp are checks, not new samples.
+        if (step.status === 'continue' && window.sampleCount > 0) {
+          /* accepted or duplicate handled inside window */
+        }
+      } else if (isUnavailable(observed)) {
+        const step = window.accept(observed)
+        if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
+      }
     } else if (expr) {
       return unavailable(UNAVAILABLE_REASONS.NO_DEBUG_SESSION)
     } else {
       return unavailable(UNAVAILABLE_REASONS.DATA_MISSING)
     }
     checkDeadline()
-    if (isUnavailable(sample)) return sample
-    samples.push(sample)
 
-    const elapsed = Date.now() - sampleStart
-    if (elapsed >= duration) break
-    await abortableDelay(Math.min(intervalMs, duration - elapsed), combinedSignal)
+    const t = now()
+    const requiredEnd = window.requiredEndAt
+    if (requiredEnd != null) {
+      if (t >= requiredEnd) {
+        const finished = window.finish(t)
+        if ('availability' in finished) return finished
+        return finished.values
+      }
+      const wait = Math.min(intervalMs, requiredEnd - t)
+      await delay(Math.max(0, wait), combinedSignal)
+      continue
+    }
+    // Still waiting for the first in-window sample.
+    if (t >= firstDeadline) {
+      return window.finish(t)
+    }
+    const wait = Math.min(intervalMs, firstDeadline - t)
+    await delay(Math.max(0, wait), combinedSignal)
   }
-  return samples
 }

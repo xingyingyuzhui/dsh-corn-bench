@@ -184,13 +184,27 @@ export const normalizeValueRec = (raw) => {
   const at = Number(input?.at)
   const rawVal = input && Object.prototype.hasOwnProperty.call(input, 'raw') ? input.raw : null
   const scaled = input && Object.prototype.hasOwnProperty.call(input, 'value') ? input.value : null
+  const stamp = input?.sampleIdentity
+  const sampleIdentity =
+    stamp &&
+    typeof stamp === 'object' &&
+    typeof stamp.fingerprint === 'string' &&
+    stamp.fingerprint &&
+    typeof stamp.generation === 'string' &&
+    stamp.generation
+      ? { fingerprint: stamp.fingerprint, generation: stamp.generation }
+      : undefined
   return {
     key: text(input && (input.key || input.pointId), ''),
+    pointId: text(input?.pointId || input?.key, ''),
+    connectionId: text(input?.connectionId || input?.connId, ''),
+    deviceId: text(input?.deviceId, ''),
     raw: rawVal,
     value: scaled,
     ok: input && input.ok === true,
     error: text(input?.error, '').slice(0, 180),
     at: Number.isFinite(at) && at > 0 ? at : 0,
+    ...(sampleIdentity ? { sampleIdentity } : {}),
   }
 }
 
@@ -217,22 +231,36 @@ export const setPointValue = (values, point, raw, opts = {}) => {
     list,
     normalizeValueRec({
       key: point.id,
+      pointId: point.id,
+      connectionId: point.connectionId || point.connId || '',
+      deviceId: point.deviceId || '',
       raw: hasRaw ? raw : null,
       value: hasRaw ? decodeValue(point, typeof raw === 'boolean' ? (raw ? 1 : 0) : raw) : null,
       ok: opts.ok !== false,
       error: opts.error || '',
       at: opts.at || Date.now(),
+      ...(opts.sampleIdentity ? { sampleIdentity: opts.sampleIdentity } : {}),
     }),
   )
   return list.slice(-MAX_VALUES)
 }
 
-/** @param {any[]} values @param {any[]} points @param {any} batch @param {any[]} raw @param {boolean} ok @param {string} error @param {number} [at] */
-export const scatterBatch = (values, points, batch, raw, ok, error, at = Date.now()) => {
+/**
+ * @param {any[]} values
+ * @param {any[]} points
+ * @param {any} batch
+ * @param {any[]} raw
+ * @param {boolean} ok
+ * @param {string} error
+ * @param {number} [at]
+ * @param {{ sampleIdentityByPointId?: Record<string, any> }} [stampOpts]
+ */
+export const scatterBatch = (values, points, batch, raw, ok, error, at = Date.now(), stampOpts = {}) => {
   const list = (Array.isArray(values) ? values : []).map(normalizeValueRec).filter((r) => r.key)
   const batchFc = batch ? (batch.fc !== undefined ? batch.fc : batch.function) : undefined
   const batchCid = batch ? String(batch.connectionId || batch.connId || '') : ''
   const batchDid = batch ? String(batch.deviceId || '') : ''
+  const stamps = stampOpts.sampleIdentityByPointId || null
   for (const rawPt of Array.isArray(points) ? points : []) {
     if (!rawPt || typeof rawPt !== 'object') continue
     const fn = Number(rawPt.function)
@@ -245,14 +273,22 @@ export const scatterBatch = (values, points, batch, raw, ok, error, at = Date.no
     const idx = addr - batch.address
     const has = ok && Array.isArray(raw) && raw[idx] !== undefined
     const rawVal = has ? raw[idx] : null
-    putValueRec(list, normalizeValueRec({
-      key: id,
-      raw: rawVal,
-      value: has ? decodeValue(rawPt, typeof rawVal === 'boolean' ? (rawVal ? 1 : 0) : rawVal) : null,
-      ok: !!ok,
-      error: ok ? '' : String(error || ''),
-      at,
-    }))
+    const stamp = stamps?.[id] || stamps?.[rawPt.id] || null
+    putValueRec(
+      list,
+      normalizeValueRec({
+        key: id,
+        pointId: id,
+        connectionId: rawPt.connectionId || rawPt.connId || batchCid,
+        deviceId: rawPt.deviceId || batchDid,
+        raw: rawVal,
+        value: has ? decodeValue(rawPt, typeof rawVal === 'boolean' ? (rawVal ? 1 : 0) : rawVal) : null,
+        ok: !!ok,
+        error: ok ? '' : String(error || ''),
+        at,
+        ...(stamp ? { sampleIdentity: stamp } : {}),
+      }),
+    )
   }
   return list.slice(-MAX_VALUES)
 }
@@ -416,13 +452,19 @@ export const normalizeQualifiedValues = (list, points) => {
     const pointId = devText(raw.pointId || raw.key || raw.id, '')
     if (!pointId || !byPoint.has(pointId) || seen.has(pointId)) continue
     const pt = byPoint.get(pointId)
-    const rec = normalizeValueRec({ ...raw, key: pointId })
+    const rec = normalizeValueRec({
+      ...raw,
+      key: pointId,
+      pointId,
+      connectionId: devText(raw.connectionId, '') || pt.connectionId,
+      deviceId: devText(raw.deviceId, '') || pt.deviceId,
+    })
     const enriched = {
       ...rec,
       pointId,
       key: pointId,
-      connectionId: devText(raw.connectionId, '') || pt.connectionId,
-      deviceId: devText(raw.deviceId, '') || pt.deviceId,
+      connectionId: rec.connectionId || pt.connectionId,
+      deviceId: rec.deviceId || pt.deviceId,
     }
     seen.add(pointId)
     out.push(enriched)

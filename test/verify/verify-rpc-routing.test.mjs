@@ -2,11 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
 import { createRouter } from '../helpers/rpc-factory.mjs'
-import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 test('vision-rpc-router: dispatches verify/run, verify/status, and verify/cancel endpoints', async () => {
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => flatWorkspace({ points: [vpoint('flow_rate')], values: [liveValue('flow_rate', 15.2)] }),
+    workspaceLoader: () =>
+      stampWorkspace(flatWorkspace({ points: [vpoint('flow_rate')], values: [liveValue('flow_rate', 15.2)] }), {
+        sessionId: 'sess-verify-rpc',
+      }),
   })
 
   const router = createRouter('/test/home', { telemetryReader: adapter })

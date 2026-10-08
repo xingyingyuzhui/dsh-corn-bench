@@ -54,6 +54,9 @@ export function splitWorkspaceParts(workspace) {
       share: modbus.share || null,
       sessionConfigs: modbus.sessionConfigs || {},
       privateClaimSessionId: modbus.privateClaimSessionId || '',
+      // Internal capture tokens — not Agent-visible. Stored with config so a
+      // new generation rejects stale runtime values after a crash.
+      sampleGenerations: modbus.sampleGenerations || {},
     },
   }
   const runtime = {
@@ -104,6 +107,7 @@ export function mergeWorkspaceParts(config, runtime) {
       share: cfgMb.share || null,
       sessionConfigs: cfgMb.sessionConfigs || {},
       privateClaimSessionId: cfgMb.privateClaimSessionId || '',
+      sampleGenerations: cfgMb.sampleGenerations || {},
       values: rtMb.values || [],
       alarmState: rtMb.alarmState || {},
       alarmActive: rtMb.alarmActive || {},

@@ -17,6 +17,7 @@ import {
 } from '../../domain/modbus/journal-model.mjs'
 import { emptyLog, mergeLog, normalizeEvent } from '../../domain/prompt/prompt-log.mjs'
 import { runExclusiveSync } from '../persistence/workspace-lock.mjs'
+import { prepareConfigPersistence } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { createWorkspaceRepository } from '../persistence/workspace-repository.mjs'
 import { storeDir } from './bindings-store.mjs'
 import { emptyFocusState, normalizeFocusState } from './focus-store.mjs'
@@ -83,6 +84,7 @@ const normalizeManualRequests = (list) => {
     home,
     keyOf: workspaceKey,
     normalizeWorkspace,
+    prepareConfigPersistence,
   })
 
 /** @param {string} home @param {string | undefined} cwd */ export const workspacePath = (home, cwd) => join(storeDir(home), 'workspaces', `${workspaceKey(cwd)}.json`)
@@ -120,6 +122,7 @@ const normalizeManualRequests = (list) => {
       home: /** @type {string} */ (home),
       keyOf: workspaceKey,
       normalizeWorkspace,
+      prepareConfigPersistence,
     })
     return repo.load(cwd) || emptyWorkspace()
   } catch {
@@ -195,6 +198,7 @@ export const applyWorkspacePatch = (prev, input) => {
     if (incoming.visualization !== undefined) mergedModbus.visualization = incoming.visualization
     if (incoming.share !== undefined) mergedModbus.share = incoming.share
     if (incoming.sessionConfigs !== undefined) mergedModbus.sessionConfigs = incoming.sessionConfigs
+    if (incoming.sampleGenerations !== undefined) mergedModbus.sampleGenerations = incoming.sampleGenerations
     if (incoming.privateClaimSessionId !== undefined)
       mergedModbus.privateClaimSessionId = incoming.privateClaimSessionId
     if (input && input._replaceFramesByConnection !== undefined) {
@@ -382,6 +386,7 @@ export const applyWorkspacePatch = (prev, input) => {
       home,
       keyOf: workspaceKey,
       normalizeWorkspace,
+      prepareConfigPersistence,
     })
     repo.replaceForMigrationSync(cwd, workspace)
     return { ok: true, workspace, prev }

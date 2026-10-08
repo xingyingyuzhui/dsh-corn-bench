@@ -44,10 +44,15 @@ function applyRuntimeOnly(current, next) {
  *   keyOf: (cwd: string) => string,
  *   normalizeWorkspace: (raw: any) => any,
  *   persistWorkspace?: (key: string, workspace: any) => void,
+ *   prepareConfigPersistence?: (current: any, candidate: any) => { workspace: any, changedPointIds?: string[] },
  * }} deps
  */
 export function createWorkspaceRepository(deps) {
   const { home, keyOf, normalizeWorkspace } = deps
+  const prepareConfig =
+    typeof deps.prepareConfigPersistence === 'function'
+      ? deps.prepareConfigPersistence
+      : (/** @type {any} */ _current, /** @type {any} */ candidate) => ({ workspace: candidate })
 
   /** @param {any} key @param {any} workspace */
   const persist = (key, workspace) => {
@@ -128,7 +133,8 @@ export function createWorkspaceRepository(deps) {
       }
       const next = await mutator(current)
       if (!next || next.ok === false) return next
-      const workspace = next.workspace || next
+      const prepared = prepareConfig(current, next.workspace || next)
+      const workspace = prepared.workspace
       try {
         persist(key, workspace)
       } catch (error) {
@@ -161,7 +167,8 @@ export function createWorkspaceRepository(deps) {
       }
       const next = await mutator(current)
       if (!next || next.ok === false) return next
-      const workspace = next.workspace || next
+      const prepared = prepareConfig(current, next.workspace || next)
+      const workspace = prepared.workspace
       const normalized = normalizeWorkspace(workspace)
       const nextVersion = previousConfigVersion + 1
       normalized.modbus = { ...normalized.modbus, configVersion: nextVersion }

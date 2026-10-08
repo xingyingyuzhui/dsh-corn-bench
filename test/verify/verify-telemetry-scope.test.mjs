@@ -8,7 +8,7 @@ import { createTelemetryReader } from '../../src/application/verify/telemetry-re
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { A, B, point, rawDiskBytes, twoSessionBench } from '../agent/evidence-scope-fixtures.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
-import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 /**
  * Production adapter over the real workspace store and read-service, with a
@@ -107,8 +107,9 @@ test('verify telemetry: same private point id in two sessions yields no value to
 })
 
 test('verify telemetry: published samples are keyed by cwd + session + point', async () => {
+  const ws = stampWorkspace(flatWorkspace({ points: [vpoint('p1')] }), { sessionId: 's' })
   const reader = createTelemetryReader({
-    workspaceLoader: () => flatWorkspace({ points: [vpoint('p1')] }),
+    workspaceLoader: () => ws,
   })
   assert.equal(reader.publishPointValue({ cwd: '/w1', sessionId: 's' }, 'p1', 7), true)
   assert.equal(reasonOf(await reader.readPoint({ cwd: '/w2', sessionId: 's' }, 'p1')), 'DATA_MISSING')
@@ -155,21 +156,21 @@ test('verify telemetry: shared point is readable; revoke, delete and rebind inva
     points: [point('ps', 'c-s', 'd-s')],
     sessionConfigs: { [A]: { connections: [], devices: [], points: [] }, [B]: { connections: [], devices: [], points: [] } },
   }
-  saveWorkspace(home, cwd, { modbus: base })
+  saveWorkspace(home, cwd, stampWorkspace({ modbus: base }))
   const { adapter, calls } = realAdapter(home)
   const scopeB = { cwd, sessionId: B }
   adapter.publishPointValue(scopeB, 'ps', 41)
   assert.equal(/** @type {any} */ (await adapter.readPoint(scopeB, 'ps')).value, 41)
 
-  saveWorkspace(home, cwd, { modbus: { ...base, points: [{ ...point('ps', 'c-s', 'd-s'), address: 5 }] } })
+  saveWorkspace(home, cwd, stampWorkspace({ modbus: { ...base, points: [{ ...point('ps', 'c-s', 'd-s'), address: 5 }] } }))
   const rebound = /** @type {any} */ (await adapter.readPoint(scopeB, 'ps'))
   assert.notEqual(rebound.value, 41, 'rebound point does not reuse the old cached sample')
   assert.equal(calls.length, 1)
 
-  saveWorkspace(home, cwd, { modbus: { ...base, share: { enabled: false, connections: false, points: false } } })
+  saveWorkspace(home, cwd, stampWorkspace({ modbus: { ...base, share: { enabled: false, connections: false, points: false } } }))
   assert.equal(reasonOf(await adapter.readPoint(scopeB, 'ps')), 'TARGET_UNAVAILABLE')
 
-  saveWorkspace(home, cwd, { modbus: { ...base, points: [] } })
+  saveWorkspace(home, cwd, stampWorkspace({ modbus: { ...base, points: [] } }))
   assert.equal(reasonOf(await adapter.readPoint(scopeB, 'ps')), 'TARGET_UNAVAILABLE')
   assert.equal(calls.length, 1)
 })

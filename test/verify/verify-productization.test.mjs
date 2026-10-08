@@ -6,17 +6,44 @@ import { createVerifyService } from '../../src/application/verify/verify-service
 import { createVerifyResult } from '../../src/domain/verify/result.mjs'
 import { visionDebugTool } from '../../src/interfaces/agent/vision-debug-tool.mjs'
 import { createVerifyRpcHandler } from '../../src/interfaces/rpc/verify-rpc-handler.mjs'
-import { flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 /** @param {string} sessionId */
 const wsScope = (sessionId) => ({ cwd: 'C:/ws', sessionId })
 /** @param {string} sessionId */
 const boundReader = (sessionId) => createTelemetryReader({ boundScope: wsScope(sessionId) })
 
+/**
+ * Bound reader that republishes on every read so stable windows see advancing
+ * Host timestamps (a single frozen publish cannot prove coverage).
+ * @param {string} sessionId
+ * @param {string} pointId
+ * @param {number} value
+ */
+function advancingBoundReader(sessionId, pointId, value) {
+  const base = boundReader(sessionId)
+  const scope = wsScope(sessionId)
+  base.publishPointValue(scope, pointId, value)
+  return {
+    publishPointValue: (/** @type {any} */ s, /** @type {string} */ pid, /** @type {any} */ v) =>
+      base.publishPointValue(s, pid, v),
+    subscribePoint: (/** @type {any} */ s, /** @type {string} */ pid, /** @type {any} */ fn) =>
+      base.subscribePoint(s, pid, fn),
+    readPoint: async (/** @type {any} */ s, /** @type {string} */ pid, /** @type {any} */ opts) => {
+      base.publishPointValue(s, pid, value)
+      return base.readPoint(s, pid, opts)
+    },
+  }
+}
+
 test('telemetry-reader: reads live values and dispatches to subscribers', async () => {
+  // Stable reference — stampWorkspace allocates gens; recreating per load rotates them.
+  const ws = stampWorkspace(
+    flatWorkspace({ points: [vpoint('receiver_level')], values: [liveValue('receiver_level', 42.5)] }),
+    { sessionId: 'sess-1' },
+  )
   const reader = createTelemetryReader({
-    workspaceLoader: () =>
-      flatWorkspace({ points: [vpoint('receiver_level')], values: [liveValue('receiver_level', 42.5)] }),
+    workspaceLoader: () => ws,
   })
   const scope = wsScope('sess-1')
 
@@ -43,8 +70,7 @@ test('telemetry-reader: reads live values and dispatches to subscribers', async 
 })
 
 test('verify-service: runs scenario with unconstrained duration and rich evidence', async () => {
-  const reader = boundReader('sess-1')
-  reader.publishPointValue(wsScope('sess-1'), 'receiver_level', 25.0)
+  const reader = advancingBoundReader('sess-1', 'receiver_level', 25.0)
 
   const verifyService = createVerifyService({
     telemetryReader: reader,
@@ -78,7 +104,7 @@ test('verify-service: runs scenario with unconstrained duration and rich evidenc
     firmwareHash: 'fw-hash-abcd',
   })
 
-  assert.equal(result.status, 'pass')
+  assert.equal(result.status, 'pass', JSON.stringify(result.assertions))
   assert.equal(result.passedCount, 2)
   assert.equal(result.failedCount, 0)
   assert.equal(result.artifactSha256, 'sha-dummy-1234')

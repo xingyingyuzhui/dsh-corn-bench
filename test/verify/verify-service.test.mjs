@@ -4,7 +4,7 @@ import { createVerifyService } from '../../src/application/verify/verify-service
 import { evaluateAssertion, evaluateOperator } from '../../src/domain/verify/assertion.mjs'
 import { createVerifyResult } from '../../src/domain/verify/result.mjs'
 import { createScenario, validateScenario } from '../../src/domain/verify/scenario.mjs'
-import { alarmPoint, flatWorkspace, liveValue, vpoint } from './verify-fixtures.mjs'
+import { alarmPoint, flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 test('evaluateOperator: numeric and string comparisons', () => {
   assert.equal(evaluateOperator(42, '==', 42), true)
@@ -154,10 +154,13 @@ test('VerifyService: orchestrates verification loop with debug and telemetry', a
   }
 
   const mockWorkspaceLoader = () => ({
-    ...flatWorkspace({
-      points: [vpoint('eev-opening'), alarmPoint('sensor-temp', { address: 1 })],
-      values: [liveValue('eev-opening', 85), liveValue('sensor-temp', 24.5)],
-    }),
+    ...stampWorkspace(
+      flatWorkspace({
+        points: [vpoint('eev-opening'), alarmPoint('sensor-temp', { address: 1 })],
+        values: [liveValue('eev-opening', 85), liveValue('sensor-temp', 24.5)],
+      }),
+      { sessionId: 'agent_session_1' },
+    ),
     tasks: [{ id: 'build_42', type: 'build', status: 'ok', sessionId: 'agent_session_1', startedAt: 1, endedAt: 2 }],
     timeline: [{ id: 'log_99', at: 1, kind: 'read', source: 'agent', sessionId: 'agent_session_1', ok: true, summary: '' }],
   })
