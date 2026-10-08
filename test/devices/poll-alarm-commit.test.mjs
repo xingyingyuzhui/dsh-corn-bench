@@ -3,8 +3,21 @@ import test from 'node:test'
 import { commitPollResult, pruneAlarmStateForPoints, alarmActiveFromState } from '../../bench-modbus-commit.mjs'
 import { modbusPoll } from '../../bench-modbus.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerations,
+} from '../../src/domain/modbus/prepare-config-persistence.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { device, hrPoint, rtuSim } from '../hmi/multi-conn-fixtures.mjs'
+
+/** @param {string} home @param {string} cwd */
+const stampWorkspace = (home, cwd) => {
+  let ws = ensureSampleGenerations(loadWorkspace(home, cwd)).workspace
+  saveWorkspace(home, cwd, ws)
+  ws = loadWorkspace(home, cwd)
+  const { sampleIdentityByPointId } = buildSampleIdentityByPointId(ws.modbus, ws.modbus.points)
+  return { ws, sampleIdentityByPointId }
+}
 
 test('pruneAlarmStateForPoints drops process alarms for deleted points', () => {
   const pruned = pruneAlarmStateForPoints(
@@ -42,10 +55,14 @@ test('commitPollResult computes alarmActive and returns fired only after success
       pollingByConnection: { c1: { enabled: true, intervalMs: 1000, lastOk: true, error: '' } },
     },
   })
-  const seeded = loadWorkspace(home, cwd)
+  const { ws: seeded, sampleIdentityByPointId } = stampWorkspace(home, cwd)
+  const stamp = sampleIdentityByPointId.p1
+  assert.ok(stamp, 'production capture requires a sampleIdentity stamp')
   const committed = await commitPollResult(home, cwd, {
     baseConfigVersion: seeded.modbus.configVersion,
-    pointValues: [{ key: 'p1', pointId: 'p1', raw: 90, value: 90, ok: true, at: Date.now() }],
+    pointValues: [
+      { key: 'p1', pointId: 'p1', raw: 90, value: 90, ok: true, at: Date.now(), sampleIdentity: stamp },
+    ],
     pollingRuntime: {
       c1: { lastAt: Date.now(), lastOk: true, error: '' },
     },
@@ -62,7 +79,9 @@ test('commitPollResult computes alarmActive and returns fired only after success
   // Same breach again: suppress/dedup → no second fired entry
   const again = await commitPollResult(home, cwd, {
     baseConfigVersion: ws.modbus.configVersion,
-    pointValues: [{ key: 'p1', pointId: 'p1', raw: 91, value: 91, ok: true, at: Date.now() }],
+    pointValues: [
+      { key: 'p1', pointId: 'p1', raw: 91, value: 91, ok: true, at: Date.now(), sampleIdentity: stamp },
+    ],
     pollingRuntime: {
       c1: { lastAt: Date.now(), lastOk: true, error: '' },
     },
@@ -87,10 +106,20 @@ test('config drift commit suppresses fired notifications and skips stale value m
       pollingByConnection: { c1: { enabled: true, intervalMs: 1000 } },
     },
   })
-  const seeded = loadWorkspace(home, cwd)
+  const { ws: seeded, sampleIdentityByPointId } = stampWorkspace(home, cwd)
   const drifted = await commitPollResult(home, cwd, {
     baseConfigVersion: Number(seeded.modbus.configVersion) - 1,
-    pointValues: [{ key: 'p1', pointId: 'p1', raw: 99, value: 99, ok: true, at: Date.now() }],
+    pointValues: [
+      {
+        key: 'p1',
+        pointId: 'p1',
+        raw: 99,
+        value: 99,
+        ok: true,
+        at: Date.now(),
+        sampleIdentity: sampleIdentityByPointId.p1,
+      },
+    ],
     pollingRuntime: {
       c1: { lastAt: Date.now(), lastOk: true, error: '' },
     },
@@ -123,10 +152,20 @@ test('deleted alarm point is pruned from alarmActive on next poll commit', async
       pollingByConnection: { c1: { enabled: true, intervalMs: 1000 } },
     },
   })
-  const seeded = loadWorkspace(home, cwd)
+  const { ws: seeded, sampleIdentityByPointId } = stampWorkspace(home, cwd)
   const committed = await commitPollResult(home, cwd, {
     baseConfigVersion: seeded.modbus.configVersion,
-    pointValues: [{ key: 'p1', pointId: 'p1', raw: 90, value: 90, ok: true, at: Date.now() }],
+    pointValues: [
+      {
+        key: 'p1',
+        pointId: 'p1',
+        raw: 90,
+        value: 90,
+        ok: true,
+        at: Date.now(),
+        sampleIdentity: sampleIdentityByPointId.p1,
+      },
+    ],
     pollingRuntime: {
       c1: { lastAt: Date.now(), lastOk: true, error: '' },
     },

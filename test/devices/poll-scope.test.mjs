@@ -2,7 +2,11 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { commitWriteResult } from '../../bench-modbus-commit.mjs'
 import { modbusPoll } from '../../bench-modbus.mjs'
-import { loadWorkspace } from '../../bench-store.mjs'
+import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerations,
+} from '../../src/domain/modbus/prepare-config-persistence.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { device, dualConnTopology, hrPoint, rtuSim } from '../hmi/multi-conn-fixtures.mjs'
 
@@ -100,14 +104,27 @@ test('poll commit of touched points does not overwrite concurrent write results'
     },
   })
 
-  const seeded = loadWorkspace(home, cwd)
+  let seeded = ensureSampleGenerations(loadWorkspace(home, cwd)).workspace
+  saveWorkspace(home, cwd, seeded)
+  seeded = loadWorkspace(home, cwd)
+  const { sampleIdentityByPointId } = buildSampleIdentityByPointId(seeded.modbus, seeded.modbus.points)
   // Simulate a manual write landing while a long poll of c2 is conceptually in flight:
   // write updates p1 on disk, then poll(c2) commits only touched c2 points.
   const written = await commitWriteResult(home, cwd, {
     baseConfigVersion: seeded.modbus.configVersion,
     connectionId: 'c1',
     deviceId: 'd1',
-    pointValues: [{ key: 'p1', pointId: 'p1', raw: 99, value: 99, ok: true, at: Date.now() }],
+    pointValues: [
+      {
+        key: 'p1',
+        pointId: 'p1',
+        raw: 99,
+        value: 99,
+        ok: true,
+        at: Date.now(),
+        sampleIdentity: sampleIdentityByPointId.p1,
+      },
+    ],
   })
   assert.equal(written.workspace.modbus.values.find((v) => (v.pointId || v.key) === 'p1')?.raw, 99)
   const ran = await modbusPoll(home, cwd, { connectionId: 'c2' })

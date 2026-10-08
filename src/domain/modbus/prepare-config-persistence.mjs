@@ -4,7 +4,12 @@
  * geometry or owner no longer matches the candidate. Pure — no I/O.
  */
 import { isCategoryShared, isScopePartitioned } from './config-scope.mjs'
-import { diffSampleGenerations, newSampleGeneration, stampForEntry } from './sample-generation.mjs'
+import {
+  collectConfiguredPointIds,
+  diffSampleGenerations,
+  newSampleGeneration,
+  stampForEntry,
+} from './sample-generation.mjs'
 
 /**
  * @param {any} modbus
@@ -101,6 +106,7 @@ export function prepareConfigPersistence(currentWs, candidateWs) {
     prevGenerations: prevGens,
     candidateGenerations: candidateGens,
     values,
+    candidatePointIds: collectConfiguredPointIds(candidateMb),
   })
   return {
     workspace: {
@@ -133,8 +139,11 @@ export function ensureSampleGenerations(workspace) {
       initialized.push(pid)
     }
   }
+  // Drop tokens only when the id is gone from every layer — not when the
+  // effective index deletes an ambiguous dual-private slot.
+  const configuredIds = collectConfiguredPointIds(mb)
   for (const pid of Object.keys(gens)) {
-    if (!index.has(pid)) delete gens[pid]
+    if (!configuredIds.has(pid)) delete gens[pid]
   }
   return {
     workspace: { ...workspace, modbus: { ...mb, sampleGenerations: gens } },

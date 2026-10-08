@@ -3,7 +3,6 @@ import { commitWriteResult } from './modbus-commit.mjs'
 import { setPointValue } from '../../domain/modbus/point-model.mjs'
 import { pointIdOf } from '../../domain/modbus/point-math.mjs'
 import { finishTask, openTask } from '../../infrastructure/store/journal-store.mjs'
-import { saveSessionModbusPatch } from './workspace-session-view.mjs'
 import { ERROR_CODES } from '../../domain/modbus/errors.mjs'
 import { findPointV3 } from '../../domain/modbus/function-code.mjs'
 import { connReady } from '../../domain/modbus/validation.mjs'
@@ -16,6 +15,7 @@ import {
   transportOf,
 } from './modbus-runtime-context.mjs'
 import { capturePlanSampleIdentities } from './sample-identity-producer.mjs'
+import { executeSimWrite } from './write-sim-execute.mjs'
 
 /**
  * @typedef {import('../../types/modbus.js').ModbusOperationOptions} ModbusOperationOptions
@@ -185,45 +185,28 @@ export async function executeApprovedWrite(ctx) {
     const writePoints = targetPointIds
       .map((id) => pack.points.find((/** @type {any} */ p) => p && p.id === id))
       .filter(Boolean)
-    const stamped = await capturePlanSampleIdentities(home, roomCwd, pack, writePoints)
-    const sampleIdentityByPointId = stamped.sampleIdentityByPointId || {}
 
     if (conn.sim) {
-      const at = Date.now()
-      let vals = pack.values
-      for (let i = 0; i < count; i++) {
-        const addr = address + i
-        const point = findPointV3(pack.points, fn, addr, targetCid, targetDid)
-        const target = point || {
-          id: pointIdOf(fn, addr),
-          function: fn,
-          address: addr,
-          scale: 1,
-          offset: 0,
-          connectionId: targetCid,
-          deviceId: targetDid,
-        }
-        const sampleIdentity = sampleIdentityByPointId[String(target.id)] || null
-        vals = setPointValue(vals, target, writeValues[i], {
-          ok: true,
-          at,
-          ...(sampleIdentity ? { sampleIdentity } : {}),
-        })
-      }
-      const nextConns = pack.connections.map((c) => (c.id === targetCid ? { ...c, conn: { ...c.conn, sim: false } } : c))
-      const saved = await saveSessionModbusPatch(home, roomCwd, sessionId, {
-        modbus: { connections: nextConns, values: vals, version: 3 },
-      })
-      if (saved && saved.ok === false) {
-        return done(false, saved.error || '仿真写入保存失败', { errorCode: saved.errorCode })
-      }
-      return done(true, `${label}（本地生效，回读一致）`, {
-        values: vals,
-        simulated: true,
-        readback: writeValues.slice(),
-        pointValues: vals.filter((rec) => targetPointIds.includes(rec.pointId || rec.key)),
+      return executeSimWrite({
+        home,
+        roomCwd,
+        sessionId,
+        pack,
+        targetCid,
+        targetDid,
+        fn,
+        address,
+        count,
+        writeValues,
+        writePoints,
+        targetPointIds,
+        label,
+        done,
       })
     }
+
+    const stamped = await capturePlanSampleIdentities(home, roomCwd, pack, writePoints)
+    const sampleIdentityByPointId = stamped.sampleIdentityByPointId || {}
 
     const writeReq = toWriteRequest({
       cwd: roomCwd,

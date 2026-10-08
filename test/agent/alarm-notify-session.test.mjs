@@ -17,6 +17,10 @@ import {
 } from '../../src/application/modbus/poll-alarm-notify.mjs'
 import { commitPollResult, stampAlarmTransitionIdentity } from '../../bench-modbus-commit.mjs'
 import { evaluateAlarms } from '../../src/domain/modbus/alarm-model.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerations,
+} from '../../src/domain/modbus/prepare-config-persistence.mjs'
 import { setAgentsRegistry } from '../../bench-notify.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
@@ -224,11 +228,20 @@ test('suppress-window re-fire via commitPollResult yields distinct eventIds; red
   })
   setAgentAlarmWatch(cwd, { followup: true, sessionId: 'sess-a', pointIds: ['p1'] })
 
+  let seeded = ensureSampleGenerations(loadWorkspace(home, cwd)).workspace
+  saveWorkspace(home, cwd, seeded)
+  seeded = loadWorkspace(home, cwd)
+  const { sampleIdentityByPointId } = buildSampleIdentityByPointId(seeded.modbus, seeded.modbus.points)
+  const stamp = sampleIdentityByPointId.p1
+  assert.ok(stamp)
+
   const fire = async (raw) => {
     const ws = loadWorkspace(home, cwd)
     return commitPollResult(home, cwd, {
       baseConfigVersion: ws.modbus.configVersion,
-      pointValues: [{ key: 'p1', pointId: 'p1', raw, value: raw, ok: true, at: Date.now() }],
+      pointValues: [
+        { key: 'p1', pointId: 'p1', raw, value: raw, ok: true, at: Date.now(), sampleIdentity: stamp },
+      ],
       pollingRuntime: {
         c1: { lastAt: Date.now(), lastOk: true, error: '' },
       },

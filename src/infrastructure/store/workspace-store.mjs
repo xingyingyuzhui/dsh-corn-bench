@@ -1,30 +1,22 @@
 // @ts-check
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { isAbsolute, join } from 'node:path'
+import { join } from 'node:path'
 import { normalizeConn, validateConnections } from '../../domain/modbus/connection-model.mjs'
 import { normalizeFramesByConnection } from '../../domain/modbus/frames-buffer.mjs'
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
 import { validateDevices } from '../../domain/modbus/device-model.mjs'
 import { validateCandidateDeviceLayers } from '../../domain/modbus/device-identity.mjs'
 import { recordKeilProjectSelect } from './workspace-keil-select.mjs'
-import {
-  normalizeTasks,
-  normalizeTimeline,
-  normalizeTimelineEvent,
-  prepend,
-  trimTimeline,
-} from '../../domain/modbus/journal-model.mjs'
-import { emptyLog, mergeLog, normalizeEvent } from '../../domain/prompt/prompt-log.mjs'
+import { normalizeTasks, normalizeTimeline } from '../../domain/modbus/journal-model.mjs'
+import { emptyLog, normalizeEvent } from '../../domain/prompt/prompt-log.mjs'
 import { runExclusiveSync } from '../persistence/workspace-lock.mjs'
 import { prepareConfigPersistence } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { createWorkspaceRepository } from '../persistence/workspace-repository.mjs'
 import { storeDir } from './bindings-store.mjs'
 import { emptyFocusState, normalizeFocusState } from './focus-store.mjs'
 
-const TIMELINE_WINDOW = 360
 /** @typedef {Record<string, any>} WorkspaceJson */
-/** @param {unknown} timeline @param {unknown} event */ const pushEvent = (timeline, event) => trimTimeline(prepend(timeline, event, TIMELINE_WINDOW))
 
 /** @param {unknown} modbus */ export const stringifyConfigSlice = (modbus) => {
   try {

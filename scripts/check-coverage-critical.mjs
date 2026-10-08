@@ -15,6 +15,7 @@ export const CRITICAL_FLOORS = {
   'src/application/modbus/write-approval-service.mjs': { lines: 99, branches: 91 },
   'src/application/modbus/write-execute.mjs': { lines: 89, branches: 70 },
   'src/application/modbus/write-service.mjs': { lines: 93, branches: 69 },
+  'src/application/modbus/write-sim-execute.mjs': { lines: 85, branches: 65 },
   'src/application/flash/flash-approval-service.mjs': { lines: 99, branches: 83 },
   'src/application/flash/flash-service.mjs': { lines: 95, branches: 85 },
   'src/application/flash/openocd-health-service.mjs': { lines: 99, branches: 83 },

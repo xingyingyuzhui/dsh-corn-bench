@@ -7,6 +7,10 @@ import test from 'node:test'
 import { appendTransactionFrame, commitReadResult } from '../../bench-modbus-commit.mjs'
 import { loadWorkspace, saveWorkspace, workspaceRepository } from '../../bench-store.mjs'
 import { mutateConfig } from '../../src/application/config/config-mutation-service.mjs'
+import {
+  buildSampleIdentityByPointId,
+  ensureSampleGenerations,
+} from '../../src/domain/modbus/prepare-config-persistence.mjs'
 
 const seed = (home, cwd, extra = {}) => {
   mkdirSync(cwd, { recursive: true })
@@ -39,7 +43,11 @@ test('config update concurrent with runtime commits does not drop values/trend/a
     const home = await mkdtemp(join(tmpdir(), 'dvb-race-'))
     const cwd = join(home, 'board')
     seed(home, cwd)
-    const cv = loadWorkspace(home, cwd).modbus.configVersion
+    let seeded = ensureSampleGenerations(loadWorkspace(home, cwd)).workspace
+    saveWorkspace(home, cwd, seeded)
+    seeded = loadWorkspace(home, cwd)
+    const { sampleIdentityByPointId } = buildSampleIdentityByPointId(seeded.modbus, seeded.modbus.points)
+    const cv = seeded.modbus.configVersion
     const name = `C1-${i}`
     const at = Date.now()
     await Promise.all([
@@ -55,7 +63,17 @@ test('config update concurrent with runtime commits does not drop values/trend/a
       commitReadResult(home, cwd, {
         connectionId: 'c1',
         deviceId: 'd1',
-        pointValues: [{ pointId: 'p1', key: 'p1', raw: 42 + (i % 7), value: 42 + (i % 7), ok: true, at }],
+        pointValues: [
+          {
+            pointId: 'p1',
+            key: 'p1',
+            raw: 42 + (i % 7),
+            value: 42 + (i % 7),
+            ok: true,
+            at,
+            sampleIdentity: sampleIdentityByPointId.p1,
+          },
+        ],
         frame: {
           id: `f-${i}`,
           connectionId: 'c1',

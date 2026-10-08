@@ -20,6 +20,29 @@ import {
  */
 
 /**
+ * Point ids present in any layer (top-level or any sessionConfigs entry).
+ * Ambiguous dual-private ids are included even when the effective index drops them.
+ *
+ * @param {any} modbus
+ * @returns {Set<string>}
+ */
+export function collectConfiguredPointIds(modbus) {
+  /** @type {Set<string>} */
+  const ids = new Set()
+  const remember = (/** @type {any[]} */ points) => {
+    for (const p of Array.isArray(points) ? points : []) {
+      if (p?.id) ids.add(String(p.id))
+    }
+  }
+  remember(modbus?.points)
+  const sessions = modbus?.sessionConfigs && typeof modbus.sessionConfigs === 'object' ? modbus.sessionConfigs : {}
+  for (const cfg of Object.values(sessions)) {
+    remember(/** @type {any} */ (cfg)?.points)
+  }
+  return ids
+}
+
+/**
  * Diff current vs candidate effective point maps; bump generations and drop
  * values for invalidated point ids.
  *
@@ -28,18 +51,25 @@ import {
  * `ensureSampleGenerations` on mutating poll/read/write; those gens are kept
  * when present on the candidate.
  *
+ * Values are dropped only when geometry/owner invalidated, or the point id is
+ * gone from every candidate layer — not merely absent from the single-owner
+ * effective index (ambiguous dual-private must keep disk rows for isolation).
+ *
  * @param {{
  *   prevIndex: Map<string, EffectivePointEntry>,
  *   nextIndex: Map<string, EffectivePointEntry>,
  *   prevGenerations: Record<string, string>,
  *   candidateGenerations?: Record<string, string>,
  *   values: any[],
+ *   candidatePointIds?: Set<string>,
  * }} input
  */
 export function diffSampleGenerations(input) {
   const { prevIndex, nextIndex, prevGenerations, values } = input
   const candidateGenerations =
     input.candidateGenerations && typeof input.candidateGenerations === 'object' ? input.candidateGenerations : {}
+  const candidatePointIds =
+    input.candidatePointIds instanceof Set ? input.candidatePointIds : new Set(nextIndex.keys())
   /** @type {Record<string, string>} */
   const nextGens = {}
   /** @type {Set<string>} */
@@ -61,8 +91,13 @@ export function diffSampleGenerations(input) {
       prev.connection,
       next.connection,
     )
+    // Legacy claim folds top-level → the claiming session's private slot without
+    // changing physical geometry. That is not a cross-session owner transfer.
+    const claimFold =
+      prev.layer === 'toplevel' && next.layer === 'private' && !String(prev.ownerSessionId || '')
     const ownerChanged =
-      prev.layer !== next.layer || String(prev.ownerSessionId || '') !== String(next.ownerSessionId || '')
+      !claimFold &&
+      (prev.layer !== next.layer || String(prev.ownerSessionId || '') !== String(next.ownerSessionId || ''))
     if (!prevGen) {
       if (geoChanged || ownerChanged) {
         nextGens[pid] = newSampleGeneration()
@@ -82,10 +117,20 @@ export function diffSampleGenerations(input) {
     }
   }
 
+  // Preserve tokens for ids still configured in any layer but absent from the
+  // effective index (ambiguous dual-private), so a later sole owner can resume.
+  for (const pid of candidatePointIds) {
+    if (nextGens[pid] || nextIndex.has(pid)) continue
+    const prevGen = prevGenerations[pid]
+    const candGen = candidateGenerations[pid]
+    if (prevGen) nextGens[pid] = prevGen
+    else if (candGen) nextGens[pid] = candGen
+  }
+
   const kept = (Array.isArray(values) ? values : []).filter((/** @type {any} */ rec) => {
     if (!rec || typeof rec !== 'object') return false
     const pid = String(rec.pointId || rec.key || '')
-    if (!pid || !nextIndex.has(pid)) return false
+    if (!pid || !candidatePointIds.has(pid)) return false
     if (invalidated.has(pid)) return false
     return true
   })

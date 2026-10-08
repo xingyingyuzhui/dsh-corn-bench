@@ -201,6 +201,7 @@
     "src/domain/modbus/frames-model.mjs",
     "src/domain/modbus/io-capability.mjs",
     "src/domain/modbus/point-model.mjs",
+    "src/domain/modbus/point-runtime-values.mjs",
     "src/domain/modbus/point-alarm-field.mjs",
     "src/domain/modbus/point-csv.mjs",
     "src/domain/modbus/point-alarm.mjs",
@@ -577,7 +578,8 @@
     "src/application/modbus/agent-runtime-visibility.mjs",
     "src/application/modbus/points-list-page.mjs",
     "src/application/modbus/poll-target-preparation.mjs",
-    "src/application/modbus/sample-identity-producer.mjs"
+    "src/application/modbus/sample-identity-producer.mjs",
+    "src/application/modbus/write-sim-execute.mjs"
   ],
   "repository": {
     "type": "git",

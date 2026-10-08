@@ -215,9 +215,11 @@ const commit = (home, cwd, input, kind) =>
     const allowed = new Set(points.map((/** @type {any} */ p) => p.id))
     // Same accepted set for values merge AND trend — late/mismatched stamps
     // must not write values, trend, or drive alarm transitions from those rows.
+    // Verify against layered disk modbus (same identity rules as producers), not
+    // a second normalize pass that could diverge from capture-time fingerprints.
     const acceptedPointValues =
       !drift && input && Array.isArray(input.pointValues) && input.pointValues.length
-        ? acceptStampedPointValues(pack, input.pointValues, allowed)
+        ? acceptStampedPointValues(ws.modbus, input.pointValues, allowed)
         : []
     let values = pack.values
     if (acceptedPointValues.length) {
