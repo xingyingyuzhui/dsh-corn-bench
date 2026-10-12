@@ -3,11 +3,13 @@
  * Producer-side sampleIdentity: persist missing generations (config, no
  * configVersion bump), then stamp a read/write plan from disk state.
  */
+import { buildEffectiveSampleTargetIndex } from '../../domain/modbus/effective-sample-target.mjs'
 import {
   buildSampleIdentityByPointId,
   ensureSampleGenerations,
 } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { loadWorkspace, workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
+import { noteSampleSchemaMigrate } from './sample-reject-log.mjs'
 
 /**
  * Cold-start / missing-token init on a mutating path. Uses repository `update`
@@ -21,6 +23,7 @@ import { loadWorkspace, workspaceRepository } from '../../infrastructure/store/w
  */
 export async function ensureSampleGenerationsPersisted(home, cwd) {
   const current = loadWorkspace(home, cwd)
+  const upgrading = Number(current?.modbus?.sampleIdentitySchemaVersion) !== 2
   const peek = ensureSampleGenerations(current)
   if (!peek.initialized.length) {
     return { ok: true, workspace: current, initialized: [] }
@@ -37,6 +40,13 @@ export async function ensureSampleGenerationsPersisted(home, cwd) {
       initialized: [],
       error: saved?.error || 'sampleGenerations init failed',
     }
+  }
+  if (upgrading) {
+    let ambiguous = 0
+    for (const target of buildEffectiveSampleTargetIndex(current.modbus).values()) {
+      if (target.kind === 'ambiguous') ambiguous += 1
+    }
+    noteSampleSchemaMigrate(Number(current?.modbus?.sampleIdentitySchemaVersion) || 0, peek.initialized.length, ambiguous)
   }
   return { ok: true, workspace: saved.workspace, initialized: peek.initialized }
 }

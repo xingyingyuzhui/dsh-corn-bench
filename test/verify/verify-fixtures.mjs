@@ -71,6 +71,22 @@ export const liveValue = (pointId, value, opts = {}) => {
  * @param {{ sessionId?: string }} [opts]
  * @returns {any}
  */
+export function publishStampedScalar(reader, scope, pointId, value, workspace, at = Date.now()) {
+  const entry = buildEffectivePointIndex(workspace?.modbus).get(String(pointId))
+  const generation = workspace?.modbus?.sampleGenerations?.[pointId]
+  const stamp = entry && generation ? stampForEntry(entry, generation) : null
+  if (!stamp) return false
+  return reader.publishPointValue(scope, pointId, {
+    value,
+    rawValue: value,
+    timestamp: at,
+    quality: 'good',
+    source: 'published',
+    fingerprint: stamp.fingerprint,
+    generation: stamp.generation,
+  })
+}
+
 export function stampWorkspace(workspace, opts = {}) {
   const sid = typeof opts.sessionId === 'string' ? opts.sessionId.trim() : ''
   const base = sid ? claimWorkspaceSync(workspace, sid).workspace : workspace

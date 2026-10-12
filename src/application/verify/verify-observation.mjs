@@ -1,11 +1,25 @@
 // @ts-check
 
-import { isUnavailable, scalarProblem, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import {
+  isUnavailable,
+  SAMPLE_STAMP_MESSAGES,
+  scalarProblem,
+  unavailable,
+  UNAVAILABLE_REASONS,
+} from '../../domain/verify/observation.mjs'
 import { isTimeoutOrAborted, withTimeoutSignal } from './verify-timeout.mjs'
 
 /**
  * @typedef {import('../../domain/verify/observation.mjs').UnavailableObservation} UnavailableObservation
- * @typedef {{ value: any, rawValue: any, timestamp: number, quality: string, provenance: string }} ObservedReading
+ * @typedef {{
+ *   value: any,
+ *   rawValue: any,
+ *   timestamp: number,
+ *   quality: string,
+ *   provenance: string,
+ *   fingerprint: string,
+ *   generation: string,
+ * }} ObservedReading
  * @typedef {{ availability: 'available', reading: ObservedReading } | UnavailableObservation} Observation
  */
 
@@ -41,10 +55,18 @@ export function observeReading(reading, opts = {}) {
   if (!Number.isFinite(timestamp) || timestamp <= 0) {
     return unavailable(UNAVAILABLE_REASONS.DATA_MISSING, '采样缺少记录时间')
   }
+  const fingerprint = typeof reading.fingerprint === 'string' ? reading.fingerprint : ''
+  const generation = typeof reading.generation === 'string' ? reading.generation : ''
+  if (!fingerprint || !generation) {
+    return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+  }
   const now = opts.now ?? Date.now()
+  if (timestamp > now) {
+    return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE)
+  }
   const maxAgeMs = opts.maxAgeMs
   if (typeof maxAgeMs === 'number' && Number.isFinite(maxAgeMs)) {
-    const age = Math.max(0, now - timestamp)
+    const age = now - timestamp
     if (age > maxAgeMs) {
       return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, `采样已过旧 (采集延时 ${age}ms > 允许最大延时 ${maxAgeMs}ms)`)
     }
@@ -57,6 +79,8 @@ export function observeReading(reading, opts = {}) {
       timestamp,
       quality: quality || 'unknown',
       provenance: String(reading.provenance || reading.source || ''),
+      fingerprint,
+      generation,
     },
   }
 }

@@ -1,11 +1,11 @@
 // @ts-check
 /**
- * Local sim write: exit sim, re-stamp against post-exit geometry, commit values.
+ * Local sim write. Stays on the simulated endpoint and updates only the
+ * points this write names. Sibling rows keep their existing stamps.
  */
 import { setPointValue } from '../../domain/modbus/point-model.mjs'
 import { pointIdOf } from '../../domain/modbus/point-math.mjs'
 import { findPointV3 } from '../../domain/modbus/function-code.mjs'
-import { saveSessionModbusPatch } from './workspace-session-view.mjs'
 import { capturePlanSampleIdentities } from './sample-identity-producer.mjs'
 
 /**
@@ -30,7 +30,6 @@ export async function executeSimWrite(input) {
   const {
     home,
     roomCwd,
-    sessionId,
     pack,
     targetCid,
     targetDid,
@@ -43,45 +42,13 @@ export async function executeSimWrite(input) {
     label,
     done,
   } = input
-  // Exit sim first (endpoint fingerprint includes sim). Stamping before the flip
-  // would be invalidated by prepareConfigPersistence and rejected at commit.
-  // Snapshot sibling rows — connection-wide sim flip invalidates every point on
-  // this endpoint; re-stamp survivors so multi-device writes keep prior locals.
-  const priorValues = Array.isArray(pack.values) ? pack.values.slice() : []
-  const nextConns = pack.connections.map((/** @type {any} */ c) =>
-    c.id === targetCid ? { ...c, conn: { ...c.conn, sim: false } } : c,
-  )
-  const saved = await saveSessionModbusPatch(home, roomCwd, sessionId, {
-    modbus: { connections: nextConns, version: 3 },
-  })
-  if (saved && saved.ok === false) {
-    return done(false, saved.error || '仿真写入保存失败', { errorCode: saved.errorCode })
+  const stamped = await capturePlanSampleIdentities(home, roomCwd, pack, writePoints)
+  if (!stamped.ok) {
+    return done(false, stamped.error || '采样身份保存失败', { errorCode: 'WORKSPACE_WRITE_FAILED' })
   }
-  const postMb = saved.workspace?.modbus || saved.view || pack
-  const restampPoints = [
-    ...writePoints,
-    ...pack.points.filter((/** @type {any} */ p) => {
-      if (!p?.id || targetPointIds.includes(p.id)) return false
-      return priorValues.some((/** @type {any} */ rec) => String(rec?.pointId || rec?.key || '') === String(p.id))
-    }),
-  ]
-  const stamped = await capturePlanSampleIdentities(home, roomCwd, postMb, restampPoints)
   const sampleIdentityByPointId = stamped.sampleIdentityByPointId || {}
   const at = Date.now()
-  let vals = Array.isArray(saved.workspace?.modbus?.values) ? saved.workspace.modbus.values : []
-  for (const rec of priorValues) {
-    const pid = String(rec?.pointId || rec?.key || '')
-    if (!pid || targetPointIds.includes(pid)) continue
-    const point = pack.points.find((/** @type {any} */ p) => p && p.id === pid)
-    if (!point) continue
-    const sampleIdentity = sampleIdentityByPointId[pid] || null
-    vals = setPointValue(vals, point, rec.raw, {
-      ok: rec.ok !== false,
-      error: rec.error || '',
-      at: Number(rec.at) > 0 ? Number(rec.at) : at,
-      ...(sampleIdentity ? { sampleIdentity } : {}),
-    })
-  }
+  let vals = Array.isArray(pack.values) ? pack.values.slice() : []
   for (let i = 0; i < count; i++) {
     const addr = address + i
     const point = findPointV3(pack.points, fn, addr, targetCid, targetDid)
@@ -98,6 +65,8 @@ export async function executeSimWrite(input) {
     vals = setPointValue(vals, target, writeValues[i], {
       ok: true,
       at,
+      source: 'sim-write',
+      simulated: true,
       ...(sampleIdentity ? { sampleIdentity } : {}),
     })
   }
@@ -105,10 +74,6 @@ export async function executeSimWrite(input) {
     values: vals,
     simulated: true,
     readback: writeValues.slice(),
-    pointValues: vals.filter(
-      (/** @type {any} */ rec) =>
-        targetPointIds.includes(rec.pointId || rec.key) ||
-        priorValues.some((/** @type {any} */ p) => String(p?.pointId || p?.key || '') === String(rec.pointId || rec.key || '')),
-    ),
+    pointValues: vals.filter((/** @type {any} */ rec) => targetPointIds.includes(rec.pointId || rec.key)),
   })
 }

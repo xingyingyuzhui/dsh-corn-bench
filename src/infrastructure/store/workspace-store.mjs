@@ -191,6 +191,9 @@ export const applyWorkspacePatch = (prev, input) => {
     if (incoming.share !== undefined) mergedModbus.share = incoming.share
     if (incoming.sessionConfigs !== undefined) mergedModbus.sessionConfigs = incoming.sessionConfigs
     if (incoming.sampleGenerations !== undefined) mergedModbus.sampleGenerations = incoming.sampleGenerations
+    if (incoming.sampleIdentitySchemaVersion !== undefined) {
+      mergedModbus.sampleIdentitySchemaVersion = incoming.sampleIdentitySchemaVersion
+    }
     if (incoming.privateClaimSessionId !== undefined)
       mergedModbus.privateClaimSessionId = incoming.privateClaimSessionId
     if (input && input._replaceFramesByConnection !== undefined) {

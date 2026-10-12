@@ -17,6 +17,8 @@ const live = (value, ageMs = 0) => ({
   timestamp: Date.now() - ageMs,
   quality: 'good',
   source: 'poll-cache',
+  fingerprint: 'fp-baseline',
+  generation: 'gen-baseline',
 })
 
 /**

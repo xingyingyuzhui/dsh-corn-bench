@@ -1,12 +1,16 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
+import { join } from 'node:path'
 import test from 'node:test'
 import { modbusWrite } from '../../bench-actions.mjs'
 import { loadWorkspace } from '../../bench-store.mjs'
 import { hasRunning } from '../../src/domain/modbus/journal-model.mjs'
+import { workspaceDir } from '../../src/infrastructure/persistence/workspace-migration.mjs'
+import { workspaceKey } from '../../src/infrastructure/store/workspace-store.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import { device, hrPoint, rtuSim } from '../hmi/multi-conn-fixtures.mjs'
 
-test('sim write save failure closes the write task so the next write can run', async (t) => {
+test('sim write identity save failure closes the write task and keeps simulation', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-write-save-fail-' })
   const { home, cwd } = bench
   bench.save({
@@ -20,6 +24,16 @@ test('sim write save failure closes the write task so the next write can run', a
       values: [],
     },
   })
+  const configPath = join(workspaceDir(home, workspaceKey(cwd)), 'config.json')
+  const unlock = () => {
+    try {
+      execFileSync('chflags', ['nouchg', configPath])
+    } catch {
+      /* already clear */
+    }
+  }
+  t.after(unlock)
+  execFileSync('chflags', ['uchg', configPath])
   const failed = await modbusWrite(home, cwd, {
     source: 'user',
     function: 3,
@@ -28,9 +42,11 @@ test('sim write save failure closes the write task so the next write can run', a
     connectionId: 'c1',
     deviceId: 'd1',
   })
-  assert.equal(failed.ok, false)
-  assert.equal(failed.errorCode, 'SESSION_REQUIRED')
-  assert.equal(hasRunning(loadWorkspace(home, cwd), 'write'), false, 'failed save must not leave a running write task')
+  unlock()
+  assert.equal(failed.ok, false, failed.error)
+  assert.equal(failed.errorCode, 'WORKSPACE_WRITE_FAILED')
+  assert.equal(loadWorkspace(home, cwd).modbus.connections[0].conn.sim, true)
+  assert.equal(hasRunning(loadWorkspace(home, cwd), 'write'), false, 'failed identity save must not leave a running write task')
 
   const again = await modbusWrite(
     home,

@@ -4,6 +4,14 @@
  * Reasons an assertion could not be judged. None of them say the device failed
  * the expectation; they say the run had no trustworthy data to compare.
  */
+/** Shared copy for publish and direct-read stamp failures. */
+export const SAMPLE_STAMP_MESSAGES = Object.freeze({
+  MISSING: '采样缺少身份',
+  MISMATCH: '采样身份已失效',
+  FUTURE: '采样时间晚于观察时间',
+  ILLEGAL: '采样不是有效数值',
+})
+
 export const UNAVAILABLE_REASONS = Object.freeze({
   DATA_MISSING: 'DATA_MISSING',
   STALE_VALUE: 'STALE_VALUE',

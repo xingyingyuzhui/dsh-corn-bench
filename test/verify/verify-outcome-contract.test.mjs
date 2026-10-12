@@ -25,7 +25,15 @@ function scriptedReader(script) {
 }
 
 /** @param {any} value @param {number} [ageMs] */
-const live = (value, ageMs = 0) => ({ value, rawValue: value, timestamp: Date.now() - ageMs, quality: 'good', source: 'poll-cache' })
+const live = (value, ageMs = 0) => ({
+  value,
+  rawValue: value,
+  timestamp: Date.now() - ageMs,
+  quality: 'good',
+  source: 'poll-cache',
+  fingerprint: 'fp-outcome',
+  generation: 'gen-outcome',
+})
 
 /**
  * @param {any} reader
@@ -113,7 +121,7 @@ test('null, stale, bad-quality, timestamp-less and failed reads never pass', asy
 })
 
 test('zero and false are valid values', async () => {
-  const zero = await run(scriptedReader({ p1: { value: 0, rawValue: 0, timestamp: Date.now(), quality: 'good' } }), [
+  const zero = await run(scriptedReader({ p1: { value: 0, rawValue: 0, timestamp: Date.now(), quality: 'good', fingerprint: 'fp-outcome', generation: 'gen-outcome' } }), [
     { type: 'modbus.point', pointId: 'p1', op: '==', value: 0 },
     { type: 'range', pointId: 'p1', min: 0, max: 0 },
   ])

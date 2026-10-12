@@ -1,4 +1,5 @@
 // @ts-check
+import { projectValueRowForCaller } from '../../domain/modbus/caller-projection.mjs'
 import { AGENT_TEXT_CAPS, utf8ByteLength } from './agent-result-caps.mjs'
 
 const READ_PAGE_DEFAULT = 20
@@ -223,7 +224,7 @@ export function projectRead(args, result) {
   /** @type {any[]} */
   const allReadings = (Array.isArray(result.readings) ? result.readings : []).map(compactReading)
   /** @type {any[]} */
-  const values = Array.isArray(result.values) ? result.values : []
+  const values = (Array.isArray(result.values) ? result.values : []).map(projectValueRowForCaller)
   /** @type {any[]} */
   const framesLog = (Array.isArray(result.framesLog) ? result.framesLog : []).map((/** @type {any} */ f) => ({
     frameId: f?.frameId || f?.id || '',

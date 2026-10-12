@@ -10,6 +10,10 @@ import {
 } from './point-sample-identity.mjs'
 
 /**
+ * @typedef {import('./effective-sample-target.mjs').SampleTarget} SampleTarget
+ */
+
+/**
  * @typedef {{
  *   point: any,
  *   layer: string,
@@ -43,102 +47,112 @@ export function collectConfiguredPointIds(modbus) {
 }
 
 /**
- * Diff current vs candidate effective point maps; bump generations and drop
- * values for invalidated point ids.
+ * Diff previous and next resolutions.
  *
- * Missing tokens are NOT invented here on every config write (Host session bind
- * must not rewrite sampleGenerations). Cold-start allocation belongs to
- * `ensureSampleGenerations` on mutating poll/read/write; those gens are kept
- * when present on the candidate.
+ * Ambiguous and missing targets have no token. A unique point keeps its token
+ * only when identity is unchanged. Geometry, owner, or schema rotation mints a
+ * new token and does not reuse a candidate token. Session bind (claim fold,
+ * same geometry, no previous token) does not invent one. Cold-start tokens
+ * already written by `ensureSampleGenerations` are kept when `acceptCandidateTokens`
+ * is set or when the identity is unchanged and no previous token exists.
  *
- * Values are dropped only when geometry/owner invalidated, or the point id is
- * gone from every candidate layer — not merely absent from the single-owner
- * effective index (ambiguous dual-private must keep disk rows for isolation).
+ * Old value rows keep their stamps. Rows are removed only when the point id
+ * is gone from every candidate layer.
  *
+ * @param {SampleTarget | undefined} target
+ * @returns {'missing' | 'ambiguous' | 'unique'}
+ */
+function resolutionKind(target) {
+  if (target?.kind === 'unique' || target?.kind === 'ambiguous') return target.kind
+  return 'missing'
+}
+
+/**
+ * @param {import('./effective-sample-target.mjs').UniqueTarget} prev
+ * @param {import('./effective-sample-target.mjs').UniqueTarget} next
+ */
+function sameUniqueIdentity(prev, next) {
+  // Legacy claim folds top-level into the claiming session without a physical change.
+  const claimFold =
+    prev.layer === 'toplevel' && next.layer === 'private' && !String(prev.ownerSessionId || '')
+  if (!claimFold && prev.layer !== next.layer) return false
+  if (!claimFold && String(prev.ownerSessionId || '') !== String(next.ownerSessionId || '')) return false
+  return !sampleGeometryChanged(prev.point, next.point, prev.device, next.device, prev.connection, next.connection)
+}
+
+/**
  * @param {{
- *   prevIndex: Map<string, EffectivePointEntry>,
- *   nextIndex: Map<string, EffectivePointEntry>,
+ *   prevResolutions: Map<string, SampleTarget>,
+ *   nextResolutions: Map<string, SampleTarget>,
  *   prevGenerations: Record<string, string>,
  *   candidateGenerations?: Record<string, string>,
  *   values: any[],
  *   candidatePointIds?: Set<string>,
+ *   rotateAll?: boolean,
+ *   acceptCandidateTokens?: boolean,
  * }} input
  */
 export function diffSampleGenerations(input) {
-  const { prevIndex, nextIndex, prevGenerations, values } = input
+  const { prevResolutions, nextResolutions, prevGenerations, values } = input
   const candidateGenerations =
     input.candidateGenerations && typeof input.candidateGenerations === 'object' ? input.candidateGenerations : {}
   const candidatePointIds =
-    input.candidatePointIds instanceof Set ? input.candidatePointIds : new Set(nextIndex.keys())
+    input.candidatePointIds instanceof Set
+      ? input.candidatePointIds
+      : new Set(nextResolutions.keys())
+  const rotateAll = input.rotateAll === true
+  const acceptCandidateTokens = input.acceptCandidateTokens === true
   /** @type {Record<string, string>} */
   const nextGens = {}
   /** @type {Set<string>} */
-  const invalidated = new Set()
+  const changed = new Set()
+  /** @type {Set<string>} */
+  const ids = new Set([...prevResolutions.keys(), ...nextResolutions.keys(), ...candidatePointIds])
 
-  for (const [pid, next] of nextIndex) {
-    const prev = prevIndex.get(pid)
+  for (const pid of ids) {
+    const prev = prevResolutions.get(pid)
+    const next = nextResolutions.get(pid)
+    const prevKind = resolutionKind(prev)
+    const nextKind = resolutionKind(next)
     const prevGen = prevGenerations[pid]
-    if (!prev) {
-      // New point: prefer an explicit candidate token, else allocate.
-      nextGens[pid] = candidateGenerations[pid] || newSampleGeneration()
+    const candGen = typeof candidateGenerations[pid] === 'string' ? candidateGenerations[pid] : ''
+    if (nextKind !== 'unique' || !next || next.kind !== 'unique') {
+      if (prevKind === 'unique' && prevGen) changed.add(pid)
       continue
     }
-    const geoChanged = sampleGeometryChanged(
-      prev.point,
-      next.point,
-      prev.device,
-      next.device,
-      prev.connection,
-      next.connection,
-    )
-    // Legacy claim folds top-level → the claiming session's private slot without
-    // changing physical geometry. That is not a cross-session owner transfer.
-    const claimFold =
-      prev.layer === 'toplevel' && next.layer === 'private' && !String(prev.ownerSessionId || '')
-    const ownerChanged =
-      !claimFold &&
-      (prev.layer !== next.layer || String(prev.ownerSessionId || '') !== String(next.ownerSessionId || ''))
-    if (!prevGen) {
-      if (geoChanged || ownerChanged) {
-        nextGens[pid] = newSampleGeneration()
-        invalidated.add(pid)
-      } else if (candidateGenerations[pid]) {
-        // Explicit cold-start init from ensureSampleGenerations — keep display rows.
-        nextGens[pid] = candidateGenerations[pid]
-      }
-      // else: leave uninitialized (e.g. session bind / no-op config write)
+    if (rotateAll || acceptCandidateTokens) {
+      nextGens[pid] = acceptCandidateTokens && candGen ? candGen : newSampleGeneration()
+      if (!prevGen || prevGen !== nextGens[pid]) changed.add(pid)
       continue
     }
-    if (geoChanged || ownerChanged) {
-      nextGens[pid] = newSampleGeneration()
-      invalidated.add(pid)
-    } else {
+    const same = prevKind === 'unique' && prev?.kind === 'unique' && sameUniqueIdentity(prev, next)
+    if (same && prevGen) {
       nextGens[pid] = prevGen
+      continue
     }
-  }
-
-  // Preserve tokens for ids still configured in any layer but absent from the
-  // effective index (ambiguous dual-private), so a later sole owner can resume.
-  for (const pid of candidatePointIds) {
-    if (nextGens[pid] || nextIndex.has(pid)) continue
-    const prevGen = prevGenerations[pid]
-    const candGen = candidateGenerations[pid]
-    if (prevGen) nextGens[pid] = prevGen
-    else if (candGen) nextGens[pid] = candGen
+    if (same && candGen) {
+      nextGens[pid] = candGen
+      continue
+    }
+    if (same) continue
+    if (prevKind === 'missing') {
+      nextGens[pid] = candGen || newSampleGeneration()
+      continue
+    }
+    nextGens[pid] = newSampleGeneration()
+    changed.add(pid)
   }
 
   const kept = (Array.isArray(values) ? values : []).filter((/** @type {any} */ rec) => {
     if (!rec || typeof rec !== 'object') return false
     const pid = String(rec.pointId || rec.key || '')
-    if (!pid || !candidatePointIds.has(pid)) return false
-    if (invalidated.has(pid)) return false
-    return true
+    return Boolean(pid) && candidatePointIds.has(pid)
   })
 
   return {
     sampleGenerations: nextGens,
     values: kept,
-    changedPointIds: [...invalidated],
+    changedPointIds: [...changed],
   }
 }
 

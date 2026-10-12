@@ -1,4 +1,5 @@
 // @ts-check
+import { omitInternalSampleMetadata } from '../../domain/modbus/caller-projection.mjs'
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
 import { normalizeTimelineEvent, prepend, trimTimeline } from '../../domain/modbus/journal-model.mjs'
 import { notifyConnectionRelease } from '../../infrastructure/modbus/modbus-transport.mjs'
@@ -302,7 +303,7 @@ function resolveMutationScope(current, sessionId, scope) {
  */
 function sessionScopedWorkspace(workspace, sessionId) {
   const modbus = sessionId ? projectModbusForSession(workspace.modbus, sessionId) : workspace.modbus
-  return { ...workspace, modbus: omitSessionConfigs(modbus) }
+  return { ...workspace, modbus: omitInternalSampleMetadata(omitSessionConfigs(modbus)) }
 }
 
 /**

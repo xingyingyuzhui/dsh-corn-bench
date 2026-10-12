@@ -41,6 +41,8 @@ export const normalizeValueRec = (raw) => {
     error: text(input?.error, '').slice(0, 180),
     at: Number.isFinite(at) && at > 0 ? at : 0,
     ...(sampleIdentity ? { sampleIdentity } : {}),
+    ...(typeof input.source === 'string' && input.source ? { source: input.source.slice(0, 40) } : {}),
+    ...(input.simulated === true ? { simulated: true } : {}),
   }
 }
 
@@ -76,6 +78,8 @@ export const setPointValue = (values, point, raw, opts = {}) => {
       error: opts.error || '',
       at: opts.at || Date.now(),
       ...(opts.sampleIdentity ? { sampleIdentity: opts.sampleIdentity } : {}),
+      ...(opts.source ? { source: String(opts.source).slice(0, 40) } : {}),
+      ...(opts.simulated === true ? { simulated: true } : {}),
     }),
   )
   return list.slice(-MAX_VALUES)

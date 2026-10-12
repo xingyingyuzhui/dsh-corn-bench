@@ -10,6 +10,8 @@ import { createStableWindow } from '../../src/domain/verify/stable-window.mjs'
 import { sampleStableDuration } from '../../src/application/verify/verify-sampling.mjs'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
+import { buildEffectivePointIndex } from '../../src/domain/modbus/prepare-config-persistence.mjs'
+import { stampForEntry } from '../../src/domain/modbus/sample-generation.mjs'
 import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 const scope = { cwd: '/tmp/verify-stable-window', sessionId: 'a' }
@@ -81,6 +83,9 @@ test('sampleStableDuration: advancing published stamps pass with injected clock'
   const ws = stampWorkspace(flatWorkspace({ points: [vpoint('p1')], values: [] }), { sessionId: 'a' })
   const reader = createVerifyTelemetryAdapter({ workspaceLoader: () => ws })
   const readScope = { cwd: scope.cwd, sessionId: 'a', source: 'user' }
+  const entry = buildEffectivePointIndex(ws.modbus).get('p1')
+  const stamp = entry ? stampForEntry(entry, ws.modbus.sampleGenerations.p1) : null
+  assert.ok(stamp)
   /** @type {number} */
   let now = 5_000
   let lastPublished = 0
@@ -95,6 +100,8 @@ test('sampleStableDuration: advancing published stamps pass with injected clock'
           timestamp: now,
           quality: 'good',
           source: 'published',
+          fingerprint: stamp.fingerprint,
+          generation: stamp.generation,
         })
       }
       return reader.readPoint(readScope, 'p1', { allowDirectRead: false })

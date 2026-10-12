@@ -3,7 +3,7 @@
 import { selectPointQueryValue } from '../modbus/point-query-value.mjs'
 import { createScopedPointReader } from './scoped-point-reader.mjs'
 import { readingFromRecord } from './verify-point-scope.mjs'
-import { unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import { SAMPLE_STAMP_MESSAGES, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 
 /**
  * @typedef {import('./verify-point-scope.mjs').PointReading} LiveTelemetryReading
@@ -73,25 +73,23 @@ function readServiceDirectRead(modbusReadFn, getHome) {
     const selected = selectPointQueryValue({ workspaceModbus: target.view?.layered, point, values: rows })
     if (selected.status !== 'available') return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果来源与点位不符')
     const reading = readingFromRecord(rows[0], point, 'direct-read')
-    if (
-      !reading ||
-      reading.quality !== 'good' ||
-      !(reading.timestamp > 0) ||
-      reading.value == null ||
-      reading.timestamp < startedAt
-    ) {
+    if (reading && Number(reading.timestamp) > Date.now()) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE)
+    }
+    if (!reading || reading.quality !== 'good' || !(reading.timestamp > 0) || reading.value == null) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.ILLEGAL)
+    }
+    if (reading.timestamp < startedAt) {
       return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果没有本次有效采样')
     }
-    // Stamp must match the target captured before I/O when the target already
-    // had a generation. Cold-start (empty target.generation) initializes tokens
-    // during I/O; finalizeDirect re-binds the post-locate identity afterwards.
+    if (!reading.fingerprint || !reading.generation) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+    }
     if (
-      reading.fingerprint &&
-      reading.generation &&
       target.generation &&
       (reading.fingerprint !== target.fingerprint || reading.generation !== target.generation)
     ) {
-      return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, '读取结果采样身份已失效')
+      return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, SAMPLE_STAMP_MESSAGES.MISMATCH)
     }
     return reading
   }

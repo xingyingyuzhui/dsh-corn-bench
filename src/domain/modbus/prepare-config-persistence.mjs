@@ -1,9 +1,11 @@
 // @ts-check
 /**
- * Config-write seam (domain): assign sampleGenerations and drop values whose
- * geometry or owner no longer matches the candidate. Pure — no I/O.
+ * Config-write seam (domain): assign sampleGenerations. Old value rows keep
+ * their stamps. Pure — no I/O. Schema v2 rotation is performed by
+ * ensureSampleGenerations; this seam keeps those tokens instead of minting
+ * a second set. Ordinary saves and session bind do not start that migration.
  */
-import { isCategoryShared, isScopePartitioned } from './config-scope.mjs'
+import { buildEffectiveSampleTargetIndex } from './effective-sample-target.mjs'
 import {
   collectConfiguredPointIds,
   diffSampleGenerations,
@@ -19,61 +21,15 @@ export function buildEffectivePointIndex(modbus) {
   /** @type {Map<string, import('./sample-generation.mjs').EffectivePointEntry>} */
   const out = new Map()
   if (!modbus || typeof modbus !== 'object') return out
-
-  const pointsShared = isCategoryShared(modbus.share, 'points')
-  const partitioned = isScopePartitioned(modbus)
-  const sessions = modbus.sessionConfigs && typeof modbus.sessionConfigs === 'object' ? modbus.sessionConfigs : {}
-
-  /** @type {Map<string, any>} */
-  const byConn = new Map()
-  /** @type {Map<string, any>} */
-  const byDev = new Map()
-  const remember = (/** @type {any[]} */ conns, /** @type {any[]} */ devices) => {
-    for (const c of conns || []) if (c?.id) byConn.set(String(c.id), c)
-    for (const d of devices || []) if (d?.id) byDev.set(String(d.id), d)
-  }
-  remember(modbus.connections, modbus.devices)
-  for (const cfg of Object.values(sessions)) {
-    remember(/** @type {any} */ (cfg)?.connections, /** @type {any} */ (cfg)?.devices)
-  }
-
-  /**
-   * @param {any} point
-   * @param {string} layer
-   * @param {string} owner
-   */
-  const put = (point, layer, owner) => {
-    if (!point?.id) return
-    const pid = String(point.id)
-    const existing = out.get(pid)
-    // Shared wins over private backups; first writer otherwise.
-    if (existing && existing.layer === 'shared' && layer !== 'shared') return
-    if (existing && layer === 'private' && existing.layer === 'private' && existing.ownerSessionId !== owner) {
-      // Ambiguous private same id — leave neither as a single trusted slot.
-      out.delete(pid)
-      return
-    }
-    if (existing && layer !== 'shared' && existing.layer === 'shared') return
+  for (const [pid, target] of buildEffectiveSampleTargetIndex(modbus)) {
+    if (target.kind !== 'unique') continue
     out.set(pid, {
-      point,
-      layer,
-      ownerSessionId: owner,
-      connection: byConn.get(String(point.connectionId || point.connId || '')) || null,
-      device: byDev.get(String(point.deviceId || '')) || null,
+      point: target.point,
+      layer: target.layer,
+      ownerSessionId: target.ownerSessionId,
+      connection: target.connection,
+      device: target.device,
     })
-  }
-
-  for (const p of Array.isArray(modbus.points) ? modbus.points : []) {
-    put(p, pointsShared ? 'shared' : 'toplevel', '')
-  }
-  if (!pointsShared) {
-    for (const [sid, cfg] of Object.entries(sessions)) {
-      for (const p of Array.isArray(/** @type {any} */ (cfg)?.points) ? /** @type {any} */ (cfg).points : []) {
-        put(p, 'private', String(sid))
-      }
-    }
-  } else if (partitioned) {
-    // Points shared: private backups are shadowed — already handled by put().
   }
   return out
 }
@@ -85,8 +41,8 @@ export function buildEffectivePointIndex(modbus) {
 export function prepareConfigPersistence(currentWs, candidateWs) {
   const currentMb = currentWs?.modbus || {}
   const candidateMb = candidateWs?.modbus || {}
-  const prevIndex = buildEffectivePointIndex(currentMb)
-  const nextIndex = buildEffectivePointIndex(candidateMb)
+  const prevResolutions = buildEffectiveSampleTargetIndex(currentMb)
+  const nextResolutions = buildEffectiveSampleTargetIndex(candidateMb)
   const prevGens =
     currentMb.sampleGenerations && typeof currentMb.sampleGenerations === 'object'
       ? /** @type {Record<string, string>} */ ({ ...currentMb.sampleGenerations })
@@ -100,22 +56,29 @@ export function prepareConfigPersistence(currentWs, candidateWs) {
     : Array.isArray(currentMb.values)
       ? currentMb.values
       : []
+  const currentVersion = Number(currentMb.sampleIdentitySchemaVersion)
+  const candidateVersion = Number(candidateMb.sampleIdentitySchemaVersion)
+  const migrating = currentVersion !== 2 && candidateVersion === 2
   const diff = diffSampleGenerations({
-    prevIndex,
-    nextIndex,
+    prevResolutions,
+    nextResolutions,
     prevGenerations: prevGens,
     candidateGenerations: candidateGens,
     values,
     candidatePointIds: collectConfiguredPointIds(candidateMb),
+    acceptCandidateTokens: migrating,
   })
+  /** @type {any} */
+  const modbus = {
+    ...candidateMb,
+    sampleGenerations: diff.sampleGenerations,
+    values: diff.values,
+  }
+  if (migrating || currentVersion === 2 || candidateVersion === 2) modbus.sampleIdentitySchemaVersion = 2
   return {
     workspace: {
       ...candidateWs,
-      modbus: {
-        ...candidateMb,
-        sampleGenerations: diff.sampleGenerations,
-        values: diff.values,
-      },
+      modbus,
     },
     changedPointIds: diff.changedPointIds,
   }
@@ -126,27 +89,29 @@ export function prepareConfigPersistence(currentWs, candidateWs) {
  */
 export function ensureSampleGenerations(workspace) {
   const mb = workspace?.modbus || {}
+  const resolutions = buildEffectiveSampleTargetIndex(mb)
   const index = buildEffectivePointIndex(mb)
+  const upgrading = Number(mb.sampleIdentitySchemaVersion) !== 2
   /** @type {Record<string, string>} */
-  const gens = {
-    ...(mb.sampleGenerations && typeof mb.sampleGenerations === 'object' ? mb.sampleGenerations : {}),
-  }
+  const prev = mb.sampleGenerations && typeof mb.sampleGenerations === 'object' ? mb.sampleGenerations : {}
+  /** @type {Record<string, string>} */
+  const gens = {}
   /** @type {string[]} */
   const initialized = []
-  for (const pid of index.keys()) {
-    if (!gens[pid]) {
-      gens[pid] = newSampleGeneration()
-      initialized.push(pid)
+  for (const [pid, target] of resolutions) {
+    if (target.kind !== 'unique') continue
+    if (!upgrading && prev[pid]) {
+      gens[pid] = prev[pid]
+      continue
     }
-  }
-  // Drop tokens only when the id is gone from every layer — not when the
-  // effective index deletes an ambiguous dual-private slot.
-  const configuredIds = collectConfiguredPointIds(mb)
-  for (const pid of Object.keys(gens)) {
-    if (!configuredIds.has(pid)) delete gens[pid]
+    gens[pid] = newSampleGeneration()
+    initialized.push(pid)
   }
   return {
-    workspace: { ...workspace, modbus: { ...mb, sampleGenerations: gens } },
+    workspace: {
+      ...workspace,
+      modbus: { ...mb, sampleGenerations: gens, sampleIdentitySchemaVersion: 2 },
+    },
     index,
     initialized,
   }

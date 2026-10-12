@@ -6,7 +6,7 @@ import { createVerifyService } from '../../src/application/verify/verify-service
 import { createVerifyResult } from '../../src/domain/verify/result.mjs'
 import { visionDebugTool } from '../../src/interfaces/agent/vision-debug-tool.mjs'
 import { createVerifyRpcHandler } from '../../src/interfaces/rpc/verify-rpc-handler.mjs'
-import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, publishStampedScalar, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 /** @param {string} sessionId */
 const wsScope = (sessionId) => ({ cwd: 'C:/ws', sessionId })
@@ -58,7 +58,7 @@ test('telemetry-reader: reads live values and dispatches to subscribers', async 
     notified = reading
   })
 
-  assert.equal(reader.publishPointValue(scope, 'receiver_level', 45.0), true)
+  assert.equal(publishStampedScalar(reader, scope, 'receiver_level', 45.0, ws), true)
   assert.ok(notified)
   assert.equal(notified.value, 45.0)
 

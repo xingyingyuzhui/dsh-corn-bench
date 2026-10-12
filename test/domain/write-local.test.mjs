@@ -4,7 +4,7 @@ import { modbusRead, modbusWrite } from '../../bench-actions.mjs'
 import { journalView, loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 
-test('modbusWrite local path persists values, exits sim and records a task', async (t) => {
+test('modbusWrite local path persists values, stays in sim and records a task', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-write-' })
   const { home, cwd } = bench
   saveWorkspace(home, cwd, {
@@ -35,11 +35,13 @@ test('modbusWrite local path persists values, exits sim and records a task', asy
   assert.deepEqual(ran.target, [1234])
   assert.deepEqual(ran.readback, [1234])
   const ws = loadWorkspace(home, cwd)
-  assert.equal(ws.modbus.conn.sim, false)
+  assert.equal(ws.modbus.conn.sim, true)
   const pt = ws.modbus.points.find((p) => (p.function === 3 || p.area === 'holdingRegister') && p.address === 2)
   const rec = ws.modbus.values.find((item) => item.key === pt.id || item.pointId === pt.id)
   assert.ok(pt && rec, 'point and value should exist for HR2')
   assert.equal(rec.value, 1234)
+  assert.equal(rec.source, 'sim-write')
+  assert.equal(rec.simulated, true)
   const journal = journalView(ws)
   assert.ok(journal.tasks.some((item) => item.type === 'write' && item.status === 'ok'))
   assert.ok(journal.timeline.some((item) => item.kind === 'write-start'))

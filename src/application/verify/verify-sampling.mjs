@@ -1,6 +1,6 @@
 // @ts-check
 
-import { isUnavailable, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import { isUnavailable, SAMPLE_STAMP_MESSAGES, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
 import { DEFAULT_STABLE_DURATION_MS, stableDurationMs } from '../../domain/verify/scenario.mjs'
 import { createStableWindow } from '../../domain/verify/stable-window.mjs'
 import { abortableDelay } from './abort-signals.mjs'
@@ -33,7 +33,7 @@ import { observeCall, observeDebugValue, observeReading } from './verify-observa
 /**
  * @param {VerifySampleContext} ctx
  * @param {string} pointId
- * @param {{ maxAgeMs?: number, allowDirectRead?: boolean }} [opts]
+ * @param {{ maxAgeMs?: number, allowDirectRead?: boolean, recordSample?: boolean }} [opts]
  * @returns {Promise<Observation>}
  */
 export async function readTelemetryPoint(ctx, pointId, opts = {}) {
@@ -53,11 +53,12 @@ export async function readTelemetryPoint(ctx, pointId, opts = {}) {
     combinedSignal,
   )
   const observed = observeReading(reading, { maxAgeMs: opts.maxAgeMs, now: ctx.now?.() })
-  if (observed.availability === 'available') {
+  if (observed.availability === 'available' && opts.recordSample !== false) {
     ctx.telemetrySamples.push({
       pointId,
       timestamp: observed.reading.timestamp,
       value: observed.reading.value,
+      checkOnly: false,
     })
   }
   return observed
@@ -136,19 +137,28 @@ export async function sampleStableDuration(ctx, spec) {
         if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
       }
     } else if (pointId) {
-      observed = await readTelemetryPoint(ctx, pointId, { maxAgeMs, allowDirectRead: false })
+      observed = await readTelemetryPoint(ctx, pointId, { maxAgeMs, allowDirectRead: false, recordSample: false })
       if (observed.availability === 'available') {
         const reading = /** @type {any} */ (observed).reading
+        if (!reading.fingerprint || !reading.generation) {
+          return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+        }
+        const before = window.sampleCount
         const step = window.accept({
           value: reading.value,
           timestamp: reading.timestamp,
-          identity: reading.fingerprint || reading.identity || '',
-          generation: reading.generation || '',
+          identity: reading.fingerprint,
+          generation: reading.generation,
+          observedAt: now(),
         })
         if (step.status === 'unavailable') return /** @type {UnavailableObservation} */ (step.unavailable)
-        // Cache rechecks of the same timestamp are checks, not new samples.
-        if (step.status === 'continue' && window.sampleCount > 0) {
-          /* accepted or duplicate handled inside window */
+        if (step.status === 'continue') {
+          ctx.telemetrySamples.push({
+            pointId,
+            timestamp: reading.timestamp,
+            value: reading.value,
+            checkOnly: window.sampleCount === before,
+          })
         }
       } else if (isUnavailable(observed)) {
         const step = window.accept(observed)

@@ -41,6 +41,7 @@ import { clearFlashApprovals } from '../../application/flash/flash-approval-serv
 import { probeOpenOcdHealth } from '../../application/flash/openocd-health-service.mjs'
 import { projectModbusForSession } from '../../application/modbus/config-scope-service.mjs'
 import { isScopePartitioned } from '../../domain/modbus/config-scope.mjs'
+import { explicitInternalSampleField } from '../../domain/modbus/caller-projection.mjs'
 import { createDebugRpcHandler } from './debug-rpc-handler.mjs'
 import { createVerifyRpcHandler } from './verify-rpc-handler.mjs'
 import {
@@ -155,6 +156,9 @@ export function createVisionRpcRouter(deps) {
         const room = requireWorkspaceCwd(body && typeof body === 'object' ? body.cwd : undefined)
         if (room.error) return { ok: false, error: room.error }
         const modbus = body && typeof body === 'object' ? body.modbus : undefined
+        if (explicitInternalSampleField(modbus)) {
+          return { ok: false, errorCode: 'INVALID_FIELD', error: '内部采样字段不能由调用方提交', details: { reason: 'INTERNAL_FIELD' } }
+        }
         if (modbus && Object.keys(modbus).some((key) => WORKSPACE_CONFIG_KEYS.has(key))) {
           return {
             ok: false,
@@ -187,7 +191,7 @@ export function createVisionRpcRouter(deps) {
           keil: body && typeof body === 'object' ? body.keil : undefined,
           modbus: patchModbus,
         })
-        if (!saved.ok) return { ok: false, error: saved.error, workspace: saved.workspace }
+        if (!saved.ok) return { ok: false, error: saved.error, workspace: saved.workspace && sessionWorkspaceView(saved.workspace, sid, room.cwd) }
         notifyConnectionRelease(room.cwd, changedConnectionIds(prev.modbus, saved.workspace.modbus))
         const viewWorkspace = sessionWorkspaceView(saved.workspace, sid, room.cwd)
         return { ok: true, workspace: viewWorkspace, journal: journalView(saved.workspace) }

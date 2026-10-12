@@ -3,7 +3,7 @@
  * Stable-for-duration window: only real advancing samples prove coverage.
  * Wall-clock waiting and repeated cache hits of the same record do not.
  */
-import { unavailable, UNAVAILABLE_REASONS } from './observation.mjs'
+import { SAMPLE_STAMP_MESSAGES, unavailable, UNAVAILABLE_REASONS } from './observation.mjs'
 
 /**
  * @typedef {{ value: any, timestamp: number, identity?: string, generation?: string }} StableSample
@@ -49,6 +49,13 @@ export function createStableWindow(opts) {
       return {
         status: 'unavailable',
         unavailable: unavailable(UNAVAILABLE_REASONS.DATA_MISSING, '采样缺少记录时间'),
+      }
+    }
+    const observedAt = Number(/** @type {any} */ (s).observedAt)
+    if (Number.isFinite(observedAt) && ts > observedAt) {
+      return {
+        status: 'unavailable',
+        unavailable: unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE),
       }
     }
     // History before this assertion started cannot prove this window.

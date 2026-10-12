@@ -36,7 +36,12 @@ test('prepareConfigPersistence: address change clears value and bumps generation
   const prepared = prepareConfigPersistence(current, candidate)
   assert.notEqual(prepared.workspace.modbus.sampleGenerations.p1, prevGen)
   assert.deepEqual(prepared.changedPointIds, ['p1'])
-  assert.equal(prepared.workspace.modbus.values.length, 0)
+  assert.equal(prepared.workspace.modbus.values.length, 1)
+  assert.equal(prepared.workspace.modbus.values[0].sampleIdentity.generation, prevGen)
+  assert.notEqual(
+    prepared.workspace.modbus.values[0].sampleIdentity.generation,
+    prepared.workspace.modbus.sampleGenerations.p1,
+  )
 })
 
 test('prepareConfigPersistence: name-only change keeps generation and value', () => {
@@ -109,12 +114,12 @@ test('production address update must not reuse the previous address runtime valu
   assert.equal(update.ok, true, update.error)
 
   const afterWs = loadWorkspace(b.home, b.cwd)
-  assert.equal(
-    (afterWs.modbus.values || []).filter((/** @type {any} */ v) => v.pointId === 'p1').length,
-    0,
-    'geometry change must clear the runtime value slot',
-  )
+  const kept = (afterWs.modbus.values || []).filter((/** @type {any} */ v) => v.pointId === 'p1')
+  assert.equal(kept.length, 1)
+  assert.notEqual(kept[0].sampleIdentity?.generation, afterWs.modbus.sampleGenerations?.p1)
   assert.notEqual(afterWs.modbus.sampleGenerations?.p1, stamped.modbus.sampleGenerations.p1)
+  const cached = /** @type {any} */ (await reader.readPoint(s, 'p1', { allowDirectRead: false }))
+  assert.notEqual(cached.availability, 'available', JSON.stringify(cached))
 
   const next = /** @type {any} */ (await reader.readPoint(s, 'p1'))
   assert.notEqual(next.value, 77, JSON.stringify({ address: 5, source: next.source, reads, next }))

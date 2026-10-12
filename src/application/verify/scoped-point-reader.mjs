@@ -1,7 +1,12 @@
 // @ts-check
 
 import { normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
-import { isUnavailable, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
+import {
+  isUnavailable,
+  SAMPLE_STAMP_MESSAGES,
+  unavailable,
+  UNAVAILABLE_REASONS,
+} from '../../domain/verify/observation.mjs'
 import { normalizeCwd } from '../../shared/path-normalize.mjs'
 import { readingFromRecord, resolveVerifyPoint, scopeKey, usableReading } from './verify-point-scope.mjs'
 
@@ -103,9 +108,8 @@ export function createScopedPointReader(deps = {}) {
   }
 
   /**
-   * Stamp a successful direct-read with the current target identity.
-   * Quality/timestamp are checked before stamp attachment (producer may not
-   * have stamped yet when the adapter maps the row).
+   * Accept a direct-read only when it already carries the current target stamp.
+   * This function does not attach or rewrite identity.
    *
    * @param {PointReading | UnavailableObservation | null | undefined} direct
    * @param {ResolvedPoint} target
@@ -120,14 +124,20 @@ export function createScopedPointReader(deps = {}) {
       )
     }
     if (isUnavailable(direct)) return direct
-    if (direct.quality !== 'good' || !(direct.timestamp > 0) || direct.value == null) {
-      return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果没有有效采样')
+    const ts = Number(direct.timestamp)
+    if (Number.isFinite(ts) && ts > Date.now()) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE)
     }
-    const reading = {
-      ...direct,
-      fingerprint: target.fingerprint,
-      generation: target.generation,
+    if (direct.quality !== 'good' || !(ts > 0) || direct.value == null) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.ILLEGAL)
     }
+    if (!direct.fingerprint || !direct.generation) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+    }
+    if (direct.fingerprint !== target.fingerprint || direct.generation !== target.generation) {
+      return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, SAMPLE_STAMP_MESSAGES.MISMATCH)
+    }
+    const reading = { ...direct }
     store(key, reading)
     return withFreshness(reading, maxAgeMs)
   }
@@ -233,29 +243,66 @@ export function createScopedPointReader(deps = {}) {
    * @param {any} valueOrReading
    * @returns {boolean}
    */
+  /**
+   * @param {ReadScope} scopeIn
+   * @param {string} pointId
+   * @param {any} reading
+   * @returns {PointReading | UnavailableObservation}
+   */
+  function publishStampedReading(scopeIn, pointId, reading) {
+    const scope = scopeOf(scopeIn)
+    if (!scope) return unavailable(UNAVAILABLE_REASONS.TARGET_UNAVAILABLE, NO_SCOPE)
+    const target = locate(scope, String(pointId || '').trim())
+    if (isUnavailable(target)) return target
+    if (!reading || typeof reading !== 'object') {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+    }
+    const ts = Number(reading.timestamp)
+    const value = reading.value !== undefined ? reading.value : reading.rawValue
+    if (Number.isFinite(ts) && ts > Date.now()) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE)
+    }
+    if (!Number.isFinite(ts) || !(ts > 0) || value == null || (reading.quality && reading.quality !== 'good')) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.ILLEGAL)
+    }
+    if (!reading.fingerprint || !reading.generation) {
+      return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.MISSING)
+    }
+    if (reading.fingerprint !== target.fingerprint || reading.generation !== target.generation) {
+      return unavailable(UNAVAILABLE_REASONS.STALE_VALUE, SAMPLE_STAMP_MESSAGES.MISMATCH)
+    }
+    /** @type {PointReading} */
+    const stored = { quality: 'good', source: 'published', ...reading, value }
+    store(scopeKey(scope.cwd, scope.sid, target.point.id), stored)
+    return stored
+  }
+
+  /**
+   * @param {ReadScope} scopeIn
+   * @param {string} pointId
+   * @param {any} valueOrReading
+   * @returns {boolean}
+   */
   function publishPointValue(scopeIn, pointId, valueOrReading) {
     const scope = scopeOf(scopeIn)
     if (!scope) return false
     const target = locate(scope, String(pointId || '').trim())
     if (isUnavailable(target)) return false
-    /** @type {PointReading} */
-    const reading =
-      valueOrReading && typeof valueOrReading === 'object' && 'timestamp' in valueOrReading
-        ? { quality: 'good', source: 'published', ...valueOrReading }
-        : {
-            value: valueOrReading,
-            rawValue: valueOrReading,
-            timestamp: Date.now(),
-            source: 'published',
-            quality: 'good',
-          }
-    // Controlled publish is a real "now" event — stamp with the current identity.
-    store(scopeKey(scope.cwd, scope.sid, target.point.id), {
-      ...reading,
-      fingerprint: target.fingerprint || reading.fingerprint || 'bound',
-      generation: target.generation || reading.generation || 'bound',
-    })
-    return true
+    if (!valueOrReading || typeof valueOrReading !== 'object' || !('timestamp' in valueOrReading)) {
+      // In-memory bound readers have no Host identity. Production targets refuse an unstamped scalar.
+      if (target.fingerprint !== 'bound' || target.generation !== 'bound') return false
+      store(scopeKey(scope.cwd, scope.sid, target.point.id), {
+        value: valueOrReading,
+        rawValue: valueOrReading,
+        timestamp: Date.now(),
+        quality: 'good',
+        source: 'published',
+        fingerprint: 'bound',
+        generation: 'bound',
+      })
+      return true
+    }
+    return !isUnavailable(publishStampedReading(scopeIn, pointId, valueOrReading))
   }
 
   /**
@@ -298,7 +345,7 @@ export function createScopedPointReader(deps = {}) {
     return results
   }
 
-  return { readPoint, publishPointValue, subscribePoint, readMultiple }
+  return { readPoint, publishPointValue, publishStampedReading, subscribePoint, readMultiple }
 }
 
 /**

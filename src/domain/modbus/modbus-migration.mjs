@@ -131,6 +131,7 @@ export function normalizeModbus(input) {
       sampleGenerations:
         src.sampleGenerations && typeof src.sampleGenerations === 'object' ? { ...src.sampleGenerations } : {},
     }
+    if (Number(src.sampleIdentitySchemaVersion) === 2) ret.sampleIdentitySchemaVersion = 2
     return attachLegacyCompatAccessors(ret, { includeExtended: true })
   }
 

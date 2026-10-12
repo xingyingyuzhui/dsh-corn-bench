@@ -4,11 +4,13 @@ import test from 'node:test'
 import { modbusRead } from '../../bench-modbus.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
+import { buildEffectivePointIndex } from '../../src/domain/modbus/prepare-config-persistence.mjs'
+import { stampForEntry } from '../../src/domain/modbus/sample-generation.mjs'
 import { createTelemetryReader } from '../../src/application/verify/telemetry-reader.mjs'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { A, B, point, rawDiskBytes, twoSessionBench } from '../agent/evidence-scope-fixtures.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
-import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
+import { flatWorkspace, liveValue, publishStampedScalar, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 /**
  * Production adapter over the real workspace store and read-service, with a
@@ -111,7 +113,7 @@ test('verify telemetry: published samples are keyed by cwd + session + point', a
   const reader = createTelemetryReader({
     workspaceLoader: () => ws,
   })
-  assert.equal(reader.publishPointValue({ cwd: '/w1', sessionId: 's' }, 'p1', 7), true)
+  assert.equal(publishStampedScalar(reader, { cwd: '/w1', sessionId: 's' }, 'p1', 7, ws), true)
   assert.equal(reasonOf(await reader.readPoint({ cwd: '/w2', sessionId: 's' }, 'p1')), 'DATA_MISSING')
   assert.equal(/** @type {any} */ (await reader.readPoint({ cwd: '/w1', sessionId: 's' }, 'p1')).value, 7)
 })
@@ -159,7 +161,7 @@ test('verify telemetry: shared point is readable; revoke, delete and rebind inva
   saveWorkspace(home, cwd, stampWorkspace({ modbus: base }))
   const { adapter, calls } = realAdapter(home)
   const scopeB = { cwd, sessionId: B }
-  adapter.publishPointValue(scopeB, 'ps', 41)
+  assert.equal(publishStampedScalar(adapter, scopeB, 'ps', 41, loadWorkspace(home, cwd)), true)
   assert.equal(/** @type {any} */ (await adapter.readPoint(scopeB, 'ps')).value, 41)
 
   saveWorkspace(home, cwd, stampWorkspace({ modbus: { ...base, points: [{ ...point('ps', 'c-s', 'd-s'), address: 5 }] } }))
@@ -179,12 +181,13 @@ test('verify telemetry: shared point is readable; revoke, delete and rebind inva
  * Adapter over an in-memory workspace with a scripted read-service response.
  *
  * @param {(body: any, opts: any) => any} respond
+ * @param {any} [workspace]
  */
-function scriptedAdapter(respond) {
+function scriptedAdapter(respond, workspace = null) {
   /** @type {any[]} */
   const calls = []
   const adapter = createVerifyTelemetryAdapter({
-    workspaceLoader: () => flatWorkspace({ points: [vpoint('p1')] }),
+    workspaceLoader: () => workspace || flatWorkspace({ points: [vpoint('p1')] }),
     modbusReadFn: async (_h, _cwd, body, opts) => {
       calls.push({ body, opts })
       return respond(body, opts)
@@ -196,8 +199,15 @@ function scriptedAdapter(respond) {
 const scope = { cwd: '/w', sessionId: 's' }
 
 test('verify telemetry: falsy values 0 and false are real samples', async () => {
+  const ws = stampWorkspace(flatWorkspace({ points: [vpoint('p1')], values: [] }), { sessionId: 's' })
+  const entry = buildEffectivePointIndex(ws.modbus).get('p1')
+  const stamp = entry ? stampForEntry(entry, ws.modbus.sampleGenerations.p1) : null
+  assert.ok(stamp)
   for (const v of [0, false]) {
-    const { adapter } = scriptedAdapter(() => ({ ok: true, values: [liveValue('p1', v)] }))
+    const { adapter } = scriptedAdapter(
+      () => ({ ok: true, values: [liveValue('p1', v, { sampleIdentity: stamp })] }),
+      ws,
+    )
     const r = /** @type {any} */ (await adapter.readPoint(scope, 'p1'))
     assert.equal(r.availability, undefined, r.message)
     assert.equal(r.value, v)

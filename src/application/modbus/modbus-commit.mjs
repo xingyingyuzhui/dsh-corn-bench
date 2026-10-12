@@ -8,6 +8,7 @@ import { normalizeSampleIdentity } from '../../domain/modbus/point-sample-identi
 import { buildEffectivePointIndex } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { stampForEntry } from '../../domain/modbus/sample-generation.mjs'
 import { workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
+import { noteSampleReject } from './sample-reject-log.mjs'
 import { sampleTrendValues } from './trend-store.mjs'
 import {
   normalizeSessionConfigs,
@@ -39,13 +40,22 @@ const acceptStampedPointValues = (layeredModbus, incoming, allowedPointIds) => {
     const pid = String(rec.pointId || rec.key || '')
     if (!pid || !allowedPointIds.has(pid)) continue
     const got = normalizeSampleIdentity(rec.sampleIdentity)
-    if (!got) continue
+    if (!got) {
+      noteSampleReject(pid, 'MISSING_STAMP', false)
+      continue
+    }
     const entry = index.get(pid)
     const gen = gens[pid]
-    if (!entry || !gen) continue
+    if (!entry || !gen) {
+      noteSampleReject(pid, 'NOT_UNIQUE', false)
+      continue
+    }
     const expected = stampForEntry(entry, gen)
     if (!expected) continue
-    if (got.fingerprint !== expected.fingerprint || got.generation !== expected.generation) continue
+    if (got.fingerprint !== expected.fingerprint || got.generation !== expected.generation) {
+      noteSampleReject(pid, 'STAMP_MISMATCH', got.generation !== expected.generation)
+      continue
+    }
     accepted.push(rec)
   }
   return accepted

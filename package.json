@@ -216,6 +216,8 @@
     "src/domain/modbus/modbus-compat-accessors.mjs",
     "src/domain/modbus/trend-model.mjs",
     "src/domain/modbus/point-sample-identity.mjs",
+    "src/domain/modbus/caller-projection.mjs",
+    "src/domain/modbus/effective-sample-target.mjs",
     "src/domain/modbus/sample-generation.mjs",
     "src/domain/modbus/prepare-config-persistence.mjs",
     "src/domain/keil/errors.mjs",
@@ -579,6 +581,7 @@
     "src/application/modbus/points-list-page.mjs",
     "src/application/modbus/poll-target-preparation.mjs",
     "src/application/modbus/sample-identity-producer.mjs",
+    "src/application/modbus/sample-reject-log.mjs",
     "src/application/modbus/write-sim-execute.mjs"
   ],
   "repository": {
