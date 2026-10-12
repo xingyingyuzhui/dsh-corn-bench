@@ -23,9 +23,18 @@
 
 覆盖率摘要：statements 85.91%，branches 72.06%，functions 78.9%，lines 85.91%。`write-execute.mjs` 的分支下限从 70 调到 68，对应这次实测 68.8%。没有扩大结构预算 allowlist。
 
+## 安装
+
+本地包版本 `0.29.29`，`buildId` `518e7019b38e7c496515cc67149778a18135136372c6a87874b9c13177d07c74`，`gitSha` `0c54ad2`。
+
+- Web：`dsh plugin --profile web add` 本地 tarball 后，profile 里的 `package.json` 和 `build-info.json` 已是 0.29.29。pnpm 以 `ERR_PNPM_IGNORED_BUILDS` 退出，因为 `@serialport/bindings-cpp` 的安装脚本被忽略。当时没有正在运行的 `dsh web`，所以没有重启，也没有做两会话 snapshot 或仿真校验。
+- Desktop：DeepSeek Harness 没有在运行。`scripts/probes/install-desktop-local.mjs` 成功，事件 `vision.desktop.local-install`。profile 里的版本和 `buildId` 与 Web 相同。没有重新打开应用，也没有做同一组界面 smoke。
+
+这只说明两个 profile 装上了本轮包。不能写成原生双端验收通过。
+
 ## 没有验证的部分
 
 - 物理串口、RTU 和真实 TCP 设备仍不在本轮。
 - R5/R6 焦点迁移和 R8 幂等失败终态不在本轮。
-- 安装结果写在版本和 build-info 提交之后；若当时 Desktop 仍在运行，则 Desktop 记为 unverified。
+- Web 与 Desktop 的运行中界面 smoke 没有做。
 - 没有推送 GitHub，没有 npm publish，没有走 Desktop 应用商店的 registry 安装。
