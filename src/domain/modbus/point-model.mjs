@@ -319,4 +319,3 @@ export const normalizePointsV3 = (list, connections, devices) => {
   }
   return out
 }
-
