@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
 import { join } from 'node:path'
 import test from 'node:test'
 import { modbusWrite } from '../../bench-actions.mjs'
@@ -25,15 +25,13 @@ test('sim write identity save failure closes the write task and keeps simulation
     },
   })
   const configPath = join(workspaceDir(home, workspaceKey(cwd)), 'config.json')
-  const unlock = () => {
-    try {
-      execFileSync('chflags', ['nouchg', configPath])
-    } catch {
-      /* already clear */
-    }
-  }
-  t.after(unlock)
-  execFileSync('chflags', ['uchg', configPath])
+  // Fail only the atomic rename onto config.json (write-file-atomic resolves
+  // fs.renameSync at call time), the same on macOS, Linux and Windows.
+  const realRename = fs.renameSync
+  const renameMock = t.mock.method(fs, 'renameSync', (from, to) => {
+    if (String(to) === configPath) throw Object.assign(new Error(`EPERM: rename '${to}'`), { code: 'EPERM' })
+    return realRename(from, to)
+  })
   const failed = await modbusWrite(home, cwd, {
     source: 'user',
     function: 3,
@@ -42,7 +40,7 @@ test('sim write identity save failure closes the write task and keeps simulation
     connectionId: 'c1',
     deviceId: 'd1',
   })
-  unlock()
+  renameMock.mock.restore()
   assert.equal(failed.ok, false, failed.error)
   assert.equal(failed.errorCode, 'WORKSPACE_WRITE_FAILED')
   assert.equal(loadWorkspace(home, cwd).modbus.connections[0].conn.sim, true)

@@ -94,12 +94,6 @@ export function createVerifyService(deps = {}) {
       assertScenarioBudget(scenario, timeoutMs)
 
       const timeoutController = new AbortController()
-      const timeoutTimer = setTimeout(() => {
-        const timeoutErr = new Error('VERIFY_TIMEOUT')
-        timeoutErr.name = 'TimeoutError'
-        timeoutController.abort(timeoutErr)
-      }, timeoutMs)
-      if (timeoutTimer.unref) timeoutTimer.unref()
 
       const combinedSignal = composeAbortSignals([signal, timeoutController.signal])
 
@@ -124,20 +118,7 @@ export function createVerifyService(deps = {}) {
         }
       }
 
-      if (timeoutController.signal.aborted) {
-        clearTimeout(timeoutTimer)
-        return createVerifyResult({
-          verificationRunId: options.verificationRunId,
-          scenario,
-          status: 'timeout',
-          durationMs: Date.now() - startTime,
-          startAt: startTime,
-          endAt: Date.now(),
-        })
-      }
-
       if (signal?.aborted) {
-        clearTimeout(timeoutTimer)
         return createVerifyResult({
           verificationRunId: options.verificationRunId,
           scenario,
@@ -170,6 +151,12 @@ export function createVerifyService(deps = {}) {
           ...(error !== undefined ? { error } : {}),
         })
 
+      // Armed right before the try so every exit below clears it in `finally`.
+      const timeoutTimer = setTimeout(() => {
+        const timeoutErr = new Error('VERIFY_TIMEOUT')
+        timeoutErr.name = 'TimeoutError'
+        timeoutController.abort(timeoutErr)
+      }, timeoutMs)
       try {
         if (scenario.setup) {
           if (scenario.setup.delayMs && Number(scenario.setup.delayMs) > 0) {
