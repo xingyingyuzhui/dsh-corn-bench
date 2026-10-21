@@ -8,6 +8,7 @@ import { executeDebugCommand } from '../../src/application/debug/debug-command-s
 import { createDebugRuntime, setSharedDebugRuntime } from '../../src/application/debug/debug-runtime.mjs'
 import { buildEvidenceRefs } from '../../src/application/modbus/evidence-service.mjs'
 import { evidenceFromRef } from '../../src/ui/common/agent-reference.mjs'
+import { createDebugWorkspace } from '../helpers/debug-workspace.mjs'
 
 test('debug-journal: task types and major kinds include debug lifecycle events', () => {
   assert.equal(taskTypeLabel('debug'), '调试')
@@ -165,7 +166,8 @@ test('debug-runtime: snapshot capture, get by id, and journal notifications', as
   assert.equal(journalEvents[2].action, 'debug-stop')
 })
 
-test('debug-command-service: returns compact summary for inspect and snapshot to agent', async () => {
+test('debug-command-service: returns compact summary for inspect and snapshot to agent', async (t) => {
+  const ws = createDebugWorkspace(t)
   const runtime = createDebugRuntime({
     backendFactory: async () => ({
       start: async () => {},
@@ -190,8 +192,8 @@ test('debug-command-service: returns compact summary for inspect and snapshot to
     action: 'start',
     source: 'user',
     sessionId: 'agent-sess',
-    cwd: '/test/cwd',
-    payload: { targetSpec: { target: 'stm32', artifactSha256: 'hash456' } },
+    cwd: ws.cwd,
+    payload: { targetSpec: { target: 'stm32f4x', artifactPath: ws.artifactPath, artifactSha256: ws.artifactSha256 } },
   }
   const startRes = await executeDebugCommand(startCmd, { debugRuntime: runtime })
   assert.equal(startRes.ok, true)
@@ -202,7 +204,7 @@ test('debug-command-service: returns compact summary for inspect and snapshot to
     action: 'inspect',
     source: 'agent',
     sessionId: 'agent-sess',
-    cwd: '/test/cwd',
+    cwd: ws.cwd,
     payload: { debugSessionId: dsId },
   }
   const inspectRes = await executeDebugCommand(inspectCmd, { debugRuntime: runtime })
@@ -216,7 +218,7 @@ test('debug-command-service: returns compact summary for inspect and snapshot to
     action: 'snapshot',
     source: 'agent',
     sessionId: 'agent-sess',
-    cwd: '/test/cwd',
+    cwd: ws.cwd,
     payload: { debugSessionId: dsId, reason: 'test crash' },
   }
   const snapRes = await executeDebugCommand(snapCmd, { debugRuntime: runtime })
@@ -231,7 +233,7 @@ test('debug-command-service: returns compact summary for inspect and snapshot to
     action: 'snapshot',
     source: 'agent',
     sessionId: 'agent-sess',
-    cwd: '/test/cwd',
+    cwd: ws.cwd,
     payload: { debugSessionId: dsId, op: 'get', snapshotId: snapRes.snapshotId },
   }
   const fullSnapRes = await executeDebugCommand(getSnapCmd, { debugRuntime: runtime })

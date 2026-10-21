@@ -4,8 +4,10 @@ import { createDebugRuntime } from '../../src/application/debug/debug-runtime.mj
 import { createDebugRpcHandler } from '../../src/interfaces/rpc/debug-rpc-handler.mjs'
 import { createRouter } from '../helpers/rpc-factory.mjs'
 import { DEBUG_RPC_ENDPOINTS } from '../../src/shared/debug-contract.mjs'
+import { createDebugWorkspace } from '../helpers/debug-workspace.mjs'
 
-test('Debug RPC Handler routes state, commands, and events over Connection RPC', async () => {
+test('Debug RPC Handler routes state, commands, and events over Connection RPC', async (t) => {
+  const ws_root = createDebugWorkspace(t)
   const runtime = createDebugRuntime({
     backendFactory: async () => ({
       start: async () => {},
@@ -20,13 +22,13 @@ test('Debug RPC Handler routes state, commands, and events over Connection RPC',
   const handler = createDebugRpcHandler({ debugRuntime: runtime })
 
   // 1. Initial state (no active session)
-  const initState = await handler('debug/state', { cwd: '/workspace', sessionId: 'sess_1' })
+  const initState = await handler('debug/state', { cwd: ws_root.cwd, sessionId: 'sess_1' })
   assert.equal(initState.ok, true)
   assert.equal(initState.active, false)
 
   // 2. Start session via debug/command op: 'start'
   const startRes = await handler('debug/command', {
-    cwd: '/workspace',
+    cwd: ws_root.cwd,
     sessionId: 'sess_1',
     op: 'start',
     targetSpec: { target: 'stm32f4x' },
@@ -38,7 +40,7 @@ test('Debug RPC Handler routes state, commands, and events over Connection RPC',
   const debugSessionId = startRes.debugSessionId
 
   // 3. State query now reports active session
-  const activeState = await handler('debug/state', { cwd: '/workspace', sessionId: 'sess_1' })
+  const activeState = await handler('debug/state', { cwd: ws_root.cwd, sessionId: 'sess_1' })
   assert.equal(activeState.ok, true)
   assert.equal(activeState.active, true)
   assert.equal(activeState.session.debugSessionId, debugSessionId)
@@ -109,12 +111,13 @@ test('Debug RPC Handler routes state, commands, and events over Connection RPC',
   assert.equal(stopRes.ok, true)
 
   // 9. State query after stop
-  const postState = await handler('debug/state', { cwd: '/workspace', sessionId: 'sess_1' })
+  const postState = await handler('debug/state', { cwd: ws_root.cwd, sessionId: 'sess_1' })
   assert.equal(postState.ok, true)
   assert.equal(postState.active, false)
 })
 
-test('debug events/wait without session identity does not return another session', async () => {
+test('debug events/wait without session identity does not return another session', async (t) => {
+  const ws_other = createDebugWorkspace(t)
   const runtime = createDebugRuntime({
     backendFactory: async () => ({
       start: async () => {},
@@ -123,7 +126,7 @@ test('debug events/wait without session identity does not return another session
   })
   const handler = createDebugRpcHandler({ debugRuntime: runtime })
   const started = await handler('debug/command', {
-    cwd: '/workspace/other',
+    cwd: ws_other.cwd,
     sessionId: 'owner-other',
     op: 'start',
     targetSpec: { target: 'stm32f4x' },
@@ -131,7 +134,7 @@ test('debug events/wait without session identity does not return another session
   assert.equal(started.ok, true)
   const t0 = Date.now()
   for (let i = 0; i < 100; i++) {
-    const waitRes = await handler('debug/events/wait', { cwd: '/workspace/other', sessionId: '', timeoutMs: 20000 })
+    const waitRes = await handler('debug/events/wait', { cwd: ws_other.cwd, sessionId: '', timeoutMs: 20000 })
     assert.equal(waitRes.ok, true)
     assert.equal(waitRes.woke, false)
     assert.equal(waitRes.debugSessionId, undefined)
@@ -145,7 +148,8 @@ test('debug events/wait without session identity does not return another session
   })
 })
 
-test('createRouter routes debug/* endpoints without Modbus interference', async () => {
+test('createRouter routes debug/* endpoints without Modbus interference', async (t) => {
+  const ws_root = createDebugWorkspace(t)
   const runtime = createDebugRuntime({
     backendFactory: async () => ({
       start: async () => {},
@@ -159,7 +163,7 @@ test('createRouter routes debug/* endpoints without Modbus interference', async 
 
   // Start debug session through router
   const start = await router.dispatch('debug/command', {
-    cwd: '/workspace',
+    cwd: ws_root.cwd,
     sessionId: 'test_session_1',
     op: 'start',
     targetSpec: { target: 'stm32f4x' },
@@ -170,7 +174,7 @@ test('createRouter routes debug/* endpoints without Modbus interference', async 
 
   // Query state through router
   const state = await router.dispatch('debug/state', {
-    cwd: '/workspace',
+    cwd: ws_root.cwd,
     sessionId: 'test_session_1',
   })
 

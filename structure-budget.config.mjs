@@ -68,7 +68,7 @@ export default {
         },
         {
           "file": "src/application/debug/debug-launch-spec-service.mjs",
-          "max": 445,
+          "max": 427,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
           "owner": "vision-bench"
@@ -179,13 +179,6 @@ export default {
         {
           "file": "test/ui/vision-view-request.test.mjs",
           "max": 398,
-          "reason": "P5-4 debt ratchet; split in later P4/P6",
-          "stage": "P4",
-          "owner": "vision-bench"
-        },
-        {
-          "file": "test/debug/debug-approval-service.test.mjs",
-          "max": 386,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P4",
           "owner": "vision-bench"

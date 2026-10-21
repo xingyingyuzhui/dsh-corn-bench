@@ -16,7 +16,7 @@ import { DEBUG_ERRORS, DebugError } from './errors.mjs'
  */
 export function createDebugLaunchSpec(input) {
   const backend = input?.backend || 'gdb-openocd'
-  if (!['gdb-openocd', 'keil-simulator', 'mock'].includes(backend)) {
+  if (!['gdb-openocd', 'keil-simulator'].includes(backend)) {
     throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, `不支持的调试后端类型: ${backend}`)
   }
 

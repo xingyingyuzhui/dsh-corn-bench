@@ -286,23 +286,17 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
         })
       }
       artifactSha256 = diskSha || artifactSha256
-    } else if (artifactSha256) {
-      // Artifact path does not exist on disk, but sha256 was provided (e.g. mock test environment)
-      source = 'explicit'
-      resolutionMethod = 'explicit'
     } else {
+      // A launch is always pinned to bytes on disk; a hash alone proves nothing.
       throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, `指定的固件产物不存在: ${artifactPath}`)
     }
   } else if (artifactSha256) {
-    // Explicit sha256 provided without path
-    source = 'explicit'
-    resolutionMethod = 'explicit'
+    throw new DebugError(
+      DEBUG_ERRORS.TARGET_SPEC_INVALID,
+      '只提供了固件 SHA256，缺少固件路径。请指定 artifactPath 或先执行 Keil 编译。',
+    )
   } else if (!existsSync(cwd)) {
-    // Synthetic / mock workspace for testing
-    artifactPath = join(cwd, 'mock.elf')
-    artifactSha256 = `mock_sha256_${targetSpec.target || 'target'}`
-    source = 'explicit'
-    resolutionMethod = 'synthetic'
+    throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, `工作区目录不存在: ${cwd}`)
   } else {
     // 7. Fallback: Auto-detect artifact from workspace via mtime scan.
     //    Search the Keil project directory first — `Objects/` lives next to the
@@ -310,16 +304,10 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
     const found = artifactFinder(cwd, { projectPath })
     artifactCandidates = found
     if (found.length === 0) {
-      if (targetSpec.target && targetSpec.allowMissingArtifact) {
-        artifactSha256 = `mock_sha256_${targetSpec.target}`
-        source = 'explicit'
-        resolutionMethod = 'synthetic'
-      } else {
-        throw new DebugError(
-          DEBUG_ERRORS.TARGET_SPEC_INVALID,
-          '未在工作区找到固件产物 (.axf / .elf)。请先执行 Keil 编译或构建固件，或在启动参数中明确指定 artifactPath。',
-        )
-      }
+      throw new DebugError(
+        DEBUG_ERRORS.TARGET_SPEC_INVALID,
+        '未在工作区找到固件产物 (.axf / .elf)。请先执行 Keil 编译或构建固件，或在启动参数中明确指定 artifactPath。',
+      )
     } else if (found.length === 1) {
       artifactPath = found[0]
       artifactSha256 = computeFileSha256(artifactPath)
@@ -347,22 +335,18 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
     }
   }
 
-  // 4. Settings bindings: resolve tool paths
-  const openocdBin = targetSpec.openocdBin
-    ? String(targetSpec.openocdBin).trim()
-    : bindings.openocd
-      ? String(bindings.openocd).trim()
-      : 'openocd'
+  // 4. Settings bindings: resolve tool paths. Executables come only from the
+  //    user's Settings → Vision bindings, never from the launch request, so a
+  //    caller (Agent included) cannot choose what gets spawned.
+  const openocdBin = bindings.openocd ? String(bindings.openocd).trim() : 'openocd'
 
-  const gdbBin = targetSpec.gdbBin
-    ? String(targetSpec.gdbBin).trim()
-    : bindings.gdb
-      ? String(bindings.gdb).trim()
-      : bindings['arm-none-eabi-gdb']
-        ? String(bindings['arm-none-eabi-gdb']).trim()
-        : 'arm-none-eabi-gdb'
+  const gdbBin = bindings.gdb
+    ? String(bindings.gdb).trim()
+    : bindings['arm-none-eabi-gdb']
+      ? String(bindings['arm-none-eabi-gdb']).trim()
+      : 'arm-none-eabi-gdb'
 
-  const uv4Bin = targetSpec.uv4Bin ? String(targetSpec.uv4Bin).trim() : bindings.uv4 ? String(bindings.uv4).trim() : ''
+  const uv4Bin = bindings.uv4 ? String(bindings.uv4).trim() : ''
 
   // 5. Shared OpenOCD profile: resolve interface and target
   let interfaceName = DEFAULT_OPENOCD_INTERFACE
@@ -377,11 +361,9 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
       },
     )
     if (!profileRes.ok) {
-      if (existsSync(cwd)) {
-        throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, profileRes.error)
-      }
-      interfaceName = String(targetSpec.interfaceName || DEFAULT_OPENOCD_INTERFACE)
-      target = String(targetSpec.target || DEFAULT_OPENOCD_TARGET)
+      // The whitelist is the only thing standing between caller text and the
+      // OpenOCD argv; it holds whether or not the workspace exists.
+      throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, profileRes.error)
     } else {
       interfaceName = profileRes.interfaceName
       target = profileRes.target

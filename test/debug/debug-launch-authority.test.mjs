@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { computeFileSha256, resolveDebugLaunchSpec } from '../../src/application/debug/debug-launch-spec-service.mjs'
 import { DEBUG_ERRORS, DebugError } from '../../src/domain/debug/errors.mjs'
+import { createDebugWorkspace } from '../helpers/debug-workspace.mjs'
 
 test('PR-3: LaunchSpec authority: prioritizes workspace project/target, bindings, and BuildResult', async () => {
   const testDir = join(tmpdir(), `launch_auth_${Date.now()}`)
@@ -141,15 +142,16 @@ test('PR-3: LaunchSpec authority: detects DEBUG_ARTIFACT_DRIFT when artifact cha
   }
 })
 
-test('PR-3: LaunchSpec authority: rejects invalid OpenOCD interface or target using shared profile', async () => {
+test('PR-3: LaunchSpec authority: rejects invalid OpenOCD interface or target using shared profile', async (t) => {
+  const ws = createDebugWorkspace(t)
   await assert.rejects(
     async () => {
       await resolveDebugLaunchSpec({
-        cwd: tmpdir(),
+        cwd: ws.cwd,
         sessionId: 'user-1',
         backend: 'gdb-openocd',
         targetSpec: {
-          artifactSha256: 'mock_sha',
+          artifactPath: ws.artifactPath,
           interfaceName: 'dangerous; rm -rf /',
         },
       })
@@ -161,4 +163,58 @@ test('PR-3: LaunchSpec authority: rejects invalid OpenOCD interface or target us
       return true
     },
   )
+})
+
+/** @param {unknown} err @param {RegExp} message */
+const specInvalid = (err, message) => {
+  assert.ok(err instanceof DebugError)
+  assert.equal(err.code, DEBUG_ERRORS.TARGET_SPEC_INVALID)
+  assert.match(err.message, message)
+  return true
+}
+
+test('launch spec never fabricates firmware: a hash without a path is rejected', async (t) => {
+  const ws = createDebugWorkspace(t)
+  await assert.rejects(
+    resolveDebugLaunchSpec({ cwd: ws.cwd, backend: 'gdb-openocd', targetSpec: { artifactSha256: ws.artifactSha256 } }),
+    (err) => specInvalid(err, /缺少固件路径/),
+  )
+})
+
+test('launch spec never fabricates firmware: a missing workspace is rejected', async () => {
+  await assert.rejects(
+    resolveDebugLaunchSpec({ cwd: join(tmpdir(), `dvb-missing-${Date.now()}`), backend: 'gdb-openocd', targetSpec: {} }),
+    (err) => specInvalid(err, /工作区目录不存在/),
+  )
+})
+
+test('launch spec never fabricates firmware: a missing artifact path is rejected even with a hash', async (t) => {
+  const ws = createDebugWorkspace(t)
+  await assert.rejects(
+    resolveDebugLaunchSpec({
+      cwd: ws.cwd,
+      backend: 'gdb-openocd',
+      targetSpec: { artifactPath: join(ws.cwd, 'Objects', 'gone.axf'), artifactSha256: ws.artifactSha256 },
+    }),
+    (err) => specInvalid(err, /固件产物不存在/),
+  )
+})
+
+test('launch spec tool executables come from bindings only, never from the request', async (t) => {
+  const ws = createDebugWorkspace(t)
+  const resolved = await resolveDebugLaunchSpec(
+    {
+      cwd: ws.cwd,
+      backend: 'gdb-openocd',
+      targetSpec: { artifactPath: ws.artifactPath, openocdBin: '/tmp/evil', gdbBin: '/tmp/evil', uv4Bin: '/tmp/evil' },
+    },
+    {
+      loadWorkspace: () => ({}),
+      loadBindings: () => ({ openocd: '/opt/bound/openocd', gdb: '/opt/bound/gdb' }),
+      portAllocator: async () => 4444,
+    },
+  )
+  assert.equal(resolved.spec.tools.openocdBin, '/opt/bound/openocd')
+  assert.equal(resolved.spec.tools.gdbBin, '/opt/bound/gdb')
+  assert.equal(resolved.spec.tools.uv4Bin, '')
 })
