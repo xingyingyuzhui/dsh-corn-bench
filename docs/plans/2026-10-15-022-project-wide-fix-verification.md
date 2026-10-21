@@ -83,3 +83,11 @@ Desktop lab 安装命令成功，未启动或关闭用户的 App。Web `dsh plug
 - 可选 Harness 只更新源码、版本和自动测试，保持未安装、未启用，不改变当前宿主私有接口兼容范围。
 - ECharts 依赖升级仍为单独事项；本轮修复自定义 formatter 的已证实 HTML 注入点，不声称清零所有第三方依赖风险。
 - 套件父仓库原有 AGENTS.md、`.cursor/` 和子模块状态未清理或纳入无关提交。
+
+## 2026-10-22 GitHub 同步收尾
+
+用户已明确授权将当前套件上传至自己的 GitHub。Bench 修复提交为 `c23e988`（`fix: close runtime isolation and debug safety gaps`）；同一主分支此前未同步的 29 个提交一并纳入此次正常快进推送。
+
+提交后重新执行两组件 `npm run quality`：Bench **1848/1848**、Harness **30/30**，全部门禁通过。Bench `build-info.json` 的 `gitSha` 更新为实际修复提交 `c23e988`，运行文件 `buildId` 仍为 `ebf6e5f97d53c32fb494738ba7c244f59d59f20e571f03eedc056174520e606c`；后续构建信息提交不改变这份业务源码。
+
+目标仓库为 `xingyingyuzhui/dsh-vision-bench` 与 `xingyingyuzhui/dsh-vision-suite` 的 `main` 分支。套件仓库包含 Harness 修复并更新 Bench 子模块指针；父仓库本机 `AGENTS.md` 与 `.cursor/` 状态保留在本地。本次仅同步 GitHub 源码，不创建 npm 发布、GitHub Release 或新的安装验收声明；远端最终提交以 GitHub/Git 引用为准。
