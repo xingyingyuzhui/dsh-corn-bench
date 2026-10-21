@@ -13,6 +13,7 @@ import { deviceDisabledOf, targetRequired } from '../../domain/modbus/validation
 import { entryLabel, writeLocks } from './modbus-runtime-context.mjs'
 import { createPendingWrite, restorePendingWrite, takePendingWrite } from './write-approval-service.mjs'
 import { executeApprovedWrite } from './write-execute.mjs'
+import { loadAgentPolicy } from '../../infrastructure/store/agent-policy-store.mjs'
 
 /**
  * @typedef {import('../../types/modbus.js').ModbusCommandBody} ModbusCommandBody
@@ -128,7 +129,10 @@ export const modbusWrite = async (home, cwd, body, opts = {}) => {
       }
     }
   }
-  if (origin.source === 'agent' && !(body && body.confirm === true)) {
+  // Settings → Vision can turn Agent write approval off for bench/dev work.
+  // The policy is read per write and fails safe to "approval required".
+  const agentApprovalOff = origin.source === 'agent' && !loadAgentPolicy(home).agentWriteApproval
+  if (origin.source === 'agent' && !agentApprovalOff && !(body && body.confirm === true)) {
     const devForWrite = pack.devices.find((d) => d.id === targetDid)
     const label = entryLabel(fn, address, count, writeValues)
     const request = createPendingWrite(room.cwd, {
@@ -158,7 +162,7 @@ export const modbusWrite = async (home, cwd, body, opts = {}) => {
 
   writeLocks.add(room.cwd)
   try {
-    return await executeApprovedWrite({
+    const ran = await executeApprovedWrite({
       home,
       roomCwd: room.cwd,
       sessionId,
@@ -177,6 +181,8 @@ export const modbusWrite = async (home, cwd, body, opts = {}) => {
       check,
       targetPointIds,
     })
+    // Audit trail: an unapproved Agent write says why it needed no approval.
+    return agentApprovalOff && ran && typeof ran === 'object' ? { ...ran, approval: 'policy-disabled' } : ran
   } finally {
     writeLocks.delete(room.cwd)
   }

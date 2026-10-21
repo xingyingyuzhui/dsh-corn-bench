@@ -61,7 +61,7 @@ export default {
         },
         {
           "file": "src/interfaces/rpc/vision-rpc-router.mjs",
-          "max": 452,
+          "max": 412,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
           "owner": "vision-bench"

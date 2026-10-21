@@ -18,6 +18,7 @@ import {
   listConnectionStates,
 } from '../../infrastructure/modbus/serial-monitor.mjs'
 import { loadBindings, probeBindings } from '../../infrastructure/store/bindings-store.mjs'
+import { loadAgentPolicy } from '../../infrastructure/store/agent-policy-store.mjs'
 import { loadGlobalShare } from '../../infrastructure/store/global-share-store.mjs'
 import { journalView, touchServiceSession } from '../../infrastructure/store/journal-store.mjs'
 import { loadWorkspace, workspaceRepository } from '../../infrastructure/store/workspace-store.mjs'
@@ -145,6 +146,7 @@ export async function snapshot(home, cwd, sessionId) {
     bindings,
     globalShare,
     health: probeBindings(bindings),
+    agentPolicy: loadAgentPolicy(home),
     ioRuntime: getVisionIoBroker().snapshot(),
     presetHealth: presetHealthCached,
   }

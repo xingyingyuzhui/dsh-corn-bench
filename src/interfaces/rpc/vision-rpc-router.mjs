@@ -29,8 +29,6 @@ import {
 } from '../../infrastructure/modbus/serial-monitor.mjs'
 import { listSerialPorts } from '../../infrastructure/modbus/serial-ports.mjs'
 import { journalView, resolveManualRequest } from '../../infrastructure/store/journal-store.mjs'
-import { loadBindings, probeBindings, saveBindings } from '../../infrastructure/store/bindings-store.mjs'
-import { loadGlobalShare, saveGlobalShare } from '../../infrastructure/store/global-share-store.mjs'
 import { loadWorkspace, saveWorkspaceAsync } from '../../infrastructure/store/workspace-store.mjs'
 import { clearFramesByConnection } from '../../infrastructure/store/journal-store.mjs'
 import { normalizeCommand } from '../../application/commands/command-contract.mjs'
@@ -44,6 +42,7 @@ import { isScopePartitioned } from '../../domain/modbus/config-scope.mjs'
 import { explicitInternalSampleField } from '../../domain/modbus/caller-projection.mjs'
 import { createDebugRpcHandler } from './debug-rpc-handler.mjs'
 import { createVerifyRpcHandler } from './verify-rpc-handler.mjs'
+import { handleSettingsEndpoint, SETTINGS_ENDPOINTS } from './vision-rpc-settings.mjs'
 import {
   WORKSPACE_CONFIG_KEYS,
   loadWorkspaceForSession,
@@ -98,49 +97,11 @@ export function createVisionRpcRouter(deps) {
       }
     }
 
+    if (SETTINGS_ENDPOINTS.has(endpoint)) return handleSettingsEndpoint(home, endpoint, body)
+
     switch (endpoint) {
       case 'state':
         return snapshot(home, String(body.cwd || '') || undefined, String(body.sessionId || ''))
-      case 'bindings/get':
-        return {
-          ok: true,
-          bindings: loadBindings(home),
-          globalShare: loadGlobalShare(home),
-          health: probeBindings(loadBindings(home)),
-        }
-      case 'bindings/save': {
-        const saved = saveBindings(home, body && typeof body === 'object' ? body.bindings : undefined)
-        if (!saved.ok) return saved
-        if (body && body.share !== undefined) {
-          saveGlobalShare(home, body.share)
-        }
-        const sid = body && typeof body === 'object' ? String(body.sessionId || '').trim() : ''
-        const cwd = body && typeof body === 'object' ? String(body.cwd || '').trim() : ''
-        if (cwd && body.share !== undefined) {
-          try {
-            await mutateConfig({
-              home,
-              cwd,
-              sessionId: sid,
-              source: 'user',
-              action: 'config',
-              payload: {
-                cwd,
-                operation: 'share.update',
-                value: { share: body.share, confirmed: true },
-              },
-            })
-          } catch {
-            /* workspace sync best-effort */
-          }
-        }
-        return {
-          ok: true,
-          bindings: saved.bindings,
-          globalShare: loadGlobalShare(home),
-          health: probeBindings(saved.bindings),
-        }
-      }
       case 'workspace/get': {
         const room = requireWorkspaceCwd(body && typeof body === 'object' ? body.cwd : undefined)
         if (room.error) return { ok: false, error: room.error }

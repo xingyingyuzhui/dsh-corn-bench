@@ -39,6 +39,11 @@ function confirmRevoke(t) {
   return window.confirm(t('shareRevokeConfirm')) === true
 }
 
+function confirmAgentApprovalOff(t) {
+  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return false
+  return window.confirm(t('agentApprovalOffConfirm')) === true
+}
+
 export function createSettingsPage(React, t, post, options = {}) {
   const getScope = typeof options.getScope === 'function' ? options.getScope : () => ({ cwd: '', sessionId: '' })
   return function SettingsPage() {
@@ -54,6 +59,8 @@ export function createSettingsPage(React, t, post, options = {}) {
     const [configVersion, setConfigVersion] = React.useState(1)
     const [shareBusy, setShareBusy] = React.useState(false)
     const [preserveNav, setPreserveNav] = React.useState(() => getPreserveNavPreference())
+    const [agentWriteApproval, setAgentWriteApproval] = React.useState(true)
+    const [policyBusy, setPolicyBusy] = React.useState(false)
 
     const scope = getScope() || {}
     const cwd = String(scope.cwd || '')
@@ -62,6 +69,7 @@ export function createSettingsPage(React, t, post, options = {}) {
       if (data && data.bindings) setBindings(data.bindings)
       if (data && data.health) setHealth(data.health)
       if (data && data.ioRuntime) setIoRuntime(data.ioRuntime)
+      if (data && data.agentPolicy) setAgentWriteApproval(data.agentPolicy.agentWriteApproval !== false)
       if (data && data.globalShare) {
         setShare(normalizeShareState(data.globalShare))
       } else {
@@ -140,6 +148,25 @@ export function createSettingsPage(React, t, post, options = {}) {
           setMessage({ kind: 'err', text: String((err && err.message) || t('fail')) })
         })
         .finally(() => setShareBusy(false))
+    }
+
+    function applyAgentPolicy(on) {
+      if (!on && !confirmAgentApprovalOff(t)) return
+      setPolicyBusy(true)
+      setMessage(null)
+      post('/dsh-vision-bench/bindings', { agentPolicy: { agentWriteApproval: on } })
+        .then((data) => {
+          if (data && data.ok) {
+            setAgentWriteApproval(!data.agentPolicy || data.agentPolicy.agentWriteApproval !== false)
+            setMessage({ kind: 'ok', text: t('agentPolicySaved') })
+            return
+          }
+          setMessage({ kind: 'err', text: (data && data.error) || t('fail') })
+        })
+        .catch((err) => {
+          setMessage({ kind: 'err', text: String((err && err.message) || t('fail')) })
+        })
+        .finally(() => setPolicyBusy(false))
     }
 
     function renderSwitch(checked, disabled, onChange, id, ariaLabel) {
@@ -270,6 +297,15 @@ export function createSettingsPage(React, t, post, options = {}) {
           ),
         ),
       ),
+      el('div', { className: 'dvb-title', style: { marginTop: '16px' } }, t('agentPolicyTitle')),
+      el('div', { className: 'dvb-hint', style: { marginBottom: '6px' } }, t('agentPolicyHint')),
+      settingRow(
+        el('span', { style: { fontWeight: 500 } }, t('agentWriteApproval')),
+        renderSwitch(agentWriteApproval, policyBusy, applyAgentPolicy, 'agent-write-approval', t('agentWriteApproval')),
+      ),
+      agentWriteApproval
+        ? null
+        : el('div', { className: 'dvb-msg', 'data-kind': 'err' }, t('agentApprovalOffWarning')),
       el('div', { className: 'dvb-title', style: { marginTop: '16px' } }, t('navBehaviorTitle')),
       settingRow(
         el('span', { style: { fontWeight: 500 } }, t('preserveLastView')),

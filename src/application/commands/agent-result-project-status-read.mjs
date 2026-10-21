@@ -179,6 +179,7 @@ export function projectStatus(_args, result) {
     ...pickSafetyFields(result),
     cwd: result.cwd,
     configVersion: result.configVersion ?? mb.configVersion,
+    agentWriteApproval: result.agentWriteApproval,
     session: result.session,
     keil: keil ? { project: keil.project || '', target: keil.target || '' } : undefined,
     modbus: {

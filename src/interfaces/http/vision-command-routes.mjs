@@ -51,6 +51,10 @@ export async function handleCommand(home, req, readBodyAndTouchSession, deps = {
         home,
         payload: body.payload || body,
         action: body.action || body.payload?.action,
+        // The bridge exists for out-of-process Agent tools. Its caller is an
+        // Agent whatever the body claims: approval gates key on source, and a
+        // self-declared 'user' would skip them.
+        source: 'agent',
       },
       deps,
     ),

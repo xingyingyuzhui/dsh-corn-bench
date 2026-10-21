@@ -21,6 +21,7 @@ import { pointRuntimeStatus } from '../../../domain/modbus/point-model.mjs'
 import { listConnectionStates } from '../../../infrastructure/modbus/serial-monitor.mjs'
 import { journalView } from '../../../infrastructure/store/journal-store.mjs'
 import { loadWorkspace, saveWorkspaceAsync } from '../../../infrastructure/store/workspace-store.mjs'
+import { loadAgentPolicy } from '../../../infrastructure/store/agent-policy-store.mjs'
 
 /**
  * @param {any} src
@@ -144,6 +145,7 @@ export async function handleProjectCommand(home, args, room, origin, opts) {
       action,
       cwd: room.cwd,
       configVersion,
+      agentWriteApproval: loadAgentPolicy(home).agentWriteApproval ? 'required' : 'disabled',
       session: {
         autoService: true,
         sessionId: sessionId || workspace.session?.boundId || '',
