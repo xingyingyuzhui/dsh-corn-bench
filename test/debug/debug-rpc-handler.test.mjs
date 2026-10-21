@@ -13,6 +13,7 @@ test('Debug RPC Handler routes state, commands, and events over Connection RPC',
       continue: async () => {},
       pause: async () => {},
       step: async () => {},
+      addBreakpoint: async () => {},
     }),
   })
 

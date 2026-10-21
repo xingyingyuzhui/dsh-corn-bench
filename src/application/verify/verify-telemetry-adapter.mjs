@@ -1,6 +1,5 @@
 // @ts-check
 
-import { selectPointQueryValue } from '../modbus/point-query-value.mjs'
 import { createScopedPointReader } from './scoped-point-reader.mjs'
 import { readingFromRecord } from './verify-point-scope.mjs'
 import { SAMPLE_STAMP_MESSAGES, unavailable, UNAVAILABLE_REASONS } from '../../domain/verify/observation.mjs'
@@ -70,8 +69,9 @@ function readServiceDirectRead(modbusReadFn, getHome) {
     if (rows.length !== 1) {
       return unavailable(UNAVAILABLE_REASONS.READ_FAILED, rows.length ? '读取结果目标行重复' : '读取结果缺少目标行')
     }
-    const selected = selectPointQueryValue({ workspaceModbus: target.view?.layered, point, values: rows })
-    if (selected.status !== 'available') return unavailable(UNAVAILABLE_REASONS.READ_FAILED, '读取结果来源与点位不符')
+    // Identity was resolved before I/O and provenance is unique above. The scoped
+    // reader re-resolves after I/O and validates the capture stamp there, including
+    // a generation first initialized by this read. Do not compare to a pre-read token.
     const reading = readingFromRecord(rows[0], point, 'direct-read')
     if (reading && Number(reading.timestamp) > Date.now()) {
       return unavailable(UNAVAILABLE_REASONS.INVALID_SAMPLE, SAMPLE_STAMP_MESSAGES.FUTURE)

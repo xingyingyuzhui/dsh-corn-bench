@@ -44,8 +44,8 @@ export function normalizeCommand(input) {
   return {
     commandId: String(raw.commandId || payload.commandId || '').trim() || newCommandId(),
     home: raw.home,
-    cwd: String(raw.cwd || payload.cwd || '').trim(),
-    sessionId: String(raw.sessionId || payload.sessionId || '').trim(),
+    cwd: String(raw.cwd || '').trim(),
+    sessionId: String(raw.sessionId || '').trim(),
     source: raw.source === 'agent' || raw.source === 'system' ? raw.source : 'user',
     action,
     payload,

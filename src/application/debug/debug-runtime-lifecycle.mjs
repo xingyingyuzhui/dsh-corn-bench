@@ -21,7 +21,8 @@ export function createDebugRuntimeLifecycle(deps) {
   const { registry, leaseManager, backendFactory, onJournalEvent = null, home = '' } = deps
   const { sessions, failedSessions, notifyOwnerWaiters, purgeFailedSessions, toView, clearOwnerWaiters } = registry
 
-  return {
+  let closed = false
+  const lifecycle = {
     /**
      * @param {{
      *   debugSessionId?: string,
@@ -33,6 +34,7 @@ export function createDebugRuntimeLifecycle(deps) {
      * @returns {Promise<import('../../types/debug.d.ts').DebugSessionView>}
      */
     async start(spec) {
+      if (closed) throw new DebugError(DEBUG_ERRORS.STALE, '调试运行时已关闭')
       const debugSessionId = spec.debugSessionId || `ds_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
       const backendKind = spec.backend || 'gdb-openocd'
       const ownerSessionId = spec.ownerSessionId
@@ -40,6 +42,11 @@ export function createDebugRuntimeLifecycle(deps) {
 
       if (!ownerSessionId) {
         throw new DebugError(DEBUG_ERRORS.NOT_OWNER, '启动调试必须指定 ownerSessionId')
+      }
+
+      purgeFailedSessions()
+      if (sessions.has(debugSessionId) || failedSessions.has(debugSessionId)) {
+        throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, 'debugSessionId 已使用，请使用新的调试会话 ID')
       }
 
       const lease = leaseManager.acquireLease(spec.targetSpec || {}, {
@@ -85,6 +92,11 @@ export function createDebugRuntimeLifecycle(deps) {
         isStopping: false,
       }
 
+      /** @type {() => void} */
+      let finishStartup = () => {}
+      sessionRecord.startupDone = new Promise((resolve) => {
+        finishStartup = () => resolve(undefined)
+      })
       sessions.set(debugSessionId, sessionRecord)
       notifyOwnerWaiters(sessionRecord)
 
@@ -97,6 +109,7 @@ export function createDebugRuntimeLifecycle(deps) {
           eventRing,
         })
         sessionRecord.backend = backend
+        if (sessionRecord.isStopping) throw new DebugError(DEBUG_ERRORS.STALE, '调试启动已取消')
 
         if (backend && typeof backend.subscribe === 'function') {
           sessionRecord.unsubscribeBackend = backend.subscribe((/** @type {any} */ backendEvent) => {
@@ -108,6 +121,7 @@ export function createDebugRuntimeLifecycle(deps) {
           await backend.start(spec)
         }
 
+        if (sessionRecord.isStopping) throw new DebugError(DEBUG_ERRORS.STALE, '调试启动已取消')
         if (sessionRecord.state === 'starting') {
           sessionRecord.state = transition(sessionRecord.state, 'ready')
         }
@@ -148,7 +162,8 @@ export function createDebugRuntimeLifecycle(deps) {
         sessionRecord.updatedAt = Date.now()
         sessionRecord.failure = {
           message: err instanceof Error ? err.message : String(err),
-          errorCode: /** @type {any} */ (err)?.errorCode || /** @type {any} */ (err)?.code || DEBUG_ERRORS.BACKEND_UNAVAILABLE,
+          errorCode:
+            /** @type {any} */ (err)?.errorCode || /** @type {any} */ (err)?.code || DEBUG_ERRORS.BACKEND_UNAVAILABLE,
           stack: err instanceof Error ? err.stack : undefined,
           at: Date.now(),
         }
@@ -178,8 +193,10 @@ export function createDebugRuntimeLifecycle(deps) {
         sessionRecord.backend = null
         purgeFailedSessions()
         failedSessions.set(debugSessionId, sessionRecord)
-        sessions.delete(debugSessionId)
+        if (sessions.get(debugSessionId) === sessionRecord) sessions.delete(debugSessionId)
         throw err
+      } finally {
+        finishStartup()
       }
     },
 
@@ -192,79 +209,26 @@ export function createDebugRuntimeLifecycle(deps) {
         return { ok: true, alreadyStopped: true }
       }
 
-      if (scope.ownerSessionId && session.ownerSessionId !== scope.ownerSessionId) {
+      if (!scope.ownerSessionId || session.ownerSessionId !== scope.ownerSessionId) {
         throw new DebugError(DEBUG_ERRORS.NOT_OWNER, '无权停止该调试会话: 会话属主不匹配', {
           debugSessionId: scope.debugSessionId,
         })
       }
 
+      if (session.stopPromise) return session.stopPromise
       session.isStopping = true
-      if (canTransition(session.state, 'stopping')) {
-        session.state = transition(session.state, 'stopping')
-      }
-
-      try {
-        if (session.backend && typeof session.backend.stop === 'function') {
-          await session.backend.stop()
-        }
-      } finally {
-        if (session.unsubscribeBackend) {
-          try {
-            session.unsubscribeBackend()
-          } catch {
-            /* ignore */
-          }
-          session.unsubscribeBackend = null
+      session.stopPromise = Promise.resolve().then(async () => {
+        await session.startupDone
+        if (sessions.get(scope.debugSessionId) !== session) return { ok: true, alreadyStopped: true }
+        if (canTransition(session.state, 'stopping')) {
+          session.state = transition(session.state, 'stopping')
         }
 
-        leaseManager.releaseLease(session.debugSessionId, session.ownerSessionId)
-
-        if (canTransition(session.state, 'idle')) {
-          session.state = transition(session.state, 'idle')
-        } else {
-          session.state = 'idle'
-        }
-
-        session.eventRing.push({
-          debugSessionId: session.debugSessionId,
-          ownerSessionId: session.ownerSessionId,
-          workspaceCwd: session.workspaceCwd,
-          backend: session.backendKind,
-          type: DEBUG_EVENT_TYPES.SESSION_STOPPED,
-        })
-
-        session.eventRing.push({
-          debugSessionId: session.debugSessionId,
-          ownerSessionId: session.ownerSessionId,
-          workspaceCwd: session.workspaceCwd,
-          backend: session.backendKind,
-          type: DEBUG_EVENT_TYPES.SESSION_CLOSED,
-        })
-
-        if (onJournalEvent) {
-          await onJournalEvent({
-            action: 'debug-stop',
-            ok: true,
-            summary: `硬件调试已停止: ${session.debugSessionId}`,
-            cwd: session.workspaceCwd,
-            sessionId: session.ownerSessionId,
-            debugSessionId: session.debugSessionId,
-          }).catch(() => {})
-        }
-
-        sessions.delete(session.debugSessionId)
-      }
-
-      return { ok: true, debugSessionId: scope.debugSessionId }
-    },
-
-    /**
-     * @param {string} [reason]
-     */
-    async shutdown(reason = 'runtime_shutdown') {
-      clearOwnerWaiters()
-      for (const session of sessions.values()) {
         try {
+          if (session.backend && typeof session.backend.stop === 'function') {
+            await session.backend.stop()
+          }
+        } finally {
           if (session.unsubscribeBackend) {
             try {
               session.unsubscribeBackend()
@@ -273,19 +237,61 @@ export function createDebugRuntimeLifecycle(deps) {
             }
             session.unsubscribeBackend = null
           }
-          if (session.backend && typeof session.backend.stop === 'function') {
-            await session.backend.stop()
+
+          leaseManager.releaseLease(session.debugSessionId, session.ownerSessionId)
+
+          if (canTransition(session.state, 'idle')) {
+            session.state = transition(session.state, 'idle')
+          } else {
+            session.state = 'idle'
           }
+
+          session.eventRing.push({
+            debugSessionId: session.debugSessionId,
+            ownerSessionId: session.ownerSessionId,
+            workspaceCwd: session.workspaceCwd,
+            backend: session.backendKind,
+            type: DEBUG_EVENT_TYPES.SESSION_STOPPED,
+          })
+
           session.eventRing.push({
             debugSessionId: session.debugSessionId,
             ownerSessionId: session.ownerSessionId,
             workspaceCwd: session.workspaceCwd,
             backend: session.backendKind,
             type: DEBUG_EVENT_TYPES.SESSION_CLOSED,
-            payload: { reason },
           })
+
+          if (onJournalEvent) {
+            await onJournalEvent({
+              action: 'debug-stop',
+              ok: true,
+              summary: `硬件调试已停止: ${session.debugSessionId}`,
+              cwd: session.workspaceCwd,
+              sessionId: session.ownerSessionId,
+              debugSessionId: session.debugSessionId,
+            }).catch(() => {})
+          }
+
+          if (sessions.get(session.debugSessionId) === session) sessions.delete(session.debugSessionId)
+        }
+
+        return { ok: true, debugSessionId: scope.debugSessionId }
+      })
+      return session.stopPromise
+    },
+
+    /**
+     * @param {string} [_reason]
+     */
+    async shutdown(_reason = 'runtime_shutdown') {
+      closed = true
+      clearOwnerWaiters()
+      for (const session of [...sessions.values()]) {
+        try {
+          await lifecycle.stop({ debugSessionId: session.debugSessionId, ownerSessionId: session.ownerSessionId })
         } catch {
-          /* ignore during shutdown */
+          /* cleanup continues for other sessions */
         }
       }
       sessions.clear()
@@ -293,4 +299,5 @@ export function createDebugRuntimeLifecycle(deps) {
       leaseManager.clearAll()
     },
   }
+  return lifecycle
 }

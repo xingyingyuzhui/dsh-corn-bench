@@ -1,6 +1,6 @@
 {
   "name": "dsh-vision-bench",
-  "version": "0.29.29",
+  "version": "0.29.30",
   "description": "Vision 模式：会话区调试/上位机点表（倍率/单位/告警上下限、CSV 导入导出、可视化组件），Keil 编译与日志、产物哈希、OpenOCD 烧录确认、串口报文订阅，Modbus 读点和受控写点（Agent 写点需界面批准），人工操作请求卡、共享任务与时间线，并安装「Vision模式」Agent 预设。",
   "keywords": [
     "dsh",
@@ -357,6 +357,7 @@
     "src/application/modbus/point-service.mjs",
     "src/application/modbus/point-query-service.mjs",
     "src/application/modbus/point-query-value.mjs",
+    "src/application/modbus/caller-runtime-projection.mjs",
     "src/application/modbus/read-service.mjs",
     "src/application/modbus/write-service.mjs",
     "src/application/modbus/write-execute.mjs",

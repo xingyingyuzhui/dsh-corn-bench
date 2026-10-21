@@ -15,7 +15,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const profile = join(homedir(), '.dsh', 'profiles', 'desktop')
 const localDir = join(profile, '.dsh-local-plugins')
-const tarballName = `${pkg.name}-${pkg.version}.tgz`
+const packedTarballName = `${pkg.name}-${pkg.version}.tgz`
+// pnpm treats a local tarball path as immutable. A version alone can still hit
+// an older package during an iterative lab install, even when the file changed.
+const buildInfo = JSON.parse(readFileSync(join(root, 'build-info.json'), 'utf8'))
+const buildSuffix = String(buildInfo.buildId || '').slice(0, 12)
+if (!/^[a-f0-9]{12}$/.test(buildSuffix)) throw new Error('Generate valid build-info.json before installing')
+const tarballName = `${pkg.name}-${pkg.version}-${buildSuffix}.tgz`
 const tarballPath = join(localDir, tarballName)
 const DESKTOP_PROFILE_BUNDLES = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
 
@@ -32,21 +38,18 @@ if (running.status === 0) {
 
 mkdirSync(localDir, { recursive: true })
 
-const packedInRoot = join(root, tarballName)
-if (existsSync(packedInRoot)) {
-  copyFileSync(packedInRoot, tarballPath)
-} else {
-  const cache = mkdtempSync(join(tmpdir(), 'npm-cache-'))
-  const pack = spawnSync('npm', ['pack', '--cache', cache, '--pack-destination', localDir], {
-    cwd: root,
-    encoding: 'utf8',
-  })
-  rmSync(cache, { recursive: true, force: true })
-  if (pack.status !== 0) {
-    console.error(pack.stdout || pack.stderr)
-    process.exit(pack.status ?? 1)
-  }
+// Pack the current tree, never reuse a possibly stale root-level tarball.
+const cache = mkdtempSync(join(tmpdir(), 'npm-cache-'))
+const pack = spawnSync('npm', ['pack', '--cache', cache, '--pack-destination', localDir], {
+  cwd: root,
+  encoding: 'utf8',
+})
+rmSync(cache, { recursive: true, force: true })
+if (pack.status !== 0) {
+  console.error(pack.stdout || pack.stderr)
+  process.exit(pack.status ?? 1)
 }
+copyFileSync(join(localDir, packedTarballName), tarballPath)
 if (!existsSync(tarballPath)) {
   console.error(`expected pack output ${tarballPath}`)
   process.exit(1)

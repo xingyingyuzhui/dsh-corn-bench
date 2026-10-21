@@ -156,10 +156,11 @@ export async function executeDebugCommand(session, command, deps = {}) {
         condition: command.condition,
         verified: true,
       }
+      if (!session.backend?.addBreakpoint) throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, '后端不支持 Breakpoint')
+      const ack = await session.backend.addBreakpoint(bp)
+      if (ack?.ok === false) throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, ack.error || '后端拒绝创建 Breakpoint')
+      bp.verified = ack?.verified !== false
       session.breakpoints.set(bpId, bp)
-      if (session.backend?.addBreakpoint) {
-        await session.backend.addBreakpoint(bp)
-      }
       session.eventRing.push({
         debugSessionId: session.debugSessionId,
         ownerSessionId: session.ownerSessionId,
@@ -174,10 +175,12 @@ export async function executeDebugCommand(session, command, deps = {}) {
     case 'removeBreakpoint': {
       const bp = session.breakpoints.get(command.id)
       if (bp) {
+        if (!session.backend?.removeBreakpoint)
+          throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, '后端不支持 removeBreakpoint')
+        const ack = await session.backend.removeBreakpoint(bp)
+        if (ack?.ok === false)
+          throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, ack.error || '后端拒绝删除 Breakpoint')
         session.breakpoints.delete(command.id)
-        if (session.backend?.removeBreakpoint) {
-          await session.backend.removeBreakpoint(bp)
-        }
         session.eventRing.push({
           debugSessionId: session.debugSessionId,
           ownerSessionId: session.ownerSessionId,
@@ -198,10 +201,11 @@ export async function executeDebugCommand(session, command, deps = {}) {
         accessType: command.accessType || command.access || 'write',
         verified: true,
       }
+      if (!session.backend?.addWatchpoint) throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, '后端不支持 Watchpoint')
+      const ack = await session.backend.addWatchpoint(wp)
+      if (ack?.ok === false) throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, ack.error || '后端拒绝创建 Watchpoint')
+      wp.verified = ack?.verified !== false
       session.watchpoints.set(wpId, wp)
-      if (session.backend?.addWatchpoint) {
-        await session.backend.addWatchpoint(wp)
-      }
       session.eventRing.push({
         debugSessionId: session.debugSessionId,
         ownerSessionId: session.ownerSessionId,
@@ -216,10 +220,12 @@ export async function executeDebugCommand(session, command, deps = {}) {
     case 'removeWatchpoint': {
       const wp = session.watchpoints.get(command.id)
       if (wp) {
+        if (!session.backend?.removeWatchpoint)
+          throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, '后端不支持 removeWatchpoint')
+        const ack = await session.backend.removeWatchpoint(wp)
+        if (ack?.ok === false)
+          throw new DebugError(DEBUG_ERRORS.COMMAND_REJECTED, ack.error || '后端拒绝删除 Watchpoint')
         session.watchpoints.delete(command.id)
-        if (session.backend?.removeWatchpoint) {
-          await session.backend.removeWatchpoint(wp)
-        }
         session.eventRing.push({
           debugSessionId: session.debugSessionId,
           ownerSessionId: session.ownerSessionId,

@@ -1,6 +1,7 @@
 // @ts-check
 import { normalizeModbus } from '../../../domain/modbus/modbus-migration.mjs'
 import { componentLatestValues } from '../../../domain/modbus/trend-model.mjs'
+import { currentPointQueryValues } from '../../modbus/point-query-value.mjs'
 import { mutateConfig } from '../../config/config-mutation-service.mjs'
 import { ensureWorkspaceClaimed, modbusForSession } from '../../modbus/workspace-session-view.mjs'
 
@@ -56,7 +57,7 @@ export async function handleVisualizationCommand(home, args, room, origin, opts)
   if (op === 'get') {
     const comp = (viz.components || []).find((/** @type {any} */ c) => c.id === id)
     if (!comp) return { ok: false, error: `组件不存在: ${id}`, errorCode: 'VIZ_NOT_FOUND' }
-    const values = componentLatestValues(pack.values, pack.points, comp.pointIds)
+    const values = componentLatestValues(currentPointQueryValues(workspace.modbus, pack.points, pack.values), pack.points, comp.pointIds)
     return {
       ok: true,
       action,

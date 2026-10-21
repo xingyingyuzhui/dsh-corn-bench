@@ -63,6 +63,7 @@ test('debug-command-ownership: starting session requires sessionId and handles t
   const resStop = await executeDebugCommand(
     {
       action: 'debug.stop',
+      cwd: '/workspace/test',
       sessionId: 'sess_alice',
       debugSessionId: resOk.debugSessionId,
     },
@@ -109,6 +110,7 @@ test('debug-command-ownership: foreign session cannot control anothers debug ses
   const foreignRes = await executeDebugCommand(
     {
       action: 'debug.pause',
+      cwd: '/workspace/owner',
       sessionId: 'sess_intruder',
       debugSessionId,
     },
@@ -176,6 +178,10 @@ test('debug-command-ownership: executes full lifecycle of actions (step, breakpo
         return [{ name: 'r0', value: '0x0000000a' }]
       },
       async resetHalt() {},
+      async addBreakpoint() {},
+      async removeBreakpoint() {},
+      async addWatchpoint() {},
+      async removeWatchpoint() {},
     }),
   })
 

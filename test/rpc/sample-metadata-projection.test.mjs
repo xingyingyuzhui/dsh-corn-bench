@@ -15,7 +15,7 @@ test('caller views omit internal sample metadata and still persist it', async (t
       configVersion: 1,
       connections: [{ id: 'c1', name: 'C1', conn: { mode: 'tcp', host: '127.0.0.1', tcpPort: 502, sim: true } }],
       devices: [{ id: 'd1', connectionId: 'c1', name: 'D1', unitId: 1 }],
-      points: [vpoint('p1')],
+      points: [vpoint('p1', { scale: 1, offset: 0 })],
       values: [liveValue('p1', 7)],
     },
   })

@@ -1,4 +1,5 @@
 // @ts-check
+import { sameCwd } from '../../shared/path-normalize.mjs'
 import { DEBUG_ERRORS, DebugError } from './errors.mjs'
 
 /**
@@ -85,7 +86,7 @@ export class TargetLeaseManager {
 
     const existing = this.leases.get(key)
     if (existing) {
-      if (existing.sessionId !== context.sessionId) {
+      if (existing.sessionId !== context.sessionId || !context.ownerSessionId || existing.ownerSessionId !== context.ownerSessionId || !sameCwd(existing.workspaceCwd, context.workspaceCwd)) {
         throw new DebugError(DEBUG_ERRORS.TARGET_BUSY, `调试目标已被其他会话占用 (${key})`, {
           targetKey: key,
           currentSessionId: existing.sessionId,

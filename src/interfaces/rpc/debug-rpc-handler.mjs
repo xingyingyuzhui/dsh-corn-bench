@@ -140,7 +140,7 @@ export function createDebugRpcHandler(deps) {
 
           const res = await runtime.command(
             { debugSessionId: targetId, ownerSessionId: sessionId },
-            { type: op, ...row },
+            { ...row, type: op },
           )
           return res
         }

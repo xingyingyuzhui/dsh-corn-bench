@@ -3,6 +3,8 @@
 import { TREND_WINDOW_MS } from '../../../../domain/modbus/trend-model.mjs'
 import { VIZ_COLORS, echartsSeriesFromTrend } from '../viz-helpers.mjs'
 
+const escapeTooltipText = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch])
+
 export const darkAlpha = (isDark, a) => (isDark ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
 
 export const checkDark = () =>
@@ -245,12 +247,12 @@ export function buildLineOption(s = {}, payload, isDark = false, isPreview = fal
         const val = p0.axisValue ?? (Array.isArray(p0.value) ? p0.value[0] : p0.value)
         const head = isCount ? `点 ${p0.axisValue || p0.dataIndex + 1}` : fmtTime(val)
         return (
-          `<div>${head}</div>` +
+          `<div>${escapeTooltipText(head)}</div>` +
           arr
             .map((it) => {
               const v = Array.isArray(it.value) ? it.value[1] : it.value
               const num = v != null && !isNaN(v) ? Number(v).toFixed(yDec != null && yDec !== '' ? Number(yDec) : 1) : '-'
-              return `<div>${it.marker || ''}${it.seriesName || ''}: <b>${num}${yUnit ? ' ' + yUnit : ''}</b></div>`
+              return `<div>${it.marker || ''}${escapeTooltipText(it.seriesName)}: <b>${num}${yUnit ? ' ' + escapeTooltipText(yUnit) : ''}</b></div>`
             })
             .join('')
         )

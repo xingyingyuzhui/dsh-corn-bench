@@ -8,12 +8,9 @@
 
 import { listPendingWrites, migrateLegacyDisabled, requestFocus } from '../../application/modbus/index.mjs'
 import { appendEvidence } from '../../application/modbus/evidence-append-service.mjs'
-import { claimLegacyPrivate, projectModbusForSession } from '../../application/modbus/config-scope-service.mjs'
-import { omitInternalSampleMetadata } from '../../domain/modbus/caller-projection.mjs'
+import { claimLegacyPrivate } from '../../application/modbus/config-scope-service.mjs'
+import { projectCallerWorkspace } from '../../application/modbus/caller-runtime-projection.mjs'
 import { ensurePolling } from '../../application/modbus/polling-coordinator.mjs'
-import { focusForView } from '../../application/modbus/evidence-service.mjs'
-import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
-import { isScopePartitioned, omitSessionConfigs } from '../../domain/modbus/config-scope.mjs'
 import { inspectPresetHealth } from '../../infrastructure/harness/preset.mjs'
 import { getVisionIoBroker } from '../../infrastructure/modbus/io-broker.mjs'
 import {
@@ -119,16 +116,7 @@ export async function loadWorkspaceForSession(home, cwd, sessionId) {
  * @param {string} [cwd] workspace cwd, needed to resolve debug snapshot rows
  */
 export function sessionWorkspaceView(workspace, sessionId, cwd = '') {
-  const scoped = Boolean(sessionId) || isScopePartitioned(workspace.modbus)
-  const modbus = scoped ? projectModbusForSession(workspace.modbus, sessionId) : workspace.modbus
-  const pack = scoped ? modbus : normalizeModbus(workspace.modbus)
-  const { evidenceHiddenCount, ...focus } = focusForView({ workspace, pack, sessionId, cwd })
-  return {
-    ...workspace,
-    modbus: omitInternalSampleMetadata(omitSessionConfigs(modbus)),
-    focus,
-    focusEvidenceHiddenCount: evidenceHiddenCount,
-  }
+  return projectCallerWorkspace(workspace, sessionId, cwd)
 }
 
 const migratedCwds = new Set()

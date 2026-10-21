@@ -57,8 +57,8 @@ export async function executeDebugCommand(input, deps = {}) {
     }
 
     const payload = cmd.payload && typeof cmd.payload === 'object' ? cmd.payload : {}
-    const cwd = String(cmd.cwd || payload.cwd || '').trim()
-    const sessionId = String(cmd.sessionId || payload.sessionId || '').trim()
+    const cwd = String(cmd.cwd || '').trim()
+    const sessionId = String(cmd.sessionId || '').trim()
     const debugSessionId = String(payload.debugSessionId || /** @type {any} */ (cmd).debugSessionId || '').trim()
     // `normalizeCommand` preserves `home`, so the agent path carries it too.
     // Without it the launch spec cannot read the user's OpenOCD/GDB bindings.
@@ -68,6 +68,7 @@ export async function executeDebugCommand(input, deps = {}) {
      * Finds active session strictly owned by the calling sessionId.
      */
     function findOwnedSession() {
+      if (!cwd) return null
       return findOwnedDebugSession(runtime, {
         ownerSessionId: sessionId,
         workspaceCwd: cwd,
@@ -130,7 +131,8 @@ export async function executeDebugCommand(input, deps = {}) {
               alreadyStopped: true,
             })
           }
-          const targetId = debugSessionId || existing?.debugSessionId || ''
+          if (!existing) throw new DebugError(DEBUG_ERRORS.NOT_FOUND, '未找到当前会话和工作区的调试会话')
+          const targetId = existing.debugSessionId
           approvalStore.revokeControlLease(targetId)
 
           const res = await runtime.stop({
@@ -182,7 +184,7 @@ export async function executeDebugCommand(input, deps = {}) {
 
         default: {
           const active = findOwnedSession()
-          const targetId = debugSessionId || active?.debugSessionId
+          const targetId = active?.debugSessionId
           if (!targetId) {
             return envelope(cmd, {
               ok: false,
@@ -236,7 +238,7 @@ export async function executeDebugCommand(input, deps = {}) {
               })
             }
           } else if (action === 'inspect') {
-            const rawRes = /** @type {any} */ (await runtime.command(scope, { type: 'inspect', ...payload }))
+            const rawRes = /** @type {any} */ (await runtime.command(scope, { ...payload, type: 'inspect' }))
             const st = runtime.state(scope)
             const stack = (rawRes?.stack || st?.stack || []).slice(0, 5)
             const locals = (rawRes?.locals || st?.variables || []).slice(0, 10)

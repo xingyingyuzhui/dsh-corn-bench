@@ -69,10 +69,9 @@ export function createDebugSessionRegistry() {
         debugSessionId: scope.debugSessionId,
       })
     }
-    if (scope.ownerSessionId && session.ownerSessionId !== scope.ownerSessionId) {
+    if (!scope.ownerSessionId || session.ownerSessionId !== scope.ownerSessionId) {
       throw new DebugError(DEBUG_ERRORS.NOT_OWNER, '无权操作该调试会话: 会话属主不匹配', {
         debugSessionId: scope.debugSessionId,
-        expectedOwner: session.ownerSessionId,
       })
     }
     return session
@@ -153,7 +152,7 @@ export function createDebugSessionRegistry() {
       const record = failedSessions.get(id)
       if (!record) return null
       const owner = String(scope?.ownerSessionId || '').trim()
-      if (owner && record.ownerSessionId !== owner) return null
+      if (!owner || record.ownerSessionId !== owner) return null
       return toView(record)
     },
 

@@ -3,6 +3,7 @@ import { connLabel } from '../../../domain/modbus/connection-model.mjs'
 import { isScopePartitioned } from '../../../domain/modbus/config-scope.mjs'
 import { ERROR_CODES } from '../../../domain/modbus/errors.mjs'
 import { normalizeModbus } from '../../../domain/modbus/modbus-migration.mjs'
+import { currentPointQueryValues, selectPointQueryValue } from '../../modbus/point-query-value.mjs'
 import { loadSessionViewForRead } from '../../modbus/workspace-session-view.mjs'
 import {
   filterAlarmStateForSession,
@@ -154,7 +155,8 @@ export async function handleProjectCommand(home, args, room, origin, opts) {
         devices: pack.devices,
         connectionStates,
         points: (pack.points || []).map((/** @type {any} */ p) => {
-          const rec = (pack.values || []).find((/** @type {any} */ item) => item.key === p.id || item.pointId === p.id)
+          const selected = selectPointQueryValue({ workspaceModbus: layered, point: p, values: pack.values })
+          const rec = selected.record
           return {
             id: p.id,
             connectionId: p.connectionId,
@@ -174,6 +176,7 @@ export async function handleProjectCommand(home, args, room, origin, opts) {
             alarmEnabled: p.alarmEnabled === true,
             trendEnabled: p.monitorEnabled === true,
             writable: [1, 3].includes(p.function),
+            valueStatus: selected.status,
             raw: rec ? rec.raw : null,
             value: rec ? decodeValue(p, rec.raw) : null,
             ok: rec ? rec.ok : false,
@@ -181,7 +184,7 @@ export async function handleProjectCommand(home, args, room, origin, opts) {
             runtimeStatus: pointRuntimeStatus(p, rec, visibleAlarms, stateByConn.get(p.connectionId) || '').label,
           }
         }),
-        values: pack.values,
+        values: currentPointQueryValues(layered, pack.points, pack.values),
         activeConnectionId: pack.activeConnectionId,
         activeDeviceId: pack.activeDeviceId,
         pollingByConnection: visiblePolling,

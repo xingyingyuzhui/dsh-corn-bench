@@ -1,5 +1,5 @@
 // @ts-check
-import { omitInternalSampleMetadata } from '../../domain/modbus/caller-projection.mjs'
+import { projectCallerWorkspace } from '../modbus/caller-runtime-projection.mjs'
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
 import { normalizeTimelineEvent, prepend, trimTimeline } from '../../domain/modbus/journal-model.mjs'
 import { notifyConnectionRelease } from '../../infrastructure/modbus/modbus-transport.mjs'
@@ -8,7 +8,7 @@ import { listConnectionStates } from '../../infrastructure/modbus/serial-monitor
 import { prepareConfigPersistence } from '../../domain/modbus/prepare-config-persistence.mjs'
 import { normalizeWorkspace, workspaceKey } from '../../infrastructure/store/workspace-store.mjs'
 import { CONFIG_OPERATIONS, SESSION_SCOPED_SCOPES, parseOperation } from '../../domain/config/config-operation.mjs'
-import { isScopePartitioned, isCategoryShared, normalizeScopeSessionId, omitSessionConfigs } from '../../domain/modbus/config-scope.mjs'
+import { isScopePartitioned, isCategoryShared, normalizeScopeSessionId } from '../../domain/modbus/config-scope.mjs'
 import { ERROR_CODES, fail } from '../../domain/modbus/errors.mjs'
 import { createWorkspaceRepository } from '../../infrastructure/persistence/workspace-repository.mjs'
 import { claimLegacyPrivate, ensureScopeFields, foldModbusFromSession, projectModbusForSession } from '../modbus/config-scope-service.mjs'
@@ -189,7 +189,7 @@ export function createConfigMutationService(deps = {}) {
     // through notifyBenchEvent / maybeNotifyResult elsewhere.
     const applied = postCommit.extras || {}
     // Callers (UI / agent / points-flags RPC) work on the session's effective topology.
-    const workspace = sessionScopedWorkspace(saved.workspace, sessionId)
+    const workspace = sessionScopedWorkspace(saved.workspace, sessionId, String(room.cwd))
 
     return {
       ok: true,
@@ -299,11 +299,11 @@ function resolveMutationScope(current, sessionId, scope) {
  * (only reachable for unpartitioned legacy workspaces).
  * @param {any} workspace
  * @param {string} sessionId
+ * @param {string} cwd
  * @returns {any}
  */
-function sessionScopedWorkspace(workspace, sessionId) {
-  const modbus = sessionId ? projectModbusForSession(workspace.modbus, sessionId) : workspace.modbus
-  return { ...workspace, modbus: omitInternalSampleMetadata(omitSessionConfigs(modbus)) }
+function sessionScopedWorkspace(workspace, sessionId, cwd) {
+  return projectCallerWorkspace(workspace, sessionId, cwd)
 }
 
 /**

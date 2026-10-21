@@ -29,7 +29,7 @@ test('A1: 启动失败后保留可查询的墓碑，且不污染活跃会话', a
   assert.equal(runtime.listSessions().length, 0)
 
   // 但失败原因可查
-  const tomb = runtime.getFailedSession({ debugSessionId: 'ds_fail' })
+  const tomb = runtime.getFailedSession({ debugSessionId: 'ds_fail', ownerSessionId: 'sess_a' })
   assert.ok(tomb, '应能查到失败会话')
   assert.equal(tomb.state, 'failed')
   assert.match(tomb.failure.message, /OpenOCD 连接被拒绝/)
@@ -55,9 +55,9 @@ test('A1: listFailedSessions 按工作区过滤', async () => {
 test('A1: shutdown 清空墓碑', async () => {
   const runtime = createDebugRuntime({ backendFactory: failingFactory })
   await assert.rejects(() => runtime.start({ debugSessionId: 'ds_x', ownerSessionId: 's', workspaceCwd: '/ws' }))
-  assert.ok(runtime.getFailedSession({ debugSessionId: 'ds_x' }))
+  assert.ok(runtime.getFailedSession({ debugSessionId: 'ds_x', ownerSessionId: 's' }))
   await runtime.shutdown()
-  assert.equal(runtime.getFailedSession({ debugSessionId: 'ds_x' }), null)
+  assert.equal(runtime.getFailedSession({ debugSessionId: 'ds_x', ownerSessionId: 's' }), null)
 })
 
 test('A1: shouldPersistDebugEvent 只保留生命周期与错误事件', () => {

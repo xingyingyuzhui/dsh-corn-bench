@@ -149,7 +149,7 @@ export function createVisionRpcRouter(deps) {
         return {
           ok: true,
           workspace: sessionWorkspaceView(ws, sid, room.cwd),
-          journal: journalView(ws),
+          journal: journalView(sessionWorkspaceView(ws, sid, room.cwd)),
         }
       }
       case 'workspace/save': {
@@ -194,7 +194,7 @@ export function createVisionRpcRouter(deps) {
         if (!saved.ok) return { ok: false, error: saved.error, workspace: saved.workspace && sessionWorkspaceView(saved.workspace, sid, room.cwd) }
         notifyConnectionRelease(room.cwd, changedConnectionIds(prev.modbus, saved.workspace.modbus))
         const viewWorkspace = sessionWorkspaceView(saved.workspace, sid, room.cwd)
-        return { ok: true, workspace: viewWorkspace, journal: journalView(saved.workspace) }
+        return { ok: true, workspace: viewWorkspace, journal: journalView(viewWorkspace) }
       }
       case 'fs/list':
         return listDir(

@@ -6,6 +6,9 @@
  */
 import { compactPointRow } from '../../domain/modbus/point-value.mjs'
 import { resolveEffectivePointIdentity } from './poll-runtime-identity.mjs'
+import { resolveEffectiveSampleTarget } from '../../domain/modbus/effective-sample-target.mjs'
+import { normalizeSampleIdentity } from '../../domain/modbus/point-sample-identity.mjs'
+import { stampForEntry } from '../../domain/modbus/sample-generation.mjs'
 
 /**
  * @param {any} point
@@ -138,7 +141,25 @@ export function selectPointQueryValue(input) {
     return { status: 'unavailable', record: null, reason: 'mismatch' }
   }
 
-  return { status: 'available', record: matched[0], reason: 'matched' }
+  // Newer failures are barriers too: never resurrect an older good sample.
+  matched.sort((a, b) => Number(b.at || 0) - Number(a.at || 0) || Number(a.ok !== false) - Number(b.ok !== false))
+  const record = matched[0]
+  const generation = workspaceModbus?.sampleGenerations?.[triple.pointId]
+  if (Number(workspaceModbus?.sampleIdentitySchemaVersion) === 2 || generation || record.sampleIdentity) {
+    const target = resolveEffectiveSampleTarget(workspaceModbus, triple.pointId)
+    const expected = target.kind === 'unique' ? stampForEntry(target, generation) : null
+    const actual = normalizeSampleIdentity(record.sampleIdentity)
+    if (
+      !expected ||
+      !actual ||
+      actual.fingerprint !== expected.fingerprint ||
+      actual.generation !== expected.generation
+    ) {
+      return { status: 'unavailable', record: null, reason: 'stale-sample-identity' }
+    }
+  }
+  if (record.ok === false) return { status: 'unavailable', record: null, reason: 'read-failed' }
+  return { status: 'available', record, reason: 'matched' }
 }
 
 let queryValueSelects = 0
@@ -176,4 +197,17 @@ export function compactPointRowForQuery(point, ctx) {
     row.at = 0
   }
   return row
+}
+
+/** Select only samples trusted under the current layered capture identity.
+ * @param {any} workspaceModbus
+ * @param {any[]} points
+ * @param {any[]} values
+ * @returns {any[]}
+ */
+export function currentPointQueryValues(workspaceModbus, points, values) {
+  return (Array.isArray(points) ? points : []).flatMap((point) => {
+    const selected = selectPointQueryValue({ workspaceModbus, point, values })
+    return selected.record ? [selected.record] : []
+  })
 }

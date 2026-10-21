@@ -61,6 +61,9 @@ export function createDebugRuntime(deps = {}) {
      */
     async command(scope, command) {
       const session = registry.requireSession(scope)
+      if (session.isStopping || session.state === 'starting') {
+        throw new DebugError(DEBUG_ERRORS.STALE, '调试会话正在启动或停止，暂不接受控制命令')
+      }
       return executeDebugCommand(session, command, { onJournalEvent })
     },
 
