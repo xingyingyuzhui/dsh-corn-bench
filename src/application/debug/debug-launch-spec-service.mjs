@@ -308,7 +308,8 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
         DEBUG_ERRORS.TARGET_SPEC_INVALID,
         '未在工作区找到固件产物 (.axf / .elf)。请先执行 Keil 编译或构建固件，或在启动参数中明确指定 artifactPath。',
       )
-    } else if (found.length === 1) {
+    }
+    if (found.length === 1) {
       artifactPath = found[0]
       artifactSha256 = computeFileSha256(artifactPath)
       source = 'auto-resolved'
@@ -364,10 +365,9 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
       // The whitelist is the only thing standing between caller text and the
       // OpenOCD argv; it holds whether or not the workspace exists.
       throw new DebugError(DEBUG_ERRORS.TARGET_SPEC_INVALID, profileRes.error)
-    } else {
-      interfaceName = profileRes.interfaceName
-      target = profileRes.target
     }
+    interfaceName = profileRes.interfaceName
+    target = profileRes.target
   } else {
     interfaceName = String(targetSpec.interfaceName || '')
     target = String(targetSpec.target || '')
