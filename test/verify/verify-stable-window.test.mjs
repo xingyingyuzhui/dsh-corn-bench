@@ -130,3 +130,65 @@ test('sampleStableDuration: advancing published stamps pass with injected clock'
   assert.ok(values.length >= 2)
   assert.ok(values.every((v) => v === 10))
 })
+
+/**
+ * Drives sampleStableDuration with a poller whose capture time trails the
+ * injected clock by `lagMs`, publishing only while `publishing()` holds.
+ * @param {{ lagMs: number, publishing?: (now: number) => boolean }} opts
+ */
+async function sampleLagging({ lagMs, publishing = () => true }) {
+  const ws = stampWorkspace(flatWorkspace({ points: [vpoint('p1')], values: [] }), { sessionId: 'a' })
+  const reader = createVerifyTelemetryAdapter({ workspaceLoader: () => ws })
+  const readScope = { cwd: scope.cwd, sessionId: 'a', source: 'user' }
+  const entry = buildEffectivePointIndex(ws.modbus).get('p1')
+  const stamp = entry ? stampForEntry(entry, ws.modbus.sampleGenerations.p1) : null
+  assert.ok(stamp)
+  let now = 5_000
+  const telemetryReader = {
+    readPoint: async () => {
+      if (publishing(now)) {
+        reader.publishPointValue(readScope, 'p1', {
+          value: 10,
+          rawValue: 10,
+          timestamp: now - lagMs,
+          quality: 'good',
+          source: 'published',
+          fingerprint: stamp.fingerprint,
+          generation: stamp.generation,
+        })
+      }
+      return reader.readPoint(readScope, 'p1', { allowDirectRead: false })
+    },
+  }
+  return sampleStableDuration(
+    {
+      ownerSessionId: 'a',
+      workspaceCwd: scope.cwd,
+      telemetryReader,
+      combinedSignal: new AbortController().signal,
+      timeoutMs: 5_000,
+      remainingMs: () => 5_000,
+      checkDeadline: () => {},
+      telemetrySamples: [],
+      now: () => now,
+      delay: async (ms) => {
+        now += Math.max(0, Number(ms) || 0)
+      },
+    },
+    { pointId: 'p1', durationMs: 80, sampleIntervalMs: 20, tolerance: 0 },
+  )
+}
+
+test('sampleStableDuration: capture time 1 ms behind the clock still covers the window', async () => {
+  // The clock reaches the window end while the newest reading is 1 ms short;
+  // the window must wait for the next reading instead of reporting 79 < 80 ms.
+  const values = await sampleLagging({ lagMs: 1 })
+  assert.ok(Array.isArray(values), JSON.stringify(values))
+  assert.ok(values.every((v) => v === 10))
+})
+
+test('sampleStableDuration: a source that stalls before the window end is insufficient, not a timeout', async () => {
+  const result = await sampleLagging({ lagMs: 1, publishing: (now) => now < 5_060 })
+  assert.equal(/** @type {any} */ (result).availability, 'unavailable')
+  assert.equal(/** @type {any} */ (result).reason, UNAVAILABLE_REASONS.INSUFFICIENT_SAMPLES)
+})

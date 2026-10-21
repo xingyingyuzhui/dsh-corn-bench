@@ -154,5 +154,13 @@ export function createStableWindow(opts) {
     get sampleCount() {
       return accepted.length
     },
+    /**
+     * Record time of the newest accepted sample. Coverage is proven by sample
+     * time, not by the wall clock passing `requiredEndAt`.
+     * @returns {number | null}
+     */
+    get lastSampleAt() {
+      return accepted.length ? accepted[accepted.length - 1].timestamp : null
+    },
   }
 }

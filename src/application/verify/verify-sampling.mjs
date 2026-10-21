@@ -174,12 +174,20 @@ export async function sampleStableDuration(ctx, spec) {
     const t = now()
     const requiredEnd = window.requiredEndAt
     if (requiredEnd != null) {
-      if (t >= requiredEnd) {
+      // Polled readings carry their capture time, which trails the wall clock:
+      // the clock can pass the window end while the newest sample sits 1 ms
+      // short of it. Wait for a sample at or past the end (bounded by the
+      // scenario deadline above) instead of failing an otherwise stable run.
+      const lastAt = window.lastSampleAt
+      const covered = lastAt != null && lastAt >= requiredEnd
+      // A stalled source gets a few intervals of grace, then reports
+      // INSUFFICIENT_SAMPLES as before rather than idling into a timeout.
+      if (t >= requiredEnd && (covered || t >= requiredEnd + intervalMs * 3)) {
         const finished = window.finish(t)
         if ('availability' in finished) return finished
         return finished.values
       }
-      const wait = Math.min(intervalMs, requiredEnd - t)
+      const wait = t >= requiredEnd ? intervalMs : Math.min(intervalMs, requiredEnd - t)
       await delay(Math.max(0, wait), combinedSignal)
       continue
     }
