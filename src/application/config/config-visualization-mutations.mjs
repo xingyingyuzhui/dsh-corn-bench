@@ -1,6 +1,7 @@
 // @ts-check
 import { migrateVisualizationToV2, normalizeComponentLayout, normalizeVisualizationComponent, parseVisualizationLayoutItems, validateVisualizationComponent, visualizationSchemaGuard } from '../../domain/modbus/visualization-model.mjs'
 import { explicitId } from '../../domain/config/config-operation.mjs'
+import { labelOf } from './summary-labels.mjs'
 
 /**
  * @param {any} workspace
@@ -26,7 +27,7 @@ export function applyVisualization(workspace, op, target, value) {
     return {
       ok: true,
       workspace,
-      summary: `添加可视化 ${cand.id}`,
+      summary: `添加可视化 ${labelOf(cand)}`,
       changedIds: [cand.id],
       changedVisualizationIds: [cand.id],
       visualization: viz,
@@ -53,7 +54,7 @@ export function applyVisualization(workspace, op, target, value) {
     return {
       ok: true,
       workspace,
-      summary: `更新可视化 ${id}`,
+      summary: `更新可视化 ${labelOf(cand, id)}`,
       changedIds: [id],
       changedVisualizationIds: [id],
       visualization: viz,
@@ -64,12 +65,13 @@ export function applyVisualization(workspace, op, target, value) {
     if (!id) return { ok: false, errorCode: 'TARGET_REQUIRED', error: 'remove 必须携带 visualizationId' }
     const idx = viz.components.findIndex((/** @type {any} */ c) => c.id === id)
     if (idx < 0) return { ok: false, error: `组件不存在: ${id}`, errorCode: 'VIZ_NOT_FOUND' }
+    const gone = viz.components[idx]
     viz.components = viz.components.filter((/** @type {any} */ c) => c.id !== id)
     pack.visualization = viz
     return {
       ok: true,
       workspace,
-      summary: `删除可视化 ${id}`,
+      summary: `删除可视化 ${labelOf(gone, id)}`,
       changedIds: [id],
       changedVisualizationIds: [id],
       visualization: viz,

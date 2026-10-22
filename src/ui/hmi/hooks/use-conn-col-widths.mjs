@@ -1,15 +1,18 @@
+// Sized to the default conversation panel (~440 px of table): the old defaults
+// summed to 810 px and even the minimums (530 px) pushed the action buttons
+// out of view. Actions (断开/编辑/AI/删除 ≈ 212 px) are also pinned right.
 export const DEFAULT_CONN_COL_WIDTHS = {
-  name: 180,
-  role: 110,
-  endpoint: 260,
-  actions: 260,
+  name: 96,
+  role: 56,
+  endpoint: 140,
+  actions: 216,
 }
 
 export const MIN_CONN_COL_WIDTHS = {
-  name: 100,
-  role: 70,
-  endpoint: 140,
-  actions: 220,
+  name: 72,
+  role: 48,
+  endpoint: 96,
+  actions: 212,
 }
 
 const STORAGE_KEY = 'dvb_conn_col_widths'

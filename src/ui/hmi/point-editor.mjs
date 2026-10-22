@@ -30,6 +30,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-name' },
       el('input', {
+        'aria-label': t('ptName'),
         className: 'dvb-input',
         placeholder: t('ptNamePh'),
         value: newPointDraft.name,
@@ -50,6 +51,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-addr' },
       el('input', {
+        'aria-label': t('ptAddr'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         min: 0,
@@ -63,6 +65,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-unit' },
       el('input', {
+        'aria-label': t('ptUnit'),
         className: 'dvb-input',
         value: newPointDraft.unit,
         onChange: (e) => setNewPointDraft((prev) => ({ ...prev, unit: e.target.value })),
@@ -72,6 +75,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-scale' },
       el('input', {
+        'aria-label': t('ptScale'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         step: 'any',
@@ -83,6 +87,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-offset' },
       el('input', {
+        'aria-label': t('ptOffset'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         step: 'any',
@@ -103,6 +108,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-min' },
       el('input', {
+        'aria-label': t('ptAlarmMin'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         step: 'any',
@@ -114,6 +120,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-max' },
       el('input', {
+        'aria-label': t('ptAlarmMax'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         step: 'any',
@@ -125,6 +132,7 @@ export function renderNewPointRow(el, t, ctx) {
       'td',
       { className: 'dvb-col-deadband' },
       el('input', {
+        'aria-label': t('ptAlarmDeadband'),
         className: 'dvb-input dvb-input-mono',
         type: 'number',
         min: 0,

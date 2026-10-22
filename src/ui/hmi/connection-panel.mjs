@@ -141,7 +141,13 @@ export function renderConnectionPanel(el, t, ctx) {
                       el('span', {
                         className: 'dvb-tab-dot',
                         'data-kind':
-                          st === 'connected' ? 'live' : st === 'connecting' || st === 'disconnecting' ? 'warn' : 'err',
+                          st === 'connected'
+                            ? 'live'
+                            : st === 'connecting' || st === 'disconnecting'
+                              ? 'warn'
+                              : st === 'error'
+                                ? 'err'
+                                : 'idle',
                         title:
                           st === 'connected'
                             ? t('connLive')

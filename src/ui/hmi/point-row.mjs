@@ -61,6 +61,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-name' },
       editing
         ? el('input', {
+            'aria-label': t('ptName'),
             className: 'dvb-input',
             value: draft ? draft.name : point.name,
             onChange: (e) => patchDraft(point.id, { name: e.target.value }),
@@ -166,6 +167,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-addr' },
       editing
         ? el('input', {
+            'aria-label': t('ptAddr'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             min: 0,
@@ -185,6 +187,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-unit' },
       editing
         ? el('input', {
+            'aria-label': t('ptUnit'),
             className: 'dvb-input',
             value: draft ? draft.unit : point.unit,
             onChange: (e) => patchDraft(point.id, { unit: e.target.value }),
@@ -196,6 +199,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-scale' },
       editing
         ? el('input', {
+            'aria-label': t('ptScale'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             step: 'any',
@@ -209,6 +213,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-offset' },
       editing
         ? el('input', {
+            'aria-label': t('ptOffset'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             step: 'any',
@@ -248,6 +253,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-min' },
       editing
         ? el('input', {
+            'aria-label': t('ptAlarmMin'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             step: 'any',
@@ -262,6 +268,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-max' },
       editing
         ? el('input', {
+            'aria-label': t('ptAlarmMax'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             step: 'any',
@@ -276,6 +283,7 @@ export function renderPointRow(el, t, ctx) {
       { className: 'dvb-col-deadband' },
       editing
         ? el('input', {
+            'aria-label': t('ptAlarmDeadband'),
             className: 'dvb-input dvb-input-mono',
             type: 'number',
             min: 0,

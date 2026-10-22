@@ -6,6 +6,9 @@ import { ioStatusInfo, pluginVersionLabel, statusKind } from './tool-status.mjs'
 const FIELDS = [
   { key: 'uv4', label: 'uv4', ph: 'uv4Ph' },
   { key: 'openocd', label: 'openocd', ph: 'openocdPh' },
+  // Run debug resolves GDB from this binding; without a field it could only
+  // fall back to arm-none-eabi-gdb on PATH.
+  { key: 'gdb', label: 'gdb', ph: 'gdbPh' },
 ]
 
 const SHARE_BOXES = [
@@ -48,7 +51,9 @@ export function createSettingsPage(React, t, post, options = {}) {
   const getScope = typeof options.getScope === 'function' ? options.getScope : () => ({ cwd: '', sessionId: '' })
   return function SettingsPage() {
     const el = React.createElement
-    const [bindings, setBindings] = React.useState({ python: '', uv4: '', openocd: '' })
+    const [bindings, setBindings] = React.useState({ python: '', uv4: '', openocd: '', gdb: '' })
+    // Saving before the stored bindings arrive would write these blanks over them.
+    const [loaded, setLoaded] = React.useState(false)
     const [health, setHealth] = React.useState({})
     const [busy, setBusy] = React.useState(false)
     const [checking, setChecking] = React.useState(false)
@@ -65,8 +70,11 @@ export function createSettingsPage(React, t, post, options = {}) {
     const scope = getScope() || {}
     const cwd = String(scope.cwd || '')
     const sessionId = String(scope.sessionId || '')
-    const applySnap = (data) => {
-      if (data && data.bindings) setBindings(data.bindings)
+    const applySnap = (data, opts = {}) => {
+      if (data && data.bindings && !opts.keepBindings) {
+        setBindings(data.bindings)
+        setLoaded(true)
+      }
       if (data && data.health) setHealth(data.health)
       if (data && data.ioRuntime) setIoRuntime(data.ioRuntime)
       if (data && data.agentPolicy) setAgentWriteApproval(data.agentPolicy.agentWriteApproval !== false)
@@ -129,8 +137,8 @@ export function createSettingsPage(React, t, post, options = {}) {
       }
       setShareBusy(true)
       setMessage(null)
+      // Share only: unsaved path edits must neither ride along nor block the toggle.
       post('/dsh-vision-bench/bindings', {
-        bindings,
         share: next,
         cwd: cwd || undefined,
         sessionId: sessionId || undefined,
@@ -140,7 +148,9 @@ export function createSettingsPage(React, t, post, options = {}) {
             if (data.globalShare) setShare(normalizeShareState(data.globalShare))
             else setShare(next)
             setMessage({ kind: 'ok', text: t('shareSaved') })
-            return post('/dsh-vision-bench/state', cwd ? { cwd, sessionId } : {}).then(applySnap)
+            return post('/dsh-vision-bench/state', cwd ? { cwd, sessionId } : {}).then((snap) =>
+              applySnap(snap, { keepBindings: true }),
+            )
           }
           setMessage({ kind: 'err', text: (data && data.error) || t('fail') })
         })
@@ -256,6 +266,7 @@ export function createSettingsPage(React, t, post, options = {}) {
         ),
         renderSaveButton(el, t, {
           saving: busy,
+          disabled: !loaded,
           onClick: save,
         }),
       ),

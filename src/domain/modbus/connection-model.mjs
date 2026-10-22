@@ -46,8 +46,12 @@ export const normalizeConn = (input) => {
 }
 
 /** @param {any} conn */
-export const connLabel = (conn) =>
-  conn.mode === 'tcp' ? `${conn.host || '?'}:${conn.tcpPort}` : `${conn.port || '?'} @ ${conn.baudrate}`
+export const connLabel = (conn) => {
+  // A simulated link has no wire endpoint; an unset one is unconfigured, not "?".
+  if (conn.sim) return '仿真'
+  if (conn.mode === 'tcp') return conn.host ? `${conn.host}:${conn.tcpPort}` : '未配置主机'
+  return `${conn.port || '未配置串口'} @ ${conn.baudrate}`
+}
 
 export const emptyConnection = () => ({
   id: 'c1',

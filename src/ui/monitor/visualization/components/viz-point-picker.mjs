@@ -33,6 +33,10 @@ export function createVizPointPicker(React, t) {
       return pointCompatible(editor.type, o.function) || editor.pointIds.includes(o.pointId)
     })
 
+    // "全部 (n)" counts what this component type can show, matching the list
+    // below (a coil was counted for a line chart but never listed).
+    const compatibleCount = pointOptions.filter((o) => pointCompatible(editor.type, o.function)).length
+
     const orphanSelected = (editor.pointIds || [])
       .filter((id) => !pointOptions.some((o) => o.pointId === id))
       .map((id) => {
@@ -73,7 +77,7 @@ export function createVizPointPicker(React, t) {
       el(
         'div',
         { className: 'dvb-viz-filter-pills' },
-        [['all', `全部 (${pointOptions.length})`], ['numeric', '模拟量'], ['bool', '开关量']].map(([k, lbl]) =>
+        [['all', `全部 (${compatibleCount})`], ['numeric', '模拟量'], ['bool', '开关量']].map(([k, lbl]) =>
           pill(filterKind === k, () => setFilterKind(k), lbl, k),
         ),
       ),

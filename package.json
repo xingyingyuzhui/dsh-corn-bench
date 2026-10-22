@@ -343,6 +343,7 @@
     "src/application/config/config-share-mutations.mjs",
     "src/application/config/config-visualization-mutations.mjs",
     "src/application/config/config-validation-service.mjs",
+    "src/application/config/summary-labels.mjs",
     "src/application/modbus/index.mjs",
     "src/application/modbus/modbus-context.mjs",
     "src/application/modbus/modbus-runtime-context.mjs",

@@ -3,6 +3,7 @@ import { normalizePointV3 } from '../../domain/modbus/point-model.mjs'
 import { explicitId } from '../../domain/config/config-operation.mjs'
 import { applyPointPatch, validateMonitorAlias } from '../../domain/modbus/point-patch.mjs'
 import { resolveHierarchy } from '../../domain/modbus/target-resolver.mjs'
+import { labelList, labelOf, pickById } from './summary-labels.mjs'
 
 /**
  * @param {any} list
@@ -115,7 +116,7 @@ export function applyPoints(workspace, op, target, value) {
     if (!removed.length) return { ok: false, errorCode: 'POINT_NOT_FOUND', error: '没有匹配的点位' }
     pack.points = pack.points.filter((/** @type {any} */ p) => !idSet.has(p.id))
     scrubPointRuntime(pack, idsOfPoints(removed))
-    return finishPoints(workspace, idsOfPoints(removed), `删除点位 ${ids.join(',')}`)
+    return finishPoints(workspace, idsOfPoints(removed), `删除点位 ${labelList(removed)}`)
   }
   if (op === 'add' || op === 'update') {
     const inputs = Array.isArray(value.points)
@@ -195,7 +196,7 @@ export function applyPoints(workspace, op, target, value) {
       }
     }
     pack.points = points
-    return finishPoints(workspace, changed, `${op === 'add' ? '添加' : '更新'}点位 ${changed.join(',')}`)
+    return finishPoints(workspace, changed, `${op === 'add' ? '添加' : '更新'}点位 ${labelList(pickById(points, changed))}`)
   }
   return { ok: false, errorCode: 'UNKNOWN_OP', error: 'points op 必须是 add|update|remove|clear' }
 }
@@ -238,5 +239,5 @@ export function applyFlags(workspace, op, target, value) {
   const patched = applyPointPatch(pack.points[idx], patch)
   if (!patched.ok) return patched
   pack.points = pack.points.map((/** @type {any} */ p, /** @type {any} */ i) => (i === idx ? patched.point : p))
-  return finishPoints(workspace, [pid], `更新点位开关 ${pid}`)
+  return finishPoints(workspace, [pid], `更新点位开关 ${labelOf(patched.point, pid)}`)
 }

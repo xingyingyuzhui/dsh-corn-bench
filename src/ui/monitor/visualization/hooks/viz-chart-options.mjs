@@ -201,6 +201,9 @@ export function buildLineOption(s = {}, payload, isDark = false, isPreview = fal
           : `${p2(d.getHours())}:${p2(d.getMinutes())}`
       },
       fontSize: isPreview ? 10 : Number(s.xLabelSize) || 11,
+      // The tick interval is pinned, so a narrow card would print every time
+      // label on top of the next ("09:3209:3309:34"); let ECharts drop overlaps.
+      hideOverlap: true,
     },
   }
 

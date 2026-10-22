@@ -169,6 +169,13 @@ export function createHmiLiveActions(ctx, core) {
     )
       .then((data) => {
         setInlineWrite((prev) => ({ ...prev, busy: false, result: data }))
+        // A clear success closes the editor after a moment; failures and
+        // unknown outcomes stay open so the user can read them and retry.
+        if (data && data.ok !== false && !data.unknown && !data.outcomeUnknown) {
+          setTimeout(() => {
+            setInlineWrite((prev) => (prev && prev.pointId === row.pointId && prev.result === data ? null : prev))
+          }, 1500)
+        }
         const isShared = Boolean(
           workspaceRef.current?.modbus?.share?.enabled && workspaceRef.current?.modbus?.share?.connections,
         )

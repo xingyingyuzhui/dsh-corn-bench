@@ -105,6 +105,9 @@ test('connLabel renders both modes without Unit ID', async (t) => {
   assert.equal(connLabel(normalizeConn({ port: 'COM3', baudrate: 9600, slave: 2 })), 'COM3 @ 9600')
   assert.equal(connLabel(normalizeConn({ mode: 'tcp', host: '10.0.0.8', tcpPort: 1502, slave: 4 })), '10.0.0.8:1502')
   assert.ok(!/站号/.test(connLabel(normalizeConn({ port: 'COM3', baudrate: 9600, slave: 2 }))))
+  assert.equal(connLabel(normalizeConn({ baudrate: 9600 })), '未配置串口 @ 9600')
+  assert.equal(connLabel(normalizeConn({ mode: 'tcp', tcpPort: 502 })), '未配置主机')
+  assert.equal(connLabel({ ...normalizeConn({ port: 'COM3', baudrate: 9600 }), sim: true }), '仿真')
 })
 test('modbusPoll reports missing points cleanly', async (t) => {
   const home = await createTempDir(t, 'dvb-poll-v2-')

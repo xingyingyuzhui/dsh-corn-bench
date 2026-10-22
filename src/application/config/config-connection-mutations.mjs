@@ -5,6 +5,7 @@ import { isSynthesizedConnection, normalizeConnections } from '../../domain/modb
 import { resolveHierarchy } from '../../domain/modbus/target-resolver.mjs'
 import { pickConnPatch } from '../../domain/modbus/validation.mjs'
 import { idsOfPoints, scrubPointRuntime } from './config-point-mutations.mjs'
+import { labelOf } from './summary-labels.mjs'
 
 /**
  * Explains that an id exists only as the placeholder `normalizeConnections`
@@ -63,7 +64,7 @@ export async function applyConnection(home, cwd, workspace, op, target, value, l
     pack.connections = pack.connections.concat([conn])
     const errs = validateConnections(pack.connections, pack.devices)
     if (errs.length) return { ok: false, errorCode: 'CONFIG_INVALID', error: errs.join('；') }
-    return { ok: true, workspace, summary: `创建连接 ${nextId}`, changedIds: [nextId], connectionId: nextId }
+    return { ok: true, workspace, summary: `创建连接 ${labelOf(conn, nextId)}`, changedIds: [nextId], connectionId: nextId }
   }
   if (op === 'remove') {
     if (!id) return { ok: false, errorCode: 'TARGET_REQUIRED', error: 'remove 必须携带 connectionId' }
@@ -157,7 +158,7 @@ export async function applyConnection(home, cwd, workspace, op, target, value, l
     return {
       ok: true,
       workspace,
-      summary: `更新连接 ${id}`,
+      summary: `更新连接 ${labelOf(pack.connections.find((/** @type {any} */ c) => c.id === id), id)}`,
       changedIds: [id],
       connectionId: id,
       postCommit: { releaseConnectionIds: Object.keys(patch).length ? [id] : [] },
@@ -190,7 +191,7 @@ export function applyDevice(workspace, op, target, value) {
         enabled: value.enabled !== false,
       },
     ])
-    return { ok: true, workspace, summary: `添加设备 ${nextId}`, changedIds: [nextId], deviceId: nextId }
+    return { ok: true, workspace, summary: `添加设备 ${labelOf(pack.devices.find((/** @type {any} */ d) => d.id === nextId), nextId)}`, changedIds: [nextId], deviceId: nextId }
   }
   if (op === 'remove') {
     if (!id) return { ok: false, errorCode: 'TARGET_REQUIRED', error: 'remove 必须携带 deviceId' }
@@ -222,7 +223,7 @@ export function applyDevice(workspace, op, target, value) {
         enabled: value.enabled != null ? value.enabled !== false : d.enabled,
       }
     })
-    return { ok: true, workspace, summary: `更新设备 ${id}`, changedIds: [id], deviceId: id }
+    return { ok: true, workspace, summary: `更新设备 ${labelOf(pack.devices.find((/** @type {any} */ d) => d.id === id), id)}`, changedIds: [id], deviceId: id }
   }
   return { ok: false, errorCode: 'UNKNOWN_OP', error: 'device op 必须是 create|update|remove' }
 }

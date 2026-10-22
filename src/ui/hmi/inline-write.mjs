@@ -1,4 +1,12 @@
 /** Inline current-value write cell. */
+
+/** Success text with the raw readback the device returned, when there is one. */
+function readbackText(t, result) {
+  const done = t('writeDone') || '写入成功'
+  const rb = Array.isArray(result && result.readback) ? result.readback : []
+  return rb.length ? `${done} · ${t('readbackLabel') || '回读'} ${rb.join(', ')}` : done
+}
+
 export function renderInlineWriteCell(el, t, ctx) {
   const { point, inlineWrite, setInlineWrite, submitWriteCell, openWriteCell, writable, shown, busy, writeRunning } =
     ctx
@@ -17,6 +25,7 @@ export function renderInlineWriteCell(el, t, ctx) {
                 type: 'button',
                 className: 'dvb-btn dvb-btn-sm' + (inlineWrite.text === '1' ? ' is-on' : ''),
                 disabled: inlineWrite.busy,
+                autoFocus: true,
                 onClick() {
                   setInlineWrite((prev) => ({ ...prev, text: '1' }))
                 },
@@ -67,6 +76,9 @@ export function renderInlineWriteCell(el, t, ctx) {
               className: 'dvb-input dvb-input-mono',
               value: inlineWrite.text,
               type: 'text',
+              // Focus scrolls a value column that sits off-screen into view.
+              autoFocus: true,
+              'aria-label': t('writeValue') || '写入值',
               disabled: inlineWrite.busy,
               onChange: (event) => {
                 setInlineWrite((prev) => ({ ...prev, text: event.target.value }))
@@ -110,7 +122,7 @@ export function renderInlineWriteCell(el, t, ctx) {
                 ? inlineWrite.result.error || '写入失败'
                 : inlineWrite.result.unknown
                   ? t('writeUnknown') || '结果未知'
-                  : t('writeDone') || '写入成功',
+                  : readbackText(t, inlineWrite.result),
             )
           : null,
     )
