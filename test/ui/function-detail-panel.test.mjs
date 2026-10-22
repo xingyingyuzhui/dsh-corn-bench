@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { functionSnippetView } from '../../src/ui/debug/project/function-detail-panel.mjs'
-import { DEMO_CALL_GRAPH_NODES } from '../../src/ui/debug/fixtures/temperature-demo.mjs'
+import { DEMO_CALL_GRAPH_NODES } from '../fixtures/ui/temperature-demo.mjs'
 
 test('源码片段用函数真实行号，空节点没有兜底源码', () => {
   const empty = functionSnippetView({})

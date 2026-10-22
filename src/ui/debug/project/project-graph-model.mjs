@@ -1,7 +1,5 @@
-import { DEMO_CALL_GRAPH_NODES } from '../fixtures/temperature-demo.mjs'
 import { fileKind, filePassesFilter, fileTreeId, findProjectFile } from './project-tree-model.mjs'
 
-export { DEMO_CALL_GRAPH_NODES, DEMO_PROJECT_MAP, DEMO_SOURCE_FILES } from '../fixtures/temperature-demo.mjs'
 
 const DEFAULT_MAX_NODES = 200
 const DEFAULT_MAX_EDGES = 120
@@ -162,70 +160,103 @@ export function graphNeighborhood(selectedId, graph) {
 }
 
 /**
- * Builds a function call DAG graph.
+ * Function graph of the mapped project. Nodes are the real functions found in
+ * `groups`; edges come from `calls` ({ from, to } function names) when the
+ * backend supplies them. Without call data the graph lists functions only and
+ * says so; it never substitutes a demo graph.
  * @param {any[]} [groups]
  * @param {{ search?: string, depth?: string }} [opts]
+ * @param {Array<{ from: string, to: string }>} [calls]
  */
-export function buildFunctionCallGraph(groups = [], opts = {}) {
+export function buildFunctionCallGraph(groups = [], opts = {}, calls = []) {
   const depthStr = opts.depth || '2'
   const needle = String(opts.search || '').trim().toLowerCase()
-  const allNodes = DEMO_CALL_GRAPH_NODES.map((n) => ({ ...n, callees: n.callees.map((c) => ({ ...c })) }))
-  const maxAllowedDepth = depthStr === '1' ? 1 : depthStr === '2' ? 2 : 3
-  const depthById = {
-    'fn:main': 0, 'fn:UpdateTemperature': 1, 'fn:UpdateDisplay': 1, 'fn:ReadTemperature': 2, 'fn:DrawText': 2, 'fn:ReadVoltage': 3,
-  }
-
-  let nodes = allNodes.filter((n) => (depthById[n.id] ?? 0) <= maxAllowedDepth)
-  for (const n of nodes) {
-    if (n.id === 'fn:ReadTemperature') {
-      const exp = maxAllowedDepth >= 3
-      n.canExpand = !exp
-      n.expandBadge = exp ? '' : '+1 可展开'
-      if (n.callees[0]) {
-        n.callees[0].expanded = exp
-        n.callees[0].location = exp ? 'sensor.c:1' : '当前层级未展开'
+  const maxNodes = 100
+  /** @type {Map<string, any>} */
+  const byName = new Map()
+  for (const group of Array.isArray(groups) ? groups : []) {
+    for (const file of Array.isArray(group?.files) ? group.files : []) {
+      const rel = String(file?.rel || file?.name || '')
+      for (const fn of Array.isArray(file?.functions) ? file.functions : []) {
+        const name = String(fn?.name || '')
+        if (!name || byName.has(name)) continue
+        const line = Number(fn.line) || 0
+        byName.set(name, {
+          id: `fn:${name}`,
+          name,
+          label: name,
+          file: rel,
+          line,
+          location: line ? `${rel}:${line}` : rel,
+          kind: 'function',
+          callers: [],
+          callees: [],
+        })
       }
     }
   }
-
+  const ref = (/** @type {any} */ n) => ({ id: n.id, name: n.name, location: n.location, expanded: true })
+  /** @type {Array<[string, string]>} */
+  const pairs = []
+  for (const call of Array.isArray(calls) ? calls : []) {
+    const from = byName.get(String(call?.from || ''))
+    const to = byName.get(String(call?.to || ''))
+    if (!from || !to || from === to) continue
+    if (pairs.some(([a, b]) => a === from.id && b === to.id)) continue
+    pairs.push([from.id, to.id])
+    from.callees.push(ref(to))
+    to.callers.push(ref(from))
+  }
+  const hasCalls = pairs.length > 0
+  const root = byName.get('main')
+  let nodes = [...byName.values()]
+  if (hasCalls && root && depthStr !== 'all') {
+    const maxDepth = depthStr === '1' ? 1 : depthStr === '2' ? 2 : 3
+    /** @type {Map<string, number>} */
+    const depth = new Map([[root.id, 0]])
+    const queue = [root]
+    while (queue.length) {
+      const node = queue.shift()
+      const d = /** @type {number} */ (depth.get(node.id))
+      if (d >= maxDepth) continue
+      for (const callee of node.callees) {
+        if (depth.has(callee.id)) continue
+        depth.set(callee.id, d + 1)
+        queue.push(byName.get(callee.name))
+      }
+    }
+    nodes = nodes.filter((n) => depth.has(n.id))
+  }
   if (needle) {
-    nodes = nodes.filter((n) =>
-      n.label.toLowerCase().includes(needle) ||
-      (n.location && n.location.toLowerCase().includes(needle)) ||
-      (n.file && n.file.toLowerCase().includes(needle))
+    nodes = nodes.filter(
+      (n) => n.label.toLowerCase().includes(needle) || String(n.location).toLowerCase().includes(needle),
     )
   }
-
+  const nodesCapped = nodes.length > maxNodes
+  nodes = nodes.slice(0, maxNodes)
   const nodeSet = new Set(nodes.map((n) => n.id))
-  const rawEdges = [
-    ['fn:main', 'fn:UpdateTemperature'],
-    ['fn:main', 'fn:UpdateDisplay'],
-    ['fn:UpdateTemperature', 'fn:ReadTemperature'],
-    ['fn:UpdateDisplay', 'fn:DrawText'],
-    ['fn:ReadTemperature', 'fn:ReadVoltage'],
-  ]
-
-  const edges = []
-  for (const [from, to] of rawEdges) {
-    if (nodeSet.has(from) && nodeSet.has(to)) {
-      edges.push({ id: `e:${from}:${to}:${edges.length}`, from, to, resolved: true })
-    }
-  }
-
-  const depthNote = depthStr === 'all' ? '全部层级调用' : `main的${depthStr}层调用`
-
+  const edges = pairs
+    .filter(([from, to]) => nodeSet.has(from) && nodeSet.has(to))
+    .map(([from, to], index) => ({ id: `e:${from}:${to}:${index}`, from, to, resolved: true }))
+  const scopeNote = !byName.size
+    ? '当前工程未识别到函数'
+    : !hasCalls
+      ? `已识别 ${byName.size} 个函数；暂无调用关系数据`
+      : root && depthStr !== 'all'
+        ? `当前范围: main 的 ${depthStr} 层调用`
+        : '当前范围: 全部调用'
   return {
     kind: 'call',
-    focus: 'main',
+    focus: root ? 'main' : nodes[0]?.name || '',
     nodes,
     edges,
     clusters: [],
     maxEdges: 100,
-    maxNodes: 100,
-    capped: false,
+    maxNodes,
+    capped: nodesCapped,
     edgesCapped: false,
-    nodesCapped: false,
+    nodesCapped,
     orphanEdges: 0,
-    scopeNote: `当前范围: ${depthNote}`,
+    scopeNote,
   }
 }

@@ -495,7 +495,6 @@
     "src/ui/components/toggle-switch.mjs",
     "src/ui/components/component-registry.mjs",
     "src/ui/patterns/filter-toolbar.mjs",
-    "src/ui/debug/fixtures/temperature-demo.mjs",
     "docs/architecture/ADR-024-client-primitives-and-facade-retirement.md",
     "src/ui/vendor/codemirror-runtime.mjs",
     "src/ui/styles/table.mjs",

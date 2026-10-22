@@ -29,7 +29,6 @@ export function createProjectToolbar(React) {
     graphDepth,
     onGraphDepth,
     keil,
-    isDemo,
     busy,
     onReload,
     t,
@@ -108,14 +107,14 @@ export function createProjectToolbar(React) {
             {
               type: 'button',
               className: 'dvb-btn dvb-btn-sm dvb-project-reload-btn',
-              disabled: (!keil.project && !isDemo) || busy,
+              disabled: !keil.project || busy,
               onClick: onReload,
             },
             renderRefreshIcon(React, 13),
             el('span', { style: { marginLeft: '4px' } }, busy ? t('opening') : '重新加载'),
           ),
           el('span', { style: { display: 'none' } }, t('projectMap')),
-          activeMapped && !isDemo
+          activeMapped
             ? el(
                 'span',
                 { style: { display: 'none' } },

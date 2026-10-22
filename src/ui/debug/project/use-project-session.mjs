@@ -4,7 +4,6 @@ import { beginRequest, postWithAbort, shouldApplyRequest } from '../../common/la
 import { pageSessionId, sessionCwd } from '../../common/session-scope.mjs'
 import { getNav, subscribeNav } from '../../workspace/vision-navigation-store.mjs'
 import { DEBUG_SECTIONS, VIEW_DEBUG } from '../../workspace/vision-route.mjs'
-import { DEMO_PROJECT_MAP, demoFileText } from '../fixtures/temperature-demo.mjs'
 import { buildFunctionCallGraph, buildProjectGraph } from './project-graph-model.mjs'
 import {
   emptyPreviewState,
@@ -23,6 +22,7 @@ import {
 } from './project-tree-model.mjs'
 
 const NO_EDGES = Object.freeze([])
+const NO_CALLS = Object.freeze([])
 
 function abortRef(ref) {
   const ac = ref.current
@@ -94,38 +94,12 @@ export function createUseProjectSession(React, t, post) {
     const identityKey = projectIdentityKey(sessionId, cwd, keil)
     const identityRef = React.useRef(identityKey)
     identityRef.current = identityKey
-    const isTestEnv = typeof navigator !== 'undefined' && String(navigator.userAgent || '').includes('happy')
-    const [demoActive] = React.useState(() => {
-      try {
-        if (typeof window !== 'undefined' && window.sessionStorage) {
-          const v = window.sessionStorage.getItem('dvb:demo_project')
-          if (v !== null) return v === 'true'
-        }
-      } catch {}
-      return !isTestEnv
-    })
-    const isDemo = Boolean(demoActive && !keil.project)
-    const activeMapped = isDemo ? DEMO_PROJECT_MAP : matchesIdentity(mapped, identityKey) ? mapped : null
+    // No demo project: without a selected project the view shows its empty
+    // state. (A demo used to be on by default outside tests, so users saw a
+    // fabricated TemperatureDemo tree, call graph and sensor.c preview.)
+    const activeMapped = matchesIdentity(mapped, identityKey) ? mapped : null
     mappedRef.current = activeMapped
 
-    React.useEffect(() => {
-      if (isDemo && (!preview || preview.rel !== 'sensor.c')) {
-        const code = demoFileText('sensor.c')
-        setPreview({
-          rel: 'sensor.c',
-          text: code,
-          lines: code.split('\n').length,
-          truncated: false,
-          error: '',
-          identityKey,
-          isDemo: true,
-          loading: false,
-        })
-        setJumpLine(6)
-        setSelectedId('sensor.c')
-        setOpenGroups({ 'Source Group1': true, Headers: true, Startup: false, Libraries: false })
-      }
-    }, [isDemo, preview, identityKey])
 
     React.useEffect(() => {
       mountedRef.current = true
@@ -154,7 +128,7 @@ export function createUseProjectSession(React, t, post) {
       setMapped(null)
       setError('')
       setBusy(false)
-      if (!isDemo) setPreview(null)
+      setPreview(null)
       setCopied('')
       setJumpLine(0)
       mappedRef.current = null
@@ -165,10 +139,10 @@ export function createUseProjectSession(React, t, post) {
         setOpenGroups({})
         setOpenFiles({})
         setCfgOpen(false)
-        if (!isDemo) setSelectedId('')
+        setSelectedId('')
         pendingJumpRef.current = null
       }
-    }, [identityKey, isDemo])
+    }, [identityKey])
 
     React.useEffect(() => {
       const onKey = (ev) => {
@@ -262,15 +236,9 @@ export function createUseProjectSession(React, t, post) {
     }, [applyMapResponse, cwd, identityKey, keil.project, keil.target, post, t])
 
     const reloadMap = React.useCallback(() => {
-      if (isDemo) {
-        setSearch('')
-        setFilter('all')
-        setGraphDepth('2')
-        return Promise.resolve()
-      }
       const started = startMapRequest()
       return started ? started.promise : Promise.resolve()
-    }, [isDemo, startMapRequest])
+    }, [startMapRequest])
 
     React.useEffect(() => {
       const started = startMapRequest()
@@ -292,19 +260,17 @@ export function createUseProjectSession(React, t, post) {
     const effectiveRelType =
       userRelType != null
         ? userRelType
-        : isDemo
-          ? 'call'
-          : includeEdges.length > 0 && !activeMapped?.calls?.length
-            ? 'include'
-            : 'call'
+        : includeEdges.length > 0 && !activeMapped?.calls?.length
+          ? 'include'
+          : 'call'
 
     const fileGraph = React.useMemo(
       () => buildProjectGraph(groups, includeEdges, { filter, search, backendTruncated }),
       [groups, includeEdges, filter, search, backendTruncated],
     )
     const callGraph = React.useMemo(
-      () => buildFunctionCallGraph(groups, { search, depth: graphDepth }),
-      [groups, search, graphDepth],
+      () => buildFunctionCallGraph(groups, { search, depth: graphDepth }, activeMapped?.calls || NO_CALLS),
+      [groups, search, graphDepth, activeMapped],
     )
     const graph = effectiveRelType === 'call' ? callGraph : fileGraph
 
@@ -335,20 +301,6 @@ export function createUseProjectSession(React, t, post) {
       (file, line = 0) => {
         const rel = file.rel || file.path || file.name
         const reqIdentity = identityKey
-        const demoCode = demoFileText(file?.name) || demoFileText(rel)
-        if (isDemo && demoCode) {
-          setJumpLine(Number(line) || 0)
-          setPreview({
-            rel,
-            text: demoCode,
-            lines: demoCode.split('\n').length,
-            truncated: false,
-            error: '',
-            identityKey: reqIdentity,
-            loading: false,
-          })
-          return
-        }
         const requestId = beginRequest(previewRequestRef)
         const ac = swapAbortController(previewAbortRef)
         const mayApply = () =>
@@ -381,7 +333,7 @@ export function createUseProjectSession(React, t, post) {
             releaseAbortController(previewAbortRef, ac)
           })
       },
-      [cwd, identityKey, isDemo, post],
+      [cwd, identityKey, post],
     )
 
     const selectFile = (file, line = 0) => {
@@ -442,7 +394,6 @@ export function createUseProjectSession(React, t, post) {
       cwd,
       sessionId,
       keil,
-      isDemo,
       identityKey,
       error,
       busy,

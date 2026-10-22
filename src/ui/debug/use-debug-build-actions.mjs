@@ -86,7 +86,19 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
     })
   }
 
+  // A saved project needs its targets on every mount (reload, reopened session,
+  // switching sub-views); they used to load only right after choosing it, which
+  // left the Target select empty while the saved target was shown above it.
+  const savedProject = (workspace && workspace.keil && workspace.keil.project) || ''
+  const targetsFor = React.useRef('')
+  React.useEffect(() => {
+    if (!cwd || !savedProject || targetsFor.current === savedProject) return
+    targetsFor.current = savedProject
+    loadTargets(savedProject)
+  }, [cwd, savedProject])
+
   function chooseProject(path) {
+    targetsFor.current = path
     setPicker(null)
     setKeil({ project: path, target: '' })
     persist({ ...workspace, keil: { ...workspace.keil, project: path, target: '' } }).then(() => {

@@ -169,3 +169,18 @@ test('map sets truncated when file cap is hit', async () => {
     await rm(home, { recursive: true, force: true })
   }
 })
+
+test('mapProject finds functions whose body sits on the definition line', async (t) => {
+  const { cpSync } = await import('node:fs')
+  const cwd = await mkdtemp(join(tmpdir(), 'dvb-map-oneline-'))
+  t.after(() => rm(cwd, { recursive: true, force: true }))
+  cpSync(new URL('../fixtures/keil/multi-target.uvprojx', import.meta.url), join(cwd, 'demo.uvprojx'))
+  await mkdir(join(cwd, 'src'), { recursive: true })
+  await writeFile(
+    join(cwd, 'src', 'app.c'),
+    'static int speed;\nint app_init(void) { speed = 0; return 0; }\nvoid app_tick(void) { speed++; }\nint main(void)\n{\n  app_init();\n}\n',
+  )
+  const details = await mapProject(join(cwd, 'demo.uvprojx'), 'STM32F103_Flash', cwd)
+  const fns = details.groups[0].files[0].functions
+  assert.deepEqual(fns.map((/** @type {any} */ f) => [f.name, f.line]), [['app_init', 2], ['app_tick', 3], ['main', 4]])
+})

@@ -33,7 +33,7 @@ export default {
         },
         {
           "file": "src/ui/debug/project/use-project-session.mjs",
-          "max": 489,
+          "max": 440,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
           "owner": "vision-bench"

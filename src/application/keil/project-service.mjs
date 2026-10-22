@@ -7,6 +7,7 @@ import { loadWorkspace } from '../../infrastructure/store/workspace-store.mjs'
 import { keilErrorResult } from '../../domain/keil/errors.mjs'
 import {
   MAX_FUNCS_TOTAL,
+  MAX_FUNCS_FILE,
   MAX_MAP_DEFINES,
   MAX_MAP_EDGES,
   MAX_MAP_FILES,
@@ -27,7 +28,8 @@ import {
   readGroups,
   readVariousControls,
 } from '../../infrastructure/keil/uvprojx-parser.mjs'
-import { extractFunctions, extractIncludes } from '../../infrastructure/program/source-analyzer.mjs'
+import { extractIncludes } from '../../infrastructure/program/source-analyzer.mjs'
+import { analyzeCSource } from '../../infrastructure/program/c-source-analyzer.mjs'
 
 /**
  * Format a relative path with forward slashes.
@@ -194,7 +196,11 @@ export async function mapProject(projectPath, target = '', root = '', options = 
       if (inside && readable && (kind === 'c' || kind === 'h') && funcTotal < maxFuncsTotal) {
         const source = await readSource(resolved)
         if (kind === 'c') {
-          functions = extractFunctions(source)
+          // Same Lezer AST as the ProgramModel (heuristic fallback inside), so
+          // one-line bodies like `int f(void) { … }` are not missed.
+          functions = analyzeCSource(source, rel || fname)
+            .functions.slice(0, MAX_FUNCS_FILE)
+            .map((fn) => ({ name: fn.name, line: fn.line }))
           funcTotal += functions.length
         }
         for (const incName of extractIncludes(source)) {

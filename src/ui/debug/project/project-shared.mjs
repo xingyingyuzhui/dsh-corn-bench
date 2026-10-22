@@ -33,7 +33,7 @@ export function tagMappedState(details, identityKey) {
 }
 
 export function matchesIdentity(state, identityKey) {
-  return !!state && (Boolean(state.isDemo) || state.identityKey === identityKey)
+  return !!state && state.identityKey === identityKey
 }
 
 let _primitives = null

@@ -16,11 +16,10 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
     onJumpLine,
     selectedFile,
     selectedGroup,
-    isDemo,
   }) {
     const el = React.createElement
-    const activePreview = (isDemo || preview?.isDemo) ? preview : (matchesIdentity(preview, identityKey) ? preview : null)
-    const activeMapped = isDemo ? mapped : (matchesIdentity(mapped, identityKey) ? mapped : null)
+    const activePreview = matchesIdentity(preview, identityKey) ? preview : null
+    const activeMapped = matchesIdentity(mapped, identityKey) ? mapped : null
     const activeJumpLine = activePreview ? jumpLine : 0
     const rel = activePreview?.rel
 
@@ -130,7 +129,7 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
                   el(
                     'div',
                     { className: 'dvb-preview-code-head' },
-                    el('span', { className: 'dvb-preview-code-title' }, '示例源码'),
+                    el('span', { className: 'dvb-preview-code-title', title: rel }, rel),
                   ),
                   el(
                     'div',
@@ -138,7 +137,7 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
                     el(SourceEditor, {
                       text: activePreview.text || '',
                       rel,
-                      jumpLine: activeJumpLine || 6,
+                      jumpLine: activeJumpLine || 0,
                       language: languageForPath(rel),
                       ariaLabel: t('sourcePreview'),
                     }),

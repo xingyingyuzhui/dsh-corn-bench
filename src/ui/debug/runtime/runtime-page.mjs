@@ -4,7 +4,6 @@ import { postWithAbort } from '../../common/latest-request-gate.mjs'
 import { pageSessionId, sessionCwd } from '../../common/session-scope.mjs'
 import { createPanel } from '../../components/primitives.mjs'
 import { createSourceEditor } from '../../components/source-editor.mjs'
-import { DEMO_DEBUG_SESSION, demoFileText } from '../fixtures/temperature-demo.mjs'
 import { languageForPath } from '../project/project-tree-model.mjs'
 import { createBreakpointPanel } from './breakpoint-panel.mjs'
 import { createDebugApprovalCard } from './debug-approval-card.mjs'
@@ -14,7 +13,6 @@ import { createStackPanel } from './stack-panel.mjs'
 import { useDebugEvents } from './use-debug-events.mjs'
 import { createVariablesPanel } from './variables-panel.mjs'
 
-export { DEMO_DEBUG_SESSION } from '../fixtures/temperature-demo.mjs'
 
 /**
  * Creates the Browser Runtime Debug UI page.
@@ -42,14 +40,16 @@ export function createRuntimePage(React, t, post) {
     const debug = useDebugEvents(React, post, { cwd, sessionId })
     const { actions } = debug
 
-    const isDemo = !debug.session || debug.status === 'idle'
-    const sessionData = debug.session || (isDemo ? DEMO_DEBUG_SESSION : null)
-    const effectiveStatus = debug.session ? debug.status : isDemo ? 'paused' : debug.status
+    // Only the real DebugRuntime session is shown. Without one the page is idle
+    // with empty panels; it used to render a fabricated paused session (stack,
+    // breakpoints, variables and events of a TemperatureDemo sensor.c).
+    const sessionData = debug.session || null
+    const effectiveStatus = debug.session ? debug.status : 'idle'
 
     const [sourcePreview, setSourcePreview] = React.useState(() => ({
-      rel: 'sensor.c',
-      text: demoFileText('sensor.c'),
-      jumpLine: 7,
+      rel: '',
+      text: '',
+      jumpLine: 0,
       loading: false,
       error: null,
     }))
@@ -60,17 +60,6 @@ export function createRuntimePage(React, t, post) {
     const loadSource = React.useCallback(
       async (filePath, line = 0) => {
         if (!filePath) return
-        const demoText = demoFileText(filePath)
-        if (demoText) {
-          setSourcePreview({
-            rel: filePath,
-            text: demoText,
-            jumpLine: line || 0,
-            loading: false,
-            error: null,
-          })
-          return
-        }
         if (!cwd) return
         if (fileAbortRef.current) {
           fileAbortRef.current.abort()
@@ -137,18 +126,18 @@ export function createRuntimePage(React, t, post) {
       }
     }
 
-    const listOrDemo = (v, k) => (v?.length ? v : isDemo ? DEMO_DEBUG_SESSION[k] || [] : [])
+    const list = (v) => (Array.isArray(v) ? v : [])
     const rawBp = sessionData?.breakpoints
-    const breakpoints = listOrDemo(Array.isArray(rawBp) ? rawBp : rawBp ? Object.values(rawBp) : [], 'breakpoints')
+    const breakpoints = Array.isArray(rawBp) ? rawBp : rawBp ? Object.values(rawBp) : []
     const watchpoints = sessionData?.watchpoints || []
-    const locals = debug.variables?.locals?.length ? debug.variables.locals : (isDemo ? DEMO_DEBUG_SESSION.variables.locals : [])
-    const watches = listOrDemo(debug.watches, 'watches')
-    const watchValues = listOrDemo(debug.watchValues, 'watchValues')
-    const events = listOrDemo(debug.events, 'events')
-    const targetLabel = sessionData?.targetKey || sessionData?.target || (isDemo ? 'TemperatureDemo · Debug' : '')
+    const locals = list(debug.variables?.locals)
+    const watches = list(debug.watches)
+    const watchValues = list(debug.watchValues)
+    const events = list(debug.events)
+    const targetLabel = sessionData?.targetKey || sessionData?.target || ''
     const backendRaw = sessionData?.backend || sessionData?.backendKind || 'gdb-openocd'
     const selectedFrame = sessionData?.stack?.[debug.selectedFrame] || sessionData?.stack?.[0] || null
-    const viewingFile = (sourcePreview.rel || sessionData?.location?.file || 'sensor.c').split(/[\\/]/).pop()
+    const viewingFile = (sourcePreview.rel || sessionData?.location?.file || '').split(/[\\/]/).pop()
     const viewingFn = selectedFrame?.function || sessionData?.location?.function || ''
     const pcFile = sessionData?.location?.file ? String(sessionData.location.file).split(/[\\/]/).pop() : ''
     const sameFile = Boolean(pcFile && viewingFile && pcFile === viewingFile)
@@ -168,7 +157,6 @@ export function createRuntimePage(React, t, post) {
         target: targetLabel,
         location: sessionData?.location || null,
         loading: debug.loading,
-        isDemo,
         onStart: () => actions.startDebug(),
         onStop: () => actions.stopDebug(),
         onRun: () => actions.run(),
@@ -259,7 +247,7 @@ export function createRuntimePage(React, t, post) {
                   ? el(SourceEditor, {
                       text: sourcePreview.text,
                       rel: sourcePreview.rel,
-                      jumpLine: sourcePreview.jumpLine || execLine || 7,
+                      jumpLine: sourcePreview.jumpLine || execLine || 0,
                       execLine,
                       breakpoints: fileBreakpoints,
                       debugGutters: true,

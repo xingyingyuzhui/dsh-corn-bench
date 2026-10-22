@@ -59,7 +59,7 @@ export function createProjectWorkspace(React, t, post) {
               selectedId: s.selectedId,
               setSelectedId: s.setSelectedId,
               jumpLine: s.jumpLine,
-              projectName: s.isDemo ? 'TemperatureDemo' : s.activeMapped?.project?.replace(/\.uvprojx$/i, '') || '',
+              projectName: s.activeMapped?.project?.replace(/\.uvprojx$/i, '') || '',
               onPreview: (file, line) => {
                 s.setSelectedId(fileTreeId(file))
                 s.openPreview(file, line)
@@ -87,7 +87,6 @@ export function createProjectWorkspace(React, t, post) {
         graphDepth: s.graphDepth,
         onGraphDepth: s.setGraphDepth,
         keil: s.keil,
-        isDemo: s.isDemo,
         busy: s.busy,
         onReload: s.reloadMap,
         t,
@@ -98,7 +97,7 @@ export function createProjectWorkspace(React, t, post) {
       }),
       !s.cwd
         ? el('div', { className: 'dvb-hint' }, t('needWorkspace'))
-        : !s.keil.project && !s.isDemo
+        : !s.keil.project
           ? el('div', { className: 'dvb-hint' }, t('projectMapEmpty'))
           : null,
       s.error ? el('div', { className: 'dvb-msg', 'data-kind': 'err' }, formatErrorMessage(s.error)) : null,
@@ -135,7 +134,6 @@ export function createProjectWorkspace(React, t, post) {
                 s.setPreview(null)
                 s.setJumpLine(0)
               },
-              isDemo: s.isDemo,
             }),
       ),
     )
