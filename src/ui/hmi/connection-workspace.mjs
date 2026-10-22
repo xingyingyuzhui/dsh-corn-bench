@@ -49,10 +49,11 @@ export function renderConnectionWorkspace(el, t, ctx) {
         )
       : null,
     tabBar,
+    // Approvals above the device cards, not below a long point table.
+    pendingPanel,
     focusToast,
     devFormPanel,
     deviceCardsPanel,
-    pendingPanel,
     activeModal && ModalDialog ? el(ModalDialog, activeModal) : null,
   )
 }

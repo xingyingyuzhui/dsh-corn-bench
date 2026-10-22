@@ -19,6 +19,7 @@ export function renderConnectionOverview(el, t, ctx) {
     focusToast,
     connListPanel,
     connFormPanel,
+    pendingPanel,
     visionCollabBar,
   } = ctx
 
@@ -48,6 +49,9 @@ export function renderConnectionOverview(el, t, ctx) {
         )
       : null,
     tabBar,
+    // Agent write approvals first: the overview used to show only a tab badge,
+    // while the Agent was told to wait for an approval the user could not see.
+    pendingPanel || null,
     focusToast,
     connListPanel,
     connFormPanel,
