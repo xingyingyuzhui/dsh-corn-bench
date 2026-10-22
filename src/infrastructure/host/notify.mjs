@@ -68,9 +68,12 @@ export function buildPluginNotice(text, summary) {
     id: randomUUID(),
     role: 'user',
     content: [{ type: 'text', text: String(text || '') }],
+    // DSH session format v4 (0.1.7+) refuses the retired { kind: 'plugin' }
+    // wrapper; a producer owns its kind. Appending the old shape broke the
+    // Session: every later turn failed with "format v4 message requires a
+    // producer-owned source kind".
     source: {
-      kind: 'plugin',
-      plugin: PLUGIN_NAME,
+      kind: PLUGIN_NAME,
       form: 'notice',
       summary: sanitizeNoticeSummary(summary),
     },

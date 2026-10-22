@@ -141,7 +141,7 @@ test('notifyBenchEvent only delivers to the bound live agent', async () => {
     assert.equal(typeof message.id, 'string')
     assert.ok(message.id)
     assert.equal(message.role, 'user')
-    assert.equal(message.source.plugin, 'dsh-vision-bench')
+    assert.equal(message.source.kind, 'dsh-vision-bench')
     assert.equal(message.source.form, 'notice')
     assert.match(message.content[0].text, /台架写点失败/)
     assert.match(message.content[0].text, /\[Vision 已生效\]/)
@@ -212,14 +212,16 @@ test('config notices are labeled as completed results, not new commands', () => 
   assert.equal(already.startsWith('Vision写点完成'), true)
 })
 
-test('notice builder emits alpha.3 plugin messages with unique ids', () => {
+test('notice builder emits producer-owned (session format v4) notices with unique ids', () => {
   const a = _internal.buildMessage('正文', '摘要')
   const b = _internal.buildMessage('正文', '摘要')
   assert.equal(a.role, 'user')
   assert.equal(a.content[0].type, 'text')
   assert.equal(a.content[0].text, '正文')
-  assert.equal(a.source.kind, 'plugin')
-  assert.equal(a.source.plugin, 'dsh-vision-bench')
+  // DSH v4 admission: a non-empty producer kind, never the retired 'plugin' wrapper.
+  assert.equal(a.source.kind, 'dsh-vision-bench')
+  assert.notEqual(a.source.kind, 'plugin')
+  assert.equal('plugin' in a.source, false)
   assert.equal(a.source.form, 'notice')
   assert.equal(a.source.summary, '摘要')
   assert.equal(typeof a.id, 'string')
