@@ -203,11 +203,6 @@ check(
   'Desktop B2 mounts via agentPresets + composedPreset(ctx)',
 )
 check(
-  'desktopB2.resultsRecorded',
-  read('scripts/probes/RESULTS.md').includes('runtime-identity-lab') &&
-    read('scripts/probes/RESULTS.md').includes('agentPresets.mount'),
-)
-check(
   'desktopCarrier.cancelFallback',
   read('scripts/probes/run-desktop-dispatch-smoke.mts').includes('FALLBACK_MS = 20_000') ||
     read('scripts/probes/run-desktop-dispatch-smoke.mts').includes('FALLBACK_MS = 20000'),

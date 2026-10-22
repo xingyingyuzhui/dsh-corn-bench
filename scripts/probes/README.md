@@ -9,7 +9,7 @@ Minimal plugins for plan `2026-09-17-003` §4 阶段 0 / §5.2.
 
 No hardware. No Vision workspace. Responses are plain JSON.
 
-## Freeze baseline (fill RESULTS.md)
+## Freeze baseline
 
 ```bash
 dsh --version
@@ -84,7 +84,7 @@ cd /path/to/deepseek-harness-desktop-official/apps/desktop
 pnpm exec tsx /path/to/dsh-vision-bench/scripts/probes/run-desktop-b1.mts
 ```
 
-Expect: HTTP 200 JSON `{ ok:true, probe:'fetch', … }`, then uninstall reboot → 404. See [RESULTS.md](./RESULTS.md).
+Expect: HTTP 200 JSON `{ ok:true, probe:'fetch', … }`, then uninstall reboot → 404.
 
 Product GUI install still requires registry `name@version` (Desktop rejects `file:`); that is an S6 packaging gate, not the B1 transport gate.
 
@@ -111,4 +111,4 @@ Expect: `POST /api/vision-bench/dispatch` `{endpoint:'state'}` → 200; aborting
 1. Official Desktop profile is separate from Web (`~/.dsh/profiles/desktop` vs `web`).
 2. Prefer registry `name@version` for product claims; tgz only for laboratory notes.
 3. In a Vision (or blank) window DevTools, run the same `fetch('/api/vision-probe', ...)`.
-4. Record origin, status, body, and Host log lines `vision.probe.fetch.start` into [RESULTS.md](./RESULTS.md).
+4. Record origin, status, body, and Host log lines `vision.probe.fetch.start`.

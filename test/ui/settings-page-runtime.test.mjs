@@ -95,3 +95,17 @@ test('turning Agent write approval off asks first and posts only the policy', as
   await waitFor(() => assert.match(view.container.textContent || '', /agentApprovalOffWarning/))
   view.unmount()
 })
+
+test('outside a session the share switches are disabled and say where to set them', async () => {
+  const post = async (/** @type {string} */ path) =>
+    path === '/dsh-vision-bench/state' ? { ok: true, bindings: STORED, globalShare: { enabled: false } } : { ok: true }
+  const SettingsPage = createSettingsPage(React, (/** @type {string} */ k) => k, post, { getScope: () => ({ cwd: '', sessionId: '' }) })
+  const view = render(React.createElement(SettingsPage))
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  })
+  const master = /** @type {HTMLButtonElement} */ (view.container.querySelector('#share-master'))
+  assert.equal(master.disabled, true)
+  assert.match(view.container.textContent || '', /shareNeedSession/)
+  view.unmount()
+})

@@ -1,6 +1,8 @@
 # Native Web / Desktop acceptance matrix (migration stage 5–7)
 
-Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration.md` and `scripts/probes/RESULTS.md`.
+Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration.md`.
+
+> **2026-10-22:** the plugin now pins DSH `0.2.1-rc.2`. The Desktop results recorded earlier (DSH 0.1.6/0.1.7 lab runs, `scripts/probes/RESULTS.md`) were retired; Desktop is re-tested by the maintainer on 0.2.1-rc.2. The probe scripts under `scripts/probes/` remain as tools. Web 0.2.1-rc.2 was exercised end to end in an isolated `DSH_HOME` (Host Fetch, in-process Agent handle, declarative preset, HMI / Monitor / Debug / Settings, Agent write approval on and off).
 
 **Capability claim (ship):** UI + Agent in-process Host + Modbus TCP/sim over Connection Fetch, no Vision listen port.
 
@@ -13,9 +15,9 @@ Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration
 | Web compat inject fiber lifecycle | **pass** |
 | Debug idle `waitForOwnerSession` | **pass** |
 | Fetch dispatch contract (no local 64 KiB cap) | **pass** |
-| Real Desktop B2 (pack → temp profile → DesktopHostProcess → agentPresets.mount → vision_bench) | **lab pass** (`runtime-identity-lab`; not official allowBuilds product install) |
-| Desktop Vision Fetch (real tarball `/api/vision-bench/dispatch`) | **lab pass** (bundled in B2 evidence) |
-| Desktop Fetch carrier smoke (stub plugin) | **carrier pass** (`run-desktop-dispatch-smoke.mts`; not Vision integration) |
+| Real Desktop B2 (pack → temp profile → DesktopHostProcess → agentPresets.mount → vision_bench) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
+| Desktop Vision Fetch (real tarball `/api/vision-bench/dispatch`) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
+| Desktop Fetch carrier smoke (stub plugin) | **pending** — maintainer re-test (`run-desktop-dispatch-smoke.mts`) |
 | Stage 3 pack / Stage 4 lifecycle | **pass** |
 | Stage 5 Desktop evidence gate | **required** — evidence must match HEAD + fingerprints + identity/cancel fields; dirty trees rejected unless `VISION_STAGE5_ALLOW_DIRTY=1` |
 

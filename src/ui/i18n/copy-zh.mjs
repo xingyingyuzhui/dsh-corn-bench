@@ -12,6 +12,7 @@ export const COPY_ZH = {
     sharePoints: '点位',
     shareVisualization: '可视化',
     shareRevokeConfirm: '关闭共享将使其他会话失去这些配置的可见性，确定继续？',
+    shareNeedSession: '工作区共享需要在会话里设置：打开会话的「调试 / 上位机 / 监控」页后，再到 设置 → Vision 修改。',
     shareSaved: '已更新工作区共享',
     navBehaviorTitle: '页面导航',
     preserveLastView: '返回上次离开的页面',

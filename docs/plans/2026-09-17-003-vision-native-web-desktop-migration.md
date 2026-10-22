@@ -282,7 +282,7 @@ Host 句柄存在且未 disposed → 直接调用 Host dispatcher
 | 编号 | 疑问（摘要） | 不实证的后果 | 回复（版本 / 结果 / 日志位置） |
 | --- | --- | --- | --- |
 | **B0** | 阶段 0「官方 Desktop」是否严格对齐 `dsh-v0.1.6-alpha.1`？探针失败时：停工等上游，还是允许 Web 继续、Desktop 标实验双轨？ | 基线漂移会使后续契约门禁失效 | **实施默认（2026-09-17 开搞）**：目标对齐本机 `dsh --version` = `0.1.6-alpha.1`。B1 Desktop 失败 → Web 可继续阶段 1 实验，Desktop 标阻塞不剥 `webServer`；不转向私有管道。 |
-| **B1** | `fetch.register` + 相对 `/api/...` 在目标 Desktop 上：注册、鉴权、调用、重复激活、卸载 404、重启是否完整？ | 阶段 1 不能剥 `webServer`，方案 A 立不住 | **Web + Desktop 已通过** — 见 `scripts/probes/RESULTS.md`（Desktop 经 `DesktopHostProcess` `/api` 管道）。 |
+| **B1** | `fetch.register` + 相对 `/api/...` 在目标 Desktop 上：注册、鉴权、调用、重复激活、卸载 404、重启是否完整？ | 阶段 1 不能剥 `webServer`，方案 A 立不住 | **Web + Desktop 曾在 0.1.6/0.1.7 通过**；旧结果已于 2026-10-22 撤下，Desktop 在 0.2.1-rc.2 上由维护者重新实测。 |
 | **B2** | Agent tool fiber 与 Host 是否同一 Node 模块实例？若否，有无公开跨进程 Host 通道？ | 阶段 2 不能只靠进程内句柄；禁止用 Web 端口硬桥 | **同进程已通过**（`run-b2-identity.mjs`）。阶段 2 已删 `hostOriginOf` 默认 `:3080`；无句柄且无显式 origin → `HOST_UNAVAILABLE`。 |
 | **B3** | Desktop `allowBuilds` + 捆绑 Node ABI 能否安装/重建/加载 `serialport`？ | 不能宣称完整硬件兼容；须限能力或拆可选包 | **否（当前官方白名单）** — `serialport` / `@serialport/bindings-cpp` 不在 Desktop `allowBuilds`；阶段 3 标记 Desktop RTU 能力限制，TCP/仿真仍可验收。 |
 | **B4** | Client 元数据 `platform: web` 是否被官方 Desktop 接受并加载？ | 阶段 1/3 可能卡在资源注入 | **是** — `client-modules` 仅接受 `dsh.client.platform === 'web'`；Desktop 与 Web 共用该契约。 |

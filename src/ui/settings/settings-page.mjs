@@ -272,9 +272,12 @@ export function createSettingsPage(React, t, post, options = {}) {
       ),
       el('div', { className: 'dvb-title', style: { marginTop: '16px' } }, t('shareTitle')),
       el('div', { className: 'dvb-hint', style: { marginBottom: '6px' } }, t('shareHint')),
+      // Sharing belongs to a workspace. Opened from the app menu there is none,
+      // and toggling only rewrote a global default no workspace read.
+      cwd ? null : el('div', { className: 'dvb-msg', 'data-kind': 'warn' }, t('shareNeedSession')),
       settingRow(
         el('span', { style: { fontWeight: 500 } }, t('shareMaster')),
-        renderSwitch(share.enabled === true, shareBusy, (enabled) => applyShare({ ...share, enabled }), 'share-master', t('shareMaster')),
+        renderSwitch(share.enabled === true, shareBusy || !cwd, (enabled) => applyShare({ ...share, enabled }), 'share-master', t('shareMaster')),
       ),
       el(
         'div',
@@ -299,7 +302,7 @@ export function createSettingsPage(React, t, post, options = {}) {
             ),
             renderSwitch(
               share[box.key] === true,
-              shareBusy || share.enabled !== true,
+              shareBusy || !cwd || share.enabled !== true,
               (on) => applyShare({ ...share, [box.key]: on }),
               'share-' + box.key,
               t(box.label),

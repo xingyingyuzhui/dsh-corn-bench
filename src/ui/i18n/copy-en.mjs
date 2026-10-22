@@ -12,6 +12,7 @@ export const COPY_EN = {
     sharePoints: 'Points',
     shareVisualization: 'Visualization',
     shareRevokeConfirm: 'Turning share off hides these items from other sessions. Continue?',
+    shareNeedSession: 'Workspace sharing is set from a session: open its Debug, HMI or Monitor view, then Settings → Vision.',
     shareSaved: 'Workspace sharing updated',
     navBehaviorTitle: 'Navigation behavior',
     preserveLastView: 'Remember last visited view',
