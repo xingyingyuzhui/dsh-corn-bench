@@ -1,6 +1,6 @@
 # dsh-vision-bench · Vision 模式
 
-版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.1.7-alpha.2`（双轨）。
+版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
 
 会话区里的调试 / 上位机 / 监控工作台。跟 Claw 无关。同一份现场状态同时给界面和当前 Session 的 Agent 用。
 
@@ -12,7 +12,7 @@
 
 验收矩阵：[`docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md`](docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md)。
 
-完整变更见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.1.7-alpha.2`（双轨）。
+完整变更见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
 
 ## 安装
 

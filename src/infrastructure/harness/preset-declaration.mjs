@@ -14,7 +14,7 @@
  * @module
  */
 import { dirname, join } from 'node:path'
-import { buildStandardPresetChildren } from './standard-preset-snapshot.mjs'
+import { describeStandardDrift, selectStandardSnapshot, standardDrift } from './standard-preset-track.mjs'
 import { checkOwnership } from './preset-overlay.mjs'
 import { _existsSync, _renameSync } from './preset-transaction.mjs'
 
@@ -66,6 +66,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  * @property {string} error
  * @property {string} migrationWarning
  * @property {string} backupDir
+ * @property {string} [snapshot] DSH release whose standard rows were restated
+ * @property {string} [snapshotDrift] live standard differs from those rows
  */
 
 /** @returns {DeclarationState} */
@@ -78,6 +80,8 @@ function idleDeclarationState() {
     error: '',
     migrationWarning: '',
     backupDir: '',
+    snapshot: '',
+    snapshotDrift: '',
   }
 }
 
@@ -157,13 +161,15 @@ export function isDuplicatePresetError(error) {
  * The self-contained Vision preset: shipped `standard` children plus the Vision
  * agent tool row. Rows are fresh per call so a caller may adapt them.
  *
- * @param {{ platform?: string }} [options]
+ * @param {{ platform?: string, standard?: import('./standard-preset-track.mjs').StandardSnapshot }} [options]
+ *   `standard` defaults to the DSH 0.2.x snapshot.
  * @returns {PresetDefinition}
  */
 export function buildVisionPresetDefinition(options = {}) {
+  const standard = options.standard || selectStandardSnapshot(null)
   /** @type {PresetChildRow[]} */
   const plugins = [
-    ...buildStandardPresetChildren(options),
+    ...standard.build(options),
     { id: 'vision-bench-tools', name: AGENT_PLUGIN_SPEC },
   ]
   return {
@@ -181,6 +187,7 @@ export function buildVisionPresetDefinition(options = {}) {
  * @property {string} via `agentPresets.register`, `external-declaration`, …
  * @property {string} [error]
  * @property {boolean} [delegated] the id is already declared by someone else
+ * @property {string} [snapshot] DSH release whose standard rows were restated
  * @property {PresetDefinition} definition
  * @property {(() => Promise<void>) | null} dispose
  */
@@ -194,7 +201,8 @@ export function buildVisionPresetDefinition(options = {}) {
  * @returns {Promise<RegistrationResult>}
  */
 export async function registerVisionPreset(agentPresets, options = {}) {
-  const definition = options.definition || buildVisionPresetDefinition(options)
+  const standard = selectStandardSnapshot(agentPresets)
+  const definition = options.definition || buildVisionPresetDefinition({ ...options, standard })
   const attempts = options.duplicateRetries ?? DUPLICATE_RETRY_ATTEMPTS
   const delayMs = options.retryDelayMs ?? DUPLICATE_RETRY_DELAY_MS
   for (let attempt = 0; ; attempt += 1) {
@@ -203,6 +211,7 @@ export async function registerVisionPreset(agentPresets, options = {}) {
       return {
         ok: true,
         via: 'agentPresets.register',
+        snapshot: standard.contract,
         definition,
         dispose: typeof dispose === 'function' ? dispose : null,
       }
@@ -313,6 +322,9 @@ export async function activateVisionPresetDeclaration(agentPresets, home, option
     }
   }
   const roster = await describeDeclaredPreset(agentPresets)
+  // Compare standard's rows only: the appended Vision tool row is ours by design.
+  const standardRows = registration.definition.plugins.filter((row) => row.name !== AGENT_PLUGIN_SPEC)
+  const drift = await standardDrift(agentPresets, standardRows)
   // Only the declaration this fiber just registered may displace the legacy
   // directory. An external owner of the id, or a broken row, leaves it in place.
   const migration =
@@ -327,6 +339,8 @@ export async function activateVisionPresetDeclaration(agentPresets, home, option
     error: roster.ok ? '' : roster.error,
     migrationWarning: migration.ok ? '' : migration.error || '',
     backupDir: migration.backupDir || '',
+    snapshot: registration.snapshot || '',
+    snapshotDrift: describeStandardDrift(drift),
   }, epoch)
   return {
     ok: roster.ok,

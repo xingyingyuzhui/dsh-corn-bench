@@ -1,3 +1,13 @@
+## Unreleased
+
+- 对齐 DSH 0.2.1-rc.2：契约钉改为 `0.2.1-rc.2`；Vision模式 重述 0.2.1 的 standard 预设（新增 time-context、tool-schedule、plugin-market 工具，persona 只保留 prefix）。按注册表能力选快照，DSH 0.1.7 继续用冻结快照。DSH 0.2.x 上与实时 standard 比对，不一致在设置页提示。CI 增加 Node 24。
+- 设置 → Vision 新增「Agent 权限」：可关闭 Agent 写点批准（默认开，关闭需确认）。关闭后写点结果带 `approval: 'policy-disabled'`；`status` 返回 `agentWriteApproval`。
+- 安全：Agent HTTP 命令桥一律按 Agent 执行，请求体不能自称 user 绕过写点批准。
+- 安全：调试启动不再伪造固件（工作区不存在、只有哈希、`allowMissingArtifact`）；OpenOCD 接口/目标白名单无论工作区是否存在都生效；GDB/OpenOCD/UV4 路径只取设置里的绑定，不接受请求指定。
+- 稳定窗口校验在时钟越过窗口终点而最新采样差 1ms 时会等下一采样，不再误报采样不足。
+- `bindings/save` 未带 `bindings` 时不再清空工具路径。
+- 测试：两个 CI 失败修复（verify 超时定时器、`chflags` 仅 macOS）；调试测试改用真实工作区与固件。
+
 ## 0.29.30
 
 - RPC 工作区、状态与配置响应统一过滤运行值、告警、趋势、报文和会话日志；共享配置不开放其他会话的私有任务。

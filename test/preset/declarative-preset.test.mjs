@@ -32,14 +32,15 @@ test('vision declaration restates standard children and appends one agent tool r
   assert.equal(definition.plugins[standard.length], toolRows[0])
 })
 
-test('persona row keeps the shipped prefix/suffix split', () => {
+test('persona row keeps the shipped prefix', () => {
   const [persona] = buildVisionPresetDefinition({ platform: 'linux' }).plugins
   assert.equal(persona.id, 'persona')
   assert.equal(persona.name, '@deepseek-ai/dsh-persona')
   assert.equal(typeof persona.config, 'object')
   const config = /** @type {Record<string, unknown>} */ (persona.config)
   assert.match(String(config.prefix), /\{\{model\}\}/)
-  assert.match(String(config.suffix), /\{\{cwd\}\}/)
+  // DSH 0.2.x moved the working directory out of the persona into time-context.
+  assert.equal(config.suffix, undefined)
 })
 
 test('!!js platform rows arrive as plain booleans', () => {
@@ -61,7 +62,7 @@ test('group rows keep their isolate realms and nested children', () => {
   assert.deepEqual(byId.get('delegation')?.isolate, { workflowEngine: true })
   const delegation = /** @type {{ config: any[] }} */ (byId.get('delegation'))
   assert.ok(delegation.config.some((row) => row.id === 'tool-subagent'))
-  assert.ok(delegation.config.some((row) => row.id === 'tool-subagent-codex' && row.disabled === true))
+  assert.ok(delegation.config.some((row) => row.id === 'tool-workflow'))
   const planning = /** @type {{ config: any[] }} */ (byId.get('planning'))
   assert.ok(String(planning.config[0].config.section).includes('exit_plan_mode'))
 })

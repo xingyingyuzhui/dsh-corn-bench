@@ -564,6 +564,8 @@
     "src/infrastructure/harness/preset-workflow-migrate.mjs",
     "src/infrastructure/harness/preset-transaction.mjs",
     "src/infrastructure/harness/standard-preset-snapshot.mjs",
+    "src/infrastructure/harness/standard-preset-track.mjs",
+    "src/infrastructure/harness/standard-preset-snapshot-0.1.7.mjs",
     "src/application/modbus/trend-store.mjs",
     "src/infrastructure/harness/guidance.mjs",
     "src/application/flash/flash-service.mjs",

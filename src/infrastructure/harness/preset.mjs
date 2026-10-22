@@ -123,20 +123,27 @@ export const ensurePresetOverlay = (dir, options = {}) =>
   })
 
 /**
+ * Live drift wins: on DSH 0.2.x the declaration compared its rows with the
+ * host's standard preset. Otherwise fall back to the release comparison.
+ *
+ * @param {import('./preset-declaration.mjs').DeclarationState} state
  * @param {string} installed
  * @returns {string}
  */
-function snapshotDriftWarning(installed) {
-  if (!installed || installed === STANDARD_PRESET_SNAPSHOT_CONTRACT) return ''
-  return `标准预设快照（${STANDARD_PRESET_SNAPSHOT_CONTRACT}）早于已安装 DSH（${installed}），如 roster 行 broken 请升级插件`
+function snapshotDriftWarning(state, installed) {
+  if (state.snapshotDrift) return state.snapshotDrift
+  const used = state.snapshot || STANDARD_PRESET_SNAPSHOT_CONTRACT
+  if (!installed || installed === used) return ''
+  return `Vision模式 按 DSH ${used} 的 standard 预设生成，已安装 DSH ${installed}；工具集可能不同，请升级插件`
 }
 
 /**
  * @param {Record<string, any>} health
+ * @param {import('./preset-declaration.mjs').DeclarationState} state
  * @param {string} installed
  */
-function withSnapshotDriftWarning(health, installed) {
-  const drift = snapshotDriftWarning(installed)
+function withSnapshotDriftWarning(health, state, installed) {
+  const drift = snapshotDriftWarning(state, installed)
   if (!drift) return health
   return { ...health, warning: health.warning ? `${health.warning}；${drift}` : drift }
 }
@@ -183,7 +190,7 @@ export async function inspectPresetHealth(home, options = {}) {
   const declaration = getDeclarationState()
   if (declaration.mode === 'declarative') {
     const installed = readInstalledDshVersion(options.dshPaths || [])
-    return withSnapshotDriftWarning(declarativePresetHealth(declaration), installed)
+    return withSnapshotDriftWarning(declarativePresetHealth(declaration), declaration, installed)
   }
   const seed = getLastPresetSeed()
   const dir = userPresetDir(home)

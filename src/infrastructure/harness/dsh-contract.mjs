@@ -5,7 +5,7 @@ import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 /** DSH contract this plugin's preset migrator and standing guard are tested against. */
-export const SUPPORTED_DSH_CONTRACT = '0.1.7-alpha.2'
+export const SUPPORTED_DSH_CONTRACT = '0.2.1-rc.2'
 
 const require = createRequire(import.meta.url)
 

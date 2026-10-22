@@ -60,7 +60,7 @@ test('declarative health warns but passes when only migration failed', async () 
   assert.match(String(health.warning), /EPERM/)
 })
 
-test('declarative health warns when the standard snapshot predates the installed DSH', async () => {
+test('declarative health warns when the standard snapshot differs from the installed DSH', async () => {
   setDeclarationState({
     mode: 'declarative',
     phase: 'registered',
@@ -78,7 +78,7 @@ test('declarative health warns when the standard snapshot predates the installed
     assert.match(
       String(health.warning),
       new RegExp(
-        `标准预设快照（${STANDARD_PRESET_SNAPSHOT_CONTRACT.replaceAll('.', '\\.')}）早于已安装 DSH（9\\.9\\.9），如 roster 行 broken 请升级插件`,
+        `按 DSH ${STANDARD_PRESET_SNAPSHOT_CONTRACT.replaceAll('.', '\\.')} 的 standard 预设生成，已安装 DSH 9\\.9\\.9；工具集可能不同，请升级插件`,
       ),
     )
     assert.match(String(health.warning), /EPERM/)
@@ -151,4 +151,19 @@ test('seed keeps writing the legacy directory on a legacy registry', async () =>
   assert.ok(entries.includes('agent.cordis.yml'))
   await rm(home, { recursive: true, force: true })
   await rm(standardDir, { recursive: true, force: true })
+})
+
+test('live standard drift recorded at registration wins over the release comparison', async () => {
+  setDeclarationState({
+    mode: 'declarative',
+    phase: 'registered',
+    via: 'agentPresets.register',
+    at: '2026-10-22T08:00:00.000Z',
+    migrationWarning: '',
+    snapshot: STANDARD_PRESET_SNAPSHOT_CONTRACT,
+    snapshotDrift: 'Vision模式 工具集与当前 standard 预设不一致：缺少 standard 中的 @x/new-tool。请升级插件。',
+  })
+  const health = await inspectPresetHealth('/unused/home', { dshPaths: ['/nonexistent'] })
+  assert.equal(health.ok, true)
+  assert.match(String(health.warning), /缺少 standard 中的 @x\/new-tool/)
 })

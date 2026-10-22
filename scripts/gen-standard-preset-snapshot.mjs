@@ -39,7 +39,7 @@ const mode = args.includes('--write') ? 'write' : args.includes('--check') ? 'ch
 const sourceArg = flag('--source')
 const outArg = flag('--out')
 const repoArg = flag('--repo') || resolve(process.env.HOME || '', 'DSH/deepseek-harness-desktop-official')
-const tagArg = flag('--tag') || 'dsh-v0.1.7-alpha.2'
+const tagArg = flag('--tag') || 'dsh-v0.2.1-rc.2'
 
 /**
  * @returns {{ contract: string, raw: string }}
