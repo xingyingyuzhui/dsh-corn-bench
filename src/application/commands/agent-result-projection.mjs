@@ -24,12 +24,26 @@ const CONFIG_ACTIONS = new Set(['points', 'config', 'configureConnection', 'visu
  */
 function projectWrite(result) {
   if (!result || result.needsConfirm !== true) {
-    if (result && 'workspace' in result) {
-      const { workspace: _workspace, ...rest } = result
-      void _workspace
-      return rest
-    }
-    return result
+    if (!result || typeof result !== 'object') return result
+    // An executed write answers with before/target/readback. The workspace,
+    // every point's value record (with internal sampleIdentity fingerprints
+    // naming private sessions) and per-frame logs grew with the point table
+    // and are not the Agent's to read; frames reduce to a count.
+    const {
+      workspace: _workspace,
+      values: _values,
+      pointValues: _pointValues,
+      framesLog,
+      framesByConnection: _byConnection,
+      frames: _frames,
+      ...rest
+    } = result
+    void _workspace
+    void _values
+    void _pointValues
+    void _byConnection
+    void _frames
+    return Array.isArray(framesLog) ? { ...rest, frameCount: framesLog.length } : rest
   }
   /** @type {Record<string, unknown>} */
   const projected = {

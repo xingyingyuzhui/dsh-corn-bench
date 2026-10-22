@@ -112,3 +112,47 @@ test('the agent command bridge binds source to agent whatever the body claims', 
   assert.equal(ran.errorCode, ERROR_CODES.APPROVAL_PENDING)
   assert.equal(listPendingWrites(bench.cwd, 's1').length, 1)
 })
+
+test('an executed agent write returns its outcome, not workspace values or sample fingerprints', async (t) => {
+  const { projectAgentResult } = await import('../../src/application/commands/agent-result-projection.mjs')
+  const bench = await simBench(t)
+  saveAgentPolicy(bench.home, { agentWriteApproval: false })
+  const ran = await agentWrite(bench)
+  assert.equal(ran.ok, true, ran.error)
+  const projected = projectAgentResult({ action: 'write' }, ran)
+  assert.deepEqual(projected.readback, [42])
+  assert.equal(projected.approval, 'policy-disabled')
+  for (const key of ['values', 'framesLog', 'frames', 'workspace', 'pointValues']) assert.equal(key in projected, false, key)
+  assert.equal(JSON.stringify(projected).includes('sampleIdentity'), false)
+  assert.equal(typeof projected.frameCount, 'number')
+})
+
+test('status reports a session-private simulated link as connected', async (t) => {
+  const { device, hrPoint, rtuSim } = await import('../hmi/multi-conn-fixtures.mjs')
+  const bench = await createBench(t, { prefix: 'dvb-status-sim-private-' })
+  bench.save({
+    modbus: {
+      version: 3,
+      share: { enabled: false, connections: false, points: false, visualization: false },
+      connections: [],
+      devices: [],
+      points: [],
+      sessionConfigs: {
+        s1: {
+          connections: [rtuSim('c1', 'COM3')],
+          devices: [device('d1', 'c1', 1)],
+          points: [hrPoint('p1', 'c1', 'd1', 0)],
+          pollingByConnection: { c1: { enabled: true, intervalMs: 1000 } },
+        },
+      },
+      pollingByConnection: { c1: { enabled: true, intervalMs: 1000 } },
+      values: [],
+    },
+  })
+  const status = await executeHostCommand({ home: bench.home, cwd: bench.cwd, sessionId: 's1', source: 'agent', action: 'status', payload: { action: 'status' } })
+  assert.equal(status.ok, true, status.error)
+  const state = status.modbus.connectionStates.find((/** @type {any} */ c) => c.connectionId === 'c1')
+  assert.ok(state, JSON.stringify(status.modbus.connectionStates))
+  assert.equal(state.simulated, true)
+  assert.equal(state.status, 'connected')
+})

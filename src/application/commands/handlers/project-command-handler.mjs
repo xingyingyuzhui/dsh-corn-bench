@@ -123,7 +123,10 @@ export async function handleProjectCommand(home, args, room, origin, opts) {
     }
     const journal = journalView(workspace)
     const configVersion = pack.configVersion || 1
-    const states = await listConnectionStates(home, room.cwd, opts)
+    // The session's own view: a partitioned workspace keeps connections (and the
+    // sim flag) in the session layer, so the top-level fallback reported a
+    // polling simulated link as 'disconnected'.
+    const states = await listConnectionStates(home, room.cwd, { ...opts, pack })
     const connectionStates = states?.connectionStates || []
     const stateByConn = new Map(connectionStates.map((s) => [s.connectionId, s.status || '']))
     const layered = workspace.modbus
