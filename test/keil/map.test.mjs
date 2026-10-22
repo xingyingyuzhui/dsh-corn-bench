@@ -183,4 +183,8 @@ test('mapProject finds functions whose body sits on the definition line', async 
   const details = await mapProject(join(cwd, 'demo.uvprojx'), 'STM32F103_Flash', cwd)
   const fns = details.groups[0].files[0].functions
   assert.deepEqual(fns.map((/** @type {any} */ f) => [f.name, f.line]), [['app_init', 2], ['app_tick', 3], ['main', 4]])
+  // Call edges from the same AST feed the project call graph.
+  assert.deepEqual(details.calls, [{ from: 'main', to: 'app_init' }])
+  assert.equal(details.counts.calls, 1)
+  assert.equal(details.truncated.calls, false)
 })

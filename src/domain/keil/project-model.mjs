@@ -45,9 +45,10 @@ export function kindOfFile(nameOrPath) {
  *   includes: Array<{ path: string, exists: boolean, inside: boolean }>,
  *   defines: string[],
  *   include_edges: Array<{ from: string, name: string, to: string, resolved: boolean }>,
- *   truncated: { files: boolean, includes: boolean, defines: boolean, include_edges: boolean, functions: boolean },
- *   limits: { files: number, includes: number, defines: number, include_edges: number, functions: number },
- *   counts: { groups: number, files: number, missing: number, unreadable: number, includes: number, defines: number, include_edges: number, functions: number }
+ *   calls: Array<{ from: string, to: string }>,
+ *   truncated: { files: boolean, includes: boolean, defines: boolean, include_edges: boolean, calls: boolean, functions: boolean },
+ *   limits: { files: number, includes: number, defines: number, include_edges: number, calls: number, functions: number },
+ *   counts: { groups: number, files: number, missing: number, unreadable: number, includes: number, defines: number, include_edges: number, calls: number, functions: number }
  * }}
  */
 export function normalizeKeilProjectMap(raw) {
@@ -99,11 +100,18 @@ export function normalizeKeilProjectMap(raw) {
       }))
     : []
 
+  const calls = Array.isArray(obj.calls)
+    ? /** @type {any[]} */ (obj.calls)
+        .map((/** @type {any} */ c) => ({ from: typeof c?.from === 'string' ? c.from : '', to: typeof c?.to === 'string' ? c.to : '' }))
+        .filter((c) => c.from && c.to)
+    : []
+
   const truncated = {
     files: Boolean(obj.truncated?.files),
     includes: Boolean(obj.truncated?.includes),
     defines: Boolean(obj.truncated?.defines),
     include_edges: Boolean(obj.truncated?.include_edges),
+    calls: Boolean(obj.truncated?.calls),
     functions: Boolean(obj.truncated?.functions),
   }
 
@@ -112,6 +120,7 @@ export function normalizeKeilProjectMap(raw) {
     includes: Number(obj.limits?.includes) || MAX_MAP_INCLUDES,
     defines: Number(obj.limits?.defines) || MAX_MAP_DEFINES,
     include_edges: Number(obj.limits?.include_edges) || MAX_MAP_EDGES,
+    calls: Number(obj.limits?.calls) || MAX_MAP_EDGES,
     functions: Number(obj.limits?.functions) || MAX_FUNCS_TOTAL,
   }
 
@@ -137,6 +146,7 @@ export function normalizeKeilProjectMap(raw) {
     includes: includes.length,
     defines: defines.length,
     include_edges: includeEdges.length,
+    calls: calls.length,
     functions: Number(obj.counts?.functions ?? funcTotal),
   }
 
@@ -147,6 +157,7 @@ export function normalizeKeilProjectMap(raw) {
     includes,
     defines,
     include_edges: includeEdges,
+    calls,
     truncated,
     limits,
     counts,

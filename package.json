@@ -258,6 +258,7 @@
     "src/infrastructure/program/lezer-c-analyzer.mjs",
     "src/infrastructure/archify/archify-adapter.mjs",
     "src/application/keil/project-service.mjs",
+    "src/application/keil/map-call-edges.mjs",
     "src/application/keil/build-service.mjs",
     "src/application/program/program-service.mjs",
     "src/application/program/runtime-correlation-service.mjs",

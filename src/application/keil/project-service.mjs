@@ -30,6 +30,7 @@ import {
 } from '../../infrastructure/keil/uvprojx-parser.mjs'
 import { extractIncludes } from '../../infrastructure/program/source-analyzer.mjs'
 import { analyzeCSource } from '../../infrastructure/program/c-source-analyzer.mjs'
+import { createCallEdgeCollector } from './map-call-edges.mjs'
 
 /**
  * Format a relative path with forward slashes.
@@ -144,6 +145,7 @@ export async function mapProject(projectPath, target = '', root = '', options = 
   let funcTotal = 0
   /** @type {Array<{ from: string, name: string, to: string, resolved: boolean }>} */
   const includeEdges = []
+  const callEdges = createCallEdgeCollector(maxEdges)
   let filesCapped = false
   let edgesCapped = false
 
@@ -198,10 +200,10 @@ export async function mapProject(projectPath, target = '', root = '', options = 
         if (kind === 'c') {
           // Same Lezer AST as the ProgramModel (heuristic fallback inside), so
           // one-line bodies like `int f(void) { … }` are not missed.
-          functions = analyzeCSource(source, rel || fname)
-            .functions.slice(0, MAX_FUNCS_FILE)
-            .map((fn) => ({ name: fn.name, line: fn.line }))
+          const analysis = analyzeCSource(source, rel || fname)
+          functions = analysis.functions.slice(0, MAX_FUNCS_FILE).map((fn) => ({ name: fn.name, line: fn.line }))
           funcTotal += functions.length
+          callEdges.add(analysis)
         }
         for (const incName of extractIncludes(source)) {
           if (includeEdges.length >= maxEdges) {
@@ -244,11 +246,13 @@ export async function mapProject(projectPath, target = '', root = '', options = 
     includes: incRows,
     defines,
     include_edges: includeEdges,
+    calls: callEdges.calls,
     truncated: {
       files: filesCapped,
       includes: includesTotal > MAX_MAP_INCLUDES,
       defines: definesTotal > MAX_MAP_DEFINES,
       include_edges: edgesCapped,
+      calls: callEdges.capped,
       functions: funcTotal >= maxFuncsTotal,
     },
     limits: {
@@ -256,6 +260,7 @@ export async function mapProject(projectPath, target = '', root = '', options = 
       includes: MAX_MAP_INCLUDES,
       defines: MAX_MAP_DEFINES,
       include_edges: maxEdges,
+      calls: maxEdges,
       functions: maxFuncsTotal,
     },
     counts: {
@@ -266,6 +271,7 @@ export async function mapProject(projectPath, target = '', root = '', options = 
       includes: incRows.length,
       defines: defines.length,
       include_edges: includeEdges.length,
+      calls: callEdges.calls.length,
       functions: funcTotal,
     },
   })
