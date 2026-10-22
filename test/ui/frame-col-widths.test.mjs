@@ -133,22 +133,24 @@ test('useFrameColWidths calculates totalTableWidth for proto and raw modes', () 
   assert.notEqual(protoWidth, rawWidth)
 })
 
-test('formatPortName converts c1 / c2 shorthand to COM1 / COM2 and respects connection ports', () => {
+test('formatPortName shows the real endpoint and never maps connection ids to COM ports', () => {
   assert.equal(formatPortName({ port: 'COM1' }), 'COM1')
   assert.equal(formatPortName({ port: 'com2' }), 'COM2')
-  assert.equal(formatPortName({ port: 'c1' }), 'COM1')
-  assert.equal(formatPortName({ port: 'C1' }), 'COM1')
-  assert.equal(formatPortName({ port: 'c2' }), 'COM2')
-  assert.equal(formatPortName({ connectionId: 'c1' }), 'COM1')
-  assert.equal(formatPortName({ connectionId: 'c2' }), 'COM2')
+  assert.equal(formatPortName({ port: '/dev/ttyUSB0' }), '/dev/ttyUSB0')
+  // A bare connection id is not a serial port.
+  assert.equal(formatPortName({ connectionId: 'c1' }), 'c1')
 
   const conns = [
-    { id: 'c1', name: 'C1', conn: { port: 'COM3' } },
-    { id: 'c2', name: 'C2', conn: { port: 'COM4' } },
+    { id: 'c1', name: '泵站', conn: { port: 'COM3' } },
+    { id: 'c2', name: 'PLC', conn: { mode: 'tcp', host: '10.0.0.5', tcpPort: 1502 } },
+    { id: 'c3', name: '仿真台', conn: { sim: true, port: 'COM9' } },
+    { id: 'c4', name: '未配置', conn: {} },
   ]
   assert.equal(formatPortName({ connectionId: 'c1' }, conns), 'COM3')
-  assert.equal(formatPortName({ connectionId: 'c2' }, conns), 'COM4')
   assert.equal(formatPortName({ port: 'c1' }, conns), 'COM3')
+  assert.equal(formatPortName({ connectionId: 'c2' }, conns), '10.0.0.5:1502')
+  assert.equal(formatPortName({ connectionId: 'c3', port: 'COM9' }, conns), 'SIM')
+  assert.equal(formatPortName({ connectionId: 'c4' }, conns), '未配置')
 })
 
 test('loadFrameColWidths automatically migrates old 118 default to 76', () => {
@@ -166,4 +168,18 @@ test('loadFrameColWidths automatically migrates old 118 default to 76', () => {
   } finally {
     delete globalThis.localStorage
   }
+})
+
+test('a simulated frame shows its description, not hex scraped from it', async () => {
+  const { framePayloadHex } = await import('../../src/ui/monitor/frames/frames-format.mjs')
+  const { frameEntry } = await import('../../src/application/modbus/modbus-runtime-context.mjs')
+  const sim = frameEntry('读 0310×1', { request: 'SIM TX 3@10×1', response: 'SIM RX 110', requestHex: '', responseHex: '' }, { connectionId: 'c1' })
+  assert.equal(sim.requestHex, '')
+  assert.equal(sim.responseHex, '')
+  assert.equal(sim.request, 'SIM TX 3@10×1')
+  assert.equal(framePayloadHex(sim), '')
+  assert.equal(framePayloadHex({ ...sim, direction: 'rx' }), '')
+  const wire = frameEntry('读', { requestHex: '01 03 00 0a 00 01', responseHex: '010302002a' }, { connectionId: 'c1' })
+  assert.equal(wire.requestHex, '0103000A0001')
+  assert.equal(framePayloadHex({ ...wire, direction: 'rx' }), '010302002A')
 })

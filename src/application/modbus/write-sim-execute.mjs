@@ -7,6 +7,7 @@ import { setPointValue } from '../../domain/modbus/point-model.mjs'
 import { pointIdOf } from '../../domain/modbus/point-math.mjs'
 import { findPointV3 } from '../../domain/modbus/function-code.mjs'
 import { capturePlanSampleIdentities } from './sample-identity-producer.mjs'
+import { rememberSimWrite } from '../../infrastructure/modbus/sim-register-bank.mjs'
 
 /**
  * @param {{
@@ -47,6 +48,9 @@ export async function executeSimWrite(input) {
     return done(false, stamped.error || '采样身份保存失败', { errorCode: 'WORKSPACE_WRITE_FAILED' })
   }
   const sampleIdentityByPointId = stamped.sampleIdentityByPointId || {}
+  // The simulated device keeps what was written, like a real slave would.
+  const device = (pack.devices || []).find((/** @type {any} */ d) => d.id === targetDid)
+  rememberSimWrite({ cwd: roomCwd, connectionId: targetCid, unitId: device && device.unitId, functionCode: fn, address, values: writeValues })
   const at = Date.now()
   let vals = Array.isArray(pack.values) ? pack.values.slice() : []
   for (let i = 0; i < count; i++) {

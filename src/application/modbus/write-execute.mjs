@@ -187,7 +187,9 @@ export async function executeApprovedWrite(ctx) {
       .filter(Boolean)
 
     if (conn.sim) {
-      return executeSimWrite({
+      // await: returning the bare promise ran `finally` before the sim write
+      // settled and logged a spurious "写入中断" failure for every sim write.
+      return await executeSimWrite({
         home,
         roomCwd,
         sessionId,

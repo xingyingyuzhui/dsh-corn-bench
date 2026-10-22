@@ -97,6 +97,10 @@ export const createTransactionFrame = (label, frames, extra = {}) => {
   const txId = String(extra.transactionId || extra.frameId || `${cid}:${at}:${tid}`)
   const req = (frames && (frames.requestHex || frames.request)) || ''
   const res = (frames && (frames.responseHex || frames.response)) || ''
+  // Hex columns carry wire bytes only. A simulated or text-only frame has none;
+  // stripping its description ("SIM TX 3@10×1") produced fake bytes "3101".
+  const reqHex = String((frames && frames.requestHex) || '')
+  const resHex = String((frames && frames.responseHex) || '')
   return {
     id: txId,
     frameId: txId,
@@ -115,8 +119,8 @@ export const createTransactionFrame = (label, frames, extra = {}) => {
     label,
     request: req,
     response: res,
-    requestHex: String(req).replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, MAX_FRAME_HEX_CHARS),
-    responseHex: String(res).replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, MAX_FRAME_HEX_CHARS),
+    requestHex: reqHex.replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, MAX_FRAME_HEX_CHARS),
+    responseHex: resHex.replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, MAX_FRAME_HEX_CHARS),
     frameFormat: String(frames?.frameFormat || extra.frameFormat || ''),
     trace: frames && Array.isArray(frames.trace) ? frames.trace : [],
     unitId: Number.isFinite(Number(extra.unitId)) ? Math.trunc(Number(extra.unitId)) : 1,

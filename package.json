@@ -554,6 +554,7 @@
     "src/infrastructure/process/run-command.mjs",
     "src/infrastructure/modbus/serial-monitor.mjs",
     "src/infrastructure/modbus/modbus-transport.mjs",
+    "src/infrastructure/modbus/sim-register-bank.mjs",
     "src/application/modbus/polling-coordinator.mjs",
     "src/infrastructure/modbus/io-broker.mjs",
     "src/infrastructure/modbus/io-broker-settle.mjs",

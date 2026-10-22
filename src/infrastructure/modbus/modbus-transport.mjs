@@ -2,6 +2,7 @@
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
 import { getVisionIoBroker } from './io-broker.mjs'
 import { clampTimeoutMs, endpointFingerprint, ioError, toEndpoint, validateIoRequest } from '../../domain/modbus/io-contract.mjs'
+import { forgetSimConnection, overlaySimRead, rememberSimWrite } from './sim-register-bank.mjs'
 
 /**
  * @typedef {{ id?: string, connectionId?: string, role?: string, enabled?: boolean, sim?: boolean, conn?: { sim?: boolean, mode?: string } }} TransportConnection
@@ -175,6 +176,7 @@ export function notifyConnectionRelease(cwd, ids, extra = {}) {
   if (!cwd || !list.length) return
   const transport = extra.transport || createModbusTransport()
   for (const id of list) {
+    forgetSimConnection(cwd, id)
     void transport.releaseConnection({ cwd, connectionId: id }).catch(() => {})
   }
 }
@@ -233,7 +235,7 @@ export function createModbusTransport({ broker = getVisionIoBroker() } = {}) {
       const options = asOpts(opts)
       if (options.sim || req.endpoint?.sim) {
         const t0 = nowMs()
-        const data = simRaw({ address: req.address, count: req.count }, req.functionCode)
+        const data = overlaySimRead(req, simRaw({ address: req.address, count: req.count }, req.functionCode))
         return {
           ok: true,
           data,
@@ -259,6 +261,7 @@ export function createModbusTransport({ broker = getVisionIoBroker() } = {}) {
       const options = asOpts(opts)
       if (options.sim || req.endpoint?.sim) {
         const t0 = nowMs()
+        rememberSimWrite(req)
         return {
           ok: true,
           data: req.values,
