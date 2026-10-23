@@ -25,6 +25,29 @@ export function dshPackageRootFromExecPath(execPath = process.execPath, platform
 }
 
 /**
+ * Where the packaging puts the Harness next to an Electron app: `Resources/app.asar/dsh`
+ * (macOS/Linux) or `Resources/app.asar/dsh` beside `app.asar` when unpacked, on Windows
+ * `resources/app.asar/dsh`. Desktop keeps its own copy there and never installs the CLI.
+ *
+ * @param {string} [resourcesPath] `process.resourcesPath`, which only Electron defines.
+ * @returns {string}
+ */
+export function dshPackageRootFromResources(resourcesPath) {
+  if (!resourcesPath) return ''
+  return path.join(resourcesPath, 'app.asar', 'dsh')
+}
+
+/**
+ * Resolution roots for the installed Harness, most authoritative first.
+ *
+ * Under Electron, `process.execPath` is the application binary, not `node`, so the
+ * exec-path derivation points at a directory the packaging never creates
+ * (`Contents/lib/node_modules/...`) and resolution silently fell through to an
+ * unrelated prefix install. That produced a wrong `readInstalledDshVersion()` and a
+ * false "please upgrade the plugin" drift warning on Desktop. The app's own
+ * `Resources/app.asar/dsh` is the DSH the Host is actually running, so it has to come
+ * before any prefix guess.
+ *
  * @param {string[]} [extra]
  * @returns {string[]}
  */
@@ -32,6 +55,7 @@ export function dshSearchPaths(extra = []) {
   return [
     ...extra,
     process.env.DSH_PACKAGE_ROOT || '',
+    dshPackageRootFromResources(process.resourcesPath),
     dshPackageRootFromExecPath(),
     '/opt/homebrew/lib/node_modules/@deepseek-ai/dsh',
     '/usr/local/lib/node_modules/@deepseek-ai/dsh',

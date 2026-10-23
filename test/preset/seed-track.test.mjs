@@ -3,7 +3,13 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { detectPresetTrack, dshPackageRootFromExecPath, dshSearchPaths } from '../../src/infrastructure/harness/dsh-contract.mjs'
+import {
+  detectPresetTrack,
+  dshPackageRootFromExecPath,
+  dshPackageRootFromResources,
+  dshSearchPaths,
+  readInstalledDshVersion,
+} from '../../src/infrastructure/harness/dsh-contract.mjs'
 
 /**
  * @param {string[]} packages `@deepseek-ai/*` package names to materialize
@@ -48,4 +54,43 @@ test('dsh search paths follow the running Node prefix, including Windows', () =>
     dshPackageRootFromExecPath('C:\\Program Files\\nodejs\\node.exe', 'win32'),
     'C:\\Program Files\\nodejs\\node_modules\\@deepseek-ai\\dsh',
   )
+})
+
+test('dshPackageRootFromResources points at the app packaging, and empty input is inert', () => {
+  assert.equal(
+    dshPackageRootFromResources('/Applications/DeepSeek Harness.app/Contents/Resources'),
+    '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh',
+  )
+  // Outside Electron there is no resourcesPath; the helper must not invent one.
+  assert.equal(dshPackageRootFromResources(undefined), '')
+  assert.equal(dshPackageRootFromResources(''), '')
+})
+
+test('under Electron the app copy of DSH outranks the exec-path guess', async () => {
+  // Regression: process.execPath is the application binary under Electron, so the
+  // exec-path derivation pointed at `<app>/Contents/lib/node_modules/...`, which the
+  // packaging never creates. Resolution then fell through to an unrelated prefix
+  // install, and readInstalledDshVersion() reported the wrong DSH with a false
+  // "please upgrade the plugin" drift warning.
+  const app = await mkdtemp(join(tmpdir(), 'dvb-electron-'))
+  const resources = join(app, 'Contents', 'Resources')
+  const shipped = join(resources, 'app.asar', 'dsh')
+  await mkdir(join(shipped, 'node_modules', '@deepseek-ai', 'dsh'), { recursive: true })
+  await writeFile(
+    join(shipped, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'),
+    JSON.stringify({ name: '@deepseek-ai/dsh', version: '0.2.1-rc.2' }),
+  )
+  const previous = process.resourcesPath
+  try {
+    Object.defineProperty(process, 'resourcesPath', { value: resources, configurable: true, writable: true })
+    const paths = dshSearchPaths()
+    assert.ok(
+      paths.indexOf(dshPackageRootFromResources(resources)) < paths.indexOf(dshPackageRootFromExecPath()),
+      'the app copy must be searched before the exec-path derivation',
+    )
+    assert.equal(readInstalledDshVersion(), '0.2.1-rc.2')
+  } finally {
+    Object.defineProperty(process, 'resourcesPath', { value: previous, configurable: true, writable: true })
+    await rm(app, { recursive: true, force: true })
+  }
 })
