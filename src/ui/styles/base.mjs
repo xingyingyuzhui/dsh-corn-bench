@@ -83,11 +83,13 @@ export const BASE_CSS = [
     ATTR +
     '] .dvb-setting-switch:focus-visible{outline:var(--dvb-focus-ring,2px solid var(--dvb-color-brand,#3b82f6));outline-offset:2px}',
   'body[' + ATTR + '] .dvb-setting-switch:disabled{cursor:default;opacity:.45}',
-  '@media (prefers-color-scheme:dark){body[' +
+  // DSH marks its own theme on body; the OS scheme only matters when DSH follows it.
+  'body[' +
     ATTR +
-    '] .dvb-setting-switch{background-color:rgba(255,255,255,.2)}body[' +
+    '][data-ds-dark-theme] .dvb-setting-switch{background-color:rgba(255,255,255,.2)}',
+  'body[' +
     ATTR +
-    '] .dvb-setting-switch[data-checked="true"]{background-color:var(--dvb-color-brand,#3b82f6)}}',
+    '][data-ds-dark-theme] .dvb-setting-switch[data-checked="true"]{background-color:var(--dvb-color-brand,#3b82f6)}',
   '@media (prefers-reduced-motion:reduce){body[' +
     ATTR +
     '] .dvb-setting-switch, body[' +

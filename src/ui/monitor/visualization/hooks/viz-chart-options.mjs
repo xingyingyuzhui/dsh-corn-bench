@@ -7,8 +7,12 @@ const escapeTooltipText = (value) => String(value ?? '').replace(/[&<>"']/g, (ch
 
 export const darkAlpha = (isDark, a) => (isDark ? `rgba(255,255,255,${a})` : `rgba(0,0,0,${a})`)
 
-export const checkDark = () =>
-  typeof globalThis !== 'undefined' && !!globalThis.window?.matchMedia?.('(prefers-color-scheme: dark)').matches
+/** DSH's theme, not the OS: DSH sets body[data-ds-dark-theme] from its own setting. */
+export const checkDark = () => {
+  const doc = globalThis.document
+  if (doc?.documentElement?.hasAttribute('data-ds-theme-source')) return !!doc.body?.hasAttribute('data-ds-dark-theme')
+  return !!globalThis.window?.matchMedia?.('(prefers-color-scheme: dark)').matches
+}
 
 const SKIP_COLOR = /^(inherit|initial|unset|revert|revert-layer)$/i
 
