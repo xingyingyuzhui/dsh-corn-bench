@@ -33,7 +33,13 @@ dsh plugin --profile web add ./dsh-vision-bench-*.tgz
 
 ### Desktop
 
-官方产品安装只认打包应用里的 **应用 → 桌面插件…**，填 npm 包名 `dsh-vision-bench`（版本见 [CHANGELOG.md](CHANGELOG.md)）。当前包还没上 npmjs.org，这条路径还不可用。
+官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装：
+
+```
+github:xingyingyuzhui/dsh-vision-bench#v0.30.0
+```
+
+或把 [Releases](https://github.com/xingyingyuzhui/dsh-vision-bench/releases/tag/v0.30.0) 里 `dsh-vision-bench-0.30.0.tgz` 的**绝对路径**填进去。裸包名 `dsh-vision-bench` 需要 registry 上有这个包 —— 当前 npmjs.org 仍是 404。
 
 本机实验室（先 **Cmd+Q** 完全退出 DeepSeek Harness）：
 
@@ -41,7 +47,7 @@ dsh plugin --profile web add ./dsh-vision-bench-*.tgz
 node scripts/probes/install-desktop-local.mjs
 ```
 
-不要执行 `dsh plugin --profile desktop`。Desktop profile 由 Electron 独占。`file:` / `link:` / `github:` / 本地 tgz 都会被桌面插件窗口拒绝；实验室脚本走 profile 内 `file:` tarball，只算 lab 证据，不算官方产品安装。
+不要执行 `dsh plugin --profile desktop`。Desktop profile 由 Electron 独占。实验室脚本走 profile 内 `file:` tarball，只算 lab 证据，不算官方产品安装。
 
 ## 卸载
 
