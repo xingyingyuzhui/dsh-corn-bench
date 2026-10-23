@@ -160,7 +160,7 @@ export function buttonByText(tree, text) {
   return Array.from(tree.container.querySelectorAll('button')).find((b) => b.textContent === text)
 }
 
-export const PREVIEW_EMPTY = '在左侧选择文件以预览源码'
+export const PREVIEW_EMPTY = '在文件树中选择文件以预览源码'
 
 export async function switchToGraph(tree) {
   const btn = buttonByText(tree, '图谱')

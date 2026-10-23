@@ -339,6 +339,8 @@ export function createDataTable(React) {
               },
               bodyRows,
             ),
+        // An empty list says so instead of leaving a blank box.
+        !rows.length && props.empty ? el('div', { className: 'dvb-data-table-empty', role: 'status' }, props.empty) : null,
       ),
     )
   }

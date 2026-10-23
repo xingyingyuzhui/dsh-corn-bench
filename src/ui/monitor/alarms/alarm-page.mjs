@@ -335,6 +335,7 @@ export function createAlarmPage(React, t, post, hooks) {
           { className: 'dvb-alarms-main' },
           el(DataTable, {
             data: enriched,
+            empty: '当前筛选条件下没有告警',
             getRowId: (row) => String(row.a.id),
             virtualize: false,
             columns,

@@ -26,7 +26,7 @@ export function createAlarmDetailCard(React, t) {
         el('div', { className: 'dvb-detail-head' }, el('span', { className: 'dvb-detail-title' }, '告警详情')),
         renderEmptyState(el, {
           kind: 'empty',
-          detail: '请从左侧列表选择一条告警查看详情',
+          detail: '在列表中选择一条告警查看详情',
           className: 'dvb-detail-empty-hint',
         }),
       )

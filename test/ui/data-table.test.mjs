@@ -145,3 +145,21 @@ test('DataTable renders resizers and handles when onStartResize is provided', ()
   assert.equal(headNode.props.style.minWidth, '500px')
 })
 
+
+test('an empty DataTable shows its empty message instead of a blank box', () => {
+  setTableRuntime({ createTable, getCoreRowModel, getSortedRowModel })
+  const DataTable = createDataTable(mockReact)
+  const columns = [{ id: 't', header: 't', accessorKey: 't' }]
+  const texts = (tree) => {
+    const out = []
+    walk(tree, (node) => {
+      if (node.props?.className === 'dvb-data-table-empty') out.push(node)
+    })
+    return out
+  }
+  const empty = render(() => DataTable({ data: [], columns, getRowId: (r) => String(r.t), empty: '没有记录' }))
+  assert.equal(texts(empty).length, 1)
+  const full = render(() => DataTable({ data: [{ t: 1 }], columns, getRowId: (r) => String(r.t), empty: '没有记录' }))
+  assert.equal(texts(full).length, 0)
+  setTableRuntime(null)
+})

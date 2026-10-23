@@ -45,6 +45,7 @@ export function createRuntimePage(React, t, post) {
     // breakpoints, variables and events of a TemperatureDemo sensor.c).
     const sessionData = debug.session || null
     const effectiveStatus = debug.session ? debug.status : 'idle'
+    const idle = !debug.session && !debug.pendingControl
 
     const [sourcePreview, setSourcePreview] = React.useState(() => ({
       rel: '',
@@ -191,8 +192,29 @@ export function createRuntimePage(React, t, post) {
           )
         : null,
 
-      // 3. Main Grid (Split 35% left / 65% right)
-      el(
+      // 3. Idle: one explanation instead of six empty panels. Breakpoints and
+      // watches need a live session, so their panels would only fail here.
+      idle
+        ? el(
+            'div',
+            { className: 'dvb-debug-idle' },
+            el('div', { className: 'dvb-debug-idle-title' }, '调试未启动'),
+            el(
+              'p',
+              { className: 'dvb-debug-idle-text' },
+              '点击上方「启动调试」连接目标板。启动后这里显示调用栈、断点、当前代码行、变量和寄存器；断点和监视需在调试启动后添加。',
+            ),
+            el(
+              'ul',
+              { className: 'dvb-debug-idle-list' },
+              el('li', null, '先在「工作台」编译出固件'),
+              el('li', null, '在 设置 → Vision 中配置 OpenOCD 和 GDB 路径'),
+            ),
+          )
+        : null,
+
+      // 4. Main Grid (Split 35% left / 65% right)
+      idle ? null : el(
         'div',
         { className: 'dvb-debug-grid' },
         // Left Column: Call Stack + Breakpoints/Watchpoints
@@ -279,8 +301,8 @@ export function createRuntimePage(React, t, post) {
         ),
       ),
 
-      // 4. Debug Timeline panel (bottom)
-      el(DebugTimelinePanel, {
+      // 5. Debug Timeline panel (bottom); kept while idle only if it has history
+      idle && events.length === 0 ? null : el(DebugTimelinePanel, {
         events,
       }),
     )

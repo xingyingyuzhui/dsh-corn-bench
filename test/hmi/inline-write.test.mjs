@@ -53,6 +53,8 @@ test('当前值行内写入：点击值单元格只在该行打开编辑器，�
     valueCell.dispatchEvent(new win.MouseEvent('click', { bubbles: true }))
   })
   await waitFor(() => assert.ok(tree.container.querySelector('.dvb-inline-write')), { timeout: 6000 })
+  // The popover covers the row's name and address columns, so it repeats them.
+  assert.match(tree.container.querySelector('.dvb-inline-write-target')?.textContent || '', / · 地址 \d+$/)
   // FC03 编辑器默认携带工程值（23.5）；直接 确定 → encodeValue(23.5/scale0.1)=235
   const okBtn = Array.from(tree.container.querySelectorAll('.dvb-inline-write button')).find(
     (b) => b.textContent === '确定',

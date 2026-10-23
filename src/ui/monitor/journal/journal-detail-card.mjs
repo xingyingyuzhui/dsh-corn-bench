@@ -23,7 +23,7 @@ export function createJournalDetailCard(React, t) {
         el('div', { className: 'dvb-detail-head' }, el('span', { className: 'dvb-detail-title' }, '操作详情')),
         renderEmptyState(el, {
           kind: 'empty',
-          detail: '请从左侧列表选择一条操作记录查看详情',
+          detail: '在列表中选择一条操作记录查看详情',
           className: 'dvb-detail-empty-hint',
         }),
       )

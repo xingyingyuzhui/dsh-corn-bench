@@ -315,7 +315,7 @@ export function createProjectTreePanel(React) {
                   renderChevronIcon(React, rootOpen),
                 ),
                 renderFolderIcon(React, rootOpen, 16),
-                el('span', { className: 'dvb-tree-root-label' }, projectName),
+                el('span', { className: 'dvb-tree-root-label', title: projectName }, projectName.split(/[\\/]/).pop()),
               ),
               rootOpen ? renderGroups() : null,
             )

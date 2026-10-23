@@ -45,7 +45,7 @@ test('切换工作区后旧源码预览立即不可见', async () => {
   activePath = '/ws-b'
   tree.rerender(createElement(Page, workspaceProps('s1', activePath)))
   assert.equal(tree.container.textContent.includes('int main(void)'), false)
-  assert.ok(tree.container.textContent.includes('在左侧选择文件以预览源码'))
+  assert.ok(tree.container.textContent.includes('在文件树中选择文件以预览源码'))
   tree.unmount()
 })
 
@@ -70,7 +70,7 @@ test('相同 cwd 的 Session A/B 选择状态隔离', async () => {
   const treeB = render(createElement(Page, workspaceProps('sB', '/shared')))
   await bootMap(treeB, pending)
   assert.equal(treeB.container.textContent.includes('session-a-source'), false)
-  assert.ok(treeB.container.textContent.includes('在左侧选择文件以预览源码'))
+  assert.ok(treeB.container.textContent.includes('在文件树中选择文件以预览源码'))
   treeA.unmount()
   treeB.unmount()
 })

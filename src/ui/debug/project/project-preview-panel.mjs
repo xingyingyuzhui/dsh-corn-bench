@@ -50,7 +50,7 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
                 { className: 'dvb-preview-breadcrumb' },
                 el('span', { className: 'dvb-breadcrumb-group' }, groupName),
                 el('span', { className: 'dvb-breadcrumb-sep' }, ' / '),
-                el('span', { className: 'dvb-breadcrumb-file' }, fileName),
+                el('span', { className: 'dvb-breadcrumb-file', title: rel }, fileName),
               )
             : el('span', { className: 'dvb-panel-title' }, '源码预览'),
           el('span', { style: { display: 'none' } }, rel ? `源码 · ${rel}` : ''),
@@ -117,7 +117,7 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
           ? el(
               'div',
               { className: 'dvb-project-preview-empty' },
-              el('div', { className: 'dvb-hint' }, '在左侧选择文件以预览源码，或从编译错误定位跳转。'),
+              el('div', { className: 'dvb-hint' }, '在文件树中选择文件以预览源码，或从编译错误定位跳转。'),
             )
           : activePreview.loading
             ? el('div', { className: 'dvb-hint' }, t('opening'))
@@ -126,11 +126,6 @@ export function createProjectPreviewPanel(React, t, SourceEditor) {
               : el(
                   'div',
                   { className: 'dvb-preview-code-box' },
-                  el(
-                    'div',
-                    { className: 'dvb-preview-code-head' },
-                    el('span', { className: 'dvb-preview-code-title', title: rel }, rel),
-                  ),
                   el(
                     'div',
                     { className: 'dvb-preview-editor-wrap' },

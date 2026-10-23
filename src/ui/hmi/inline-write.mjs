@@ -15,6 +15,12 @@ export function renderInlineWriteCell(el, t, ctx) {
     return el(
       'span',
       { className: 'dvb-inline-write' },
+      // The popover covers the row's own columns, so it names what it writes.
+      el(
+        'span',
+        { className: 'dvb-inline-write-target' },
+        `${point.name || point.id} · 地址 ${point.address}`,
+      ),
       point.function === 1
         ? el(
             'span',
