@@ -33,13 +33,13 @@ dsh plugin --profile web add ./dsh-vision-bench-*.tgz
 
 ### Desktop
 
-官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装：
+官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装 —— 把下面 `${version}` 换成 [Releases](https://github.com/xingyingyuzhui/dsh-vision-bench/releases) 里最新标签的版本号：
 
 ```
-github:xingyingyuzhui/dsh-vision-bench#v0.30.0
+github:xingyingyuzhui/dsh-vision-bench#v${version}
 ```
 
-或把 [Releases](https://github.com/xingyingyuzhui/dsh-vision-bench/releases/tag/v0.30.0) 里 `dsh-vision-bench-0.30.0.tgz` 的**绝对路径**填进去。裸包名 `dsh-vision-bench` 需要 registry 上有这个包 —— 当前 npmjs.org 仍是 404。
+或下载对应 Release 的 `dsh-vision-bench-${version}.tgz`（同目录有 `.sha256`），把它**绝对路径**填进同一个框。裸包名 `dsh-vision-bench` 需要 registry 上有这个包 —— 当前 npmjs.org 仍是 404。
 
 本机实验室（先 **Cmd+Q** 完全退出 DeepSeek Harness）：
 
