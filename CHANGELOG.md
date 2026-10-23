@@ -1,3 +1,12 @@
+## 0.30.2
+
+需要 DSH 0.2.1-rc.2。
+
+- 修正 Desktop 下 DSH 安装位置解析错误：原先用 `process.execPath` 反推安装前缀，而 Electron 的 `execPath` 是应用主程序，算出的 `Contents/lib/node_modules/@deepseek-ai/dsh` 并不存在，解析于是落到无关的全局 CLI（本机是 0.1.7）。后果是 `readInstalledDshVersion()` 报错版本，设置页出现误导性告警「Vision模式 按 DSH 0.2.1-rc.2 的 standard 预设生成，已安装 DSH 0.1.7-alpha.2；请升级插件」。
+- 改为优先用 Electron 的 `process.resourcesPath` 定位应用自带的 `Resources/app.asar/dsh` —— 那才是 Host 真正在跑的 DSH；`execPath` 推导和前缀路径退到其后。
+- 同一修复让 `loadOfficialPersonaConfig()` 在 Desktop 下重新可用（此前无法解析 `@deepseek-ai/dsh-persona`）。
+- 回归测试覆盖 Electron 情形，并验证「应用自带副本排在 execPath 推导之前」；该用例在修复前失败。
+
 ## 0.30.1
 
 需要 DSH 0.2.1-rc.2。
