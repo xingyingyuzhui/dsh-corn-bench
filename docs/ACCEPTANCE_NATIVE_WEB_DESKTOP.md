@@ -26,11 +26,12 @@ Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration
 - Official Desktop full Modbus RTU native (`serialport` not in Desktop `allowBuilds`) — optional RTU package or upstream allowBuilds.
 - Windows hardware / Keil-OpenOCD physical chain — `docs/WINDOWS_ACCEPTANCE_0.27.md`.
 - 10–15 min soak (CPU/log storm) — run manually with isolated `DSH_HOME`; Web XOR Desktop, never both on one Home.
-- Product GUI install — registry `name@version` only (Desktop rejects `file:`/`tgz`/`link:`).
+- Product GUI install by bare registry name — `dsh-vision-bench` is not on npmjs.org (404), so that one form is unavailable. The desktop window also accepts a git tag or a tarball path, verified against `@deepseek-ai/dsh-plugin-manager` `install-spec.js` in the installed 0.2.1-rc.2 app.
 
 | Scenario | Web macOS | Desktop macOS | Desktop Windows | Gate |
 | --- | --- | --- | --- | --- |
-| Install / update / remove (registry `name@version`) | manual | **manual product** | manual | Desktop GUI rejects `file:`/`tgz`/`link:` |
+| Install / update / remove (registry `name@version`) | manual | **manual product**, blocked on npm publish | manual | bare name needs the registry |
+| Install by git tag / tarball path in the desktop window | n/a | **manual product** | manual | accepted by `install-spec.js`; not yet exercised |
 | Pack closure + platform `web` | **auto** | **auto** | auto | `check-stage3-pack.mjs` |
 | Fetch dispatch + uninstall 404 | **auto** (B1) | **auto** (DesktopHostProcess) | manual mirror | `run-desktop-b1.mts` / Web probe |
 | Agent Host identity / no `:3080` | **auto** | **lab auto** (Desktop B2 pack + `agentPresets.mount` → `tools.execute`; serialport allowBuilds patched) | auto | `run-desktop-b2-identity.mts` + evidence JSON; claim=`runtime-identity-lab` |
