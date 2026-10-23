@@ -4,6 +4,7 @@ import { act, render, waitFor } from '@testing-library/react'
 import React from 'react'
 import { createElement } from 'react'
 import { createHmiView } from '../../bench-hmi.mjs'
+import { translate } from '../../bench-i18n.mjs'
 import { alpha3PageProps } from '../fixtures/harness-alpha3-props.mjs'
 import { MB, selectConn, t } from '../helpers/hmi-page-fixtures.mjs'
 import { pageWindow as win, useReactPageRuntime } from '../helpers/react-runtime.mjs'
@@ -54,7 +55,8 @@ test('当前值行内写入：点击值单元格只在该行打开编辑器，�
   })
   await waitFor(() => assert.ok(tree.container.querySelector('.dvb-inline-write')), { timeout: 6000 })
   // The popover covers the row's name and address columns, so it repeats them.
-  assert.match(tree.container.querySelector('.dvb-inline-write-target')?.textContent || '', / · 地址 \d+$/)
+  assert.ok(tree.container.querySelector('.dvb-inline-write .dvb-inline-write-target'), '写入浮层标明点位')
+  assert.equal(translate('zh', 'inlineWriteTarget', { name: '温度', addr: 10 }), '温度 · 地址 10')
   // FC03 编辑器默认携带工程值（23.5）；直接 确定 → encodeValue(23.5/scale0.1)=235
   const okBtn = Array.from(tree.container.querySelectorAll('.dvb-inline-write button')).find(
     (b) => b.textContent === '确定',

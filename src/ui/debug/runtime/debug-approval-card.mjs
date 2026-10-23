@@ -1,4 +1,5 @@
 // @ts-check
+import { icon } from '../../components/icons.mjs'
 
 /**
  * Interactive approval card for pending dangerous debug operations.
@@ -28,7 +29,7 @@ export function createDebugApprovalCard(React, t) {
           el(
             'div',
             { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
-            el('span', { style: { fontSize: '14px' } }, '⚠️'),
+            icon(el, 'warning', 16),
             el(
               'div',
               null,

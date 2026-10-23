@@ -1,4 +1,5 @@
 import { toBodyPortal } from '../../common/body-portal.mjs'
+import { iconLabel } from '../../components/icons.mjs'
 
 /**
  * @param {any} React
@@ -65,7 +66,7 @@ export function createKeilPickerDialog(React, t) {
                 openPicker(item.path)
               },
             },
-            `▸ ${item.name}`,
+            iconLabel(el, 'chevronRight', item.name),
           ),
         ),
         (picker.files || []).map((item) =>

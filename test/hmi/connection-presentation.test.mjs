@@ -11,7 +11,7 @@ import { renderConnectionThead } from '../../src/ui/hmi/connection-thead.mjs'
 import { renderConnectionWorkspace } from '../../src/ui/hmi/connection-workspace.mjs'
 import { renderModalDialog } from '../../src/ui/components/modal-dialog.mjs'
 import { renderDeviceCards } from '../../src/ui/hmi/device-card.mjs'
-import { el } from '../helpers/react-unit.mjs'
+import { el, text } from '../helpers/react-unit.mjs'
 
 test('连接表表头为四列：名称|角色|端点/状态|操作', () => {
   const thead = renderConnectionThead(el, (k) => ({ role: '角色' })[k] || k, {})
@@ -314,7 +314,7 @@ test('renderDeviceCards has 连接/断开 button next to 添加设备 in panel-h
   }
   walkHead(treeDisconnected)
   assert.equal(headButtons.length, 2, 'panel-head has ＋添加设备 and 连接/断开')
-  assert.equal(headButtons[0].children[0], '＋添加设备')
+  assert.equal(text(headButtons[0]), '添加设备')
   assert.equal(headButtons[1].children[0], '连接')
 
   // Clicking "连接" invokes linkConnection('c1')

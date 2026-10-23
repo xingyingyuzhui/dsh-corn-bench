@@ -8,7 +8,7 @@ const UI_ROOT = fileURLToPath(new URL('../../src/ui/', import.meta.url))
 const CJK = /[\u3400-\u9fff]/
 
 /** Ratchet: lower this when strings move into src/ui/i18n. Do not raise it. */
-const CJK_LITERAL_BASELINE = 878
+const CJK_LITERAL_BASELINE = 870
 
 /**
  * @param {string} source

@@ -1,5 +1,7 @@
 // @ts-check
 
+import { iconLabel } from '../../components/icons.mjs'
+
 /**
  * Debug control toolbar with strict state-driven action availability.
  * Parity with Phase 7 Section 11.6.
@@ -94,7 +96,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onStart && onStart(),
               },
-              isStarting ? t('dbgStarting') : t('dbgStart'),
+              isStarting ? t('dbgStarting') : iconLabel(el, 'play', t('dbgStart')),
             )
           : null,
         isPaused
@@ -106,7 +108,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onRun && onRun(),
               },
-              t('dbgContinue'),
+              iconLabel(el, 'play', t('dbgContinue')),
             )
           : null,
         isRunning
@@ -118,7 +120,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onPause && onPause(),
               },
-              t('dbgPause'),
+              iconLabel(el, 'pause', t('dbgPause')),
             )
           : null,
         isPaused
@@ -131,7 +133,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onStep && onStep('over'),
               },
-              t('dbgStepOver'),
+              iconLabel(el, 'stepOver', t('dbgStepOver')),
             )
           : null,
         isPaused
@@ -144,7 +146,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onStep && onStep('into'),
               },
-              t('dbgStepInto'),
+              iconLabel(el, 'stepInto', t('dbgStepInto')),
             )
           : null,
         isPaused
@@ -157,7 +159,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onStep && onStep('out'),
               },
-              t('dbgStepOut'),
+              iconLabel(el, 'stepOut', t('dbgStepOut')),
             )
           : null,
         !isIdle
@@ -169,7 +171,7 @@ export function createDebugToolbar(React, t) {
                 disabled: isBusy,
                 onClick: () => onStop && onStop(),
               },
-              t('dbgStop'),
+              iconLabel(el, 'stop', t('dbgStop')),
             )
           : null,
       ),

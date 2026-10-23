@@ -1,6 +1,7 @@
 import { connLabel } from '../../domain/modbus/connection-model.mjs'
 import { shouldHighlightFocus } from '../common/focus-store.mjs'
 import { renderConnectionThead } from './connection-thead.mjs'
+import { iconLabel } from '../components/icons.mjs'
 
 /** Connection list / collection toolbar panel. */
 export function renderConnectionPanel(el, t, ctx) {
@@ -57,7 +58,7 @@ export function renderConnectionPanel(el, t, ctx) {
           disabled: !cwd,
           onClick: addConnection,
         },
-        t('connAdd'),
+        iconLabel(el, 'plus', t('connAdd')),
       ),
       activeConnObj?.conn?.sim ? el('span', { className: 'dvb-badge', 'data-kind': 'warn' }, t('simOn')) : null,
       el(

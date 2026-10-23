@@ -1,6 +1,7 @@
 import { renderCustomSelect } from '../components/custom-select.mjs'
 import { AREA_BY_FN_EDIT, fnOptionLabel } from './hmi-ids.mjs'
 import { renderFlagSwitch } from './point-flags.mjs'
+import { icon } from '../components/icons.mjs'
 
 /** New-point draft row inside a device table. */
 export function renderNewPointRow(el, t, ctx) {
@@ -172,7 +173,7 @@ export function renderNewPointRow(el, t, ctx) {
               setNewPointDraft(null)
             },
           },
-          '✕',
+          icon(el, 'close', 12),
         ),
       ),
     ),

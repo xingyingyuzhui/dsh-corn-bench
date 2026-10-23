@@ -119,6 +119,7 @@ export function createDebugProjectPanel(React, t, CustomSelect) {
             type: 'button',
             className: 'dvb-btn dvb-btn-primary',
             disabled: !cwd || !pythonReady || !uv4Ready || !workspace.keil.project || buildBusy,
+            title: !cwd ? t('needWorkspace') : buildBlock || undefined,
             onClick: build,
           },
           buildLabel,

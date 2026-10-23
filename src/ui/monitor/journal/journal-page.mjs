@@ -264,7 +264,7 @@ export function createLogPage(React, t, post, helpers = {}) {
           { className: 'dvb-journal-main' },
           el(DataTable, {
             data: pageItems,
-            empty: '当前筛选条件下没有操作记录',
+            empty: t('journalEmptyFiltered'),
             getRowId: (item) => String(item.id),
             virtualize: false,
             columns,

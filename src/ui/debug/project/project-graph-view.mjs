@@ -1,6 +1,7 @@
 import { createUseGraphCamera } from '../graph/graph-camera.mjs'
 import { layoutProjectGraph, polylinePath } from './project-graph-layout.mjs'
 import { graphNeighborhood } from './project-graph-model.mjs'
+import { icon } from '../../components/icons.mjs'
 
 const fileGlyph = (l) => {
   const s = String(l || '').toLowerCase()
@@ -237,10 +238,10 @@ export function createProjectGraphView(React) {
           ),
         ),
           el('div', { className: 'dvb-graph-zoom-bar' },
-            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); zoomBy(1 / ZOOM_STEP) }, title: '缩小', 'aria-label': '缩小' }, '－'),
+            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); zoomBy(1 / ZOOM_STEP) }, title: '缩小', 'aria-label': '缩小' }, icon(el, 'minus')),
             el('button', { type: 'button', className: 'dvb-graph-zoom-btn dvb-graph-zoom-val', onClick: (e) => { e.stopPropagation(); applyFit() }, title: '适应画布', 'aria-label': '适应画布' }, `${Math.round(camera.scale * 100)}%`),
-            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); zoomBy(ZOOM_STEP) }, title: '放大', 'aria-label': '放大' }, '＋'),
-            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); applyFit() }, title: '适应画布', 'aria-label': '适应画布' }, '⛶'),
+            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); zoomBy(ZOOM_STEP) }, title: '放大', 'aria-label': '放大' }, icon(el, 'plus')),
+            el('button', { type: 'button', className: 'dvb-graph-zoom-btn', onClick: (e) => { e.stopPropagation(); applyFit() }, title: '适应画布', 'aria-label': '适应画布' }, icon(el, 'fit')),
           ),
       ),
     )

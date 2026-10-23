@@ -6,6 +6,7 @@ import { renderNewPointRow } from './point-editor.mjs'
 import { renderPointRow } from './point-row.mjs'
 import { renderPointThead } from './point-table.mjs'
 import { renderCancelButton, renderSaveButton } from '../components/save-cancel-buttons.mjs'
+import { iconLabel } from '../components/icons.mjs'
 
 /**
  * Render one device card (header, toolbars, point table).
@@ -62,7 +63,6 @@ export function renderDeviceCard(el, t, { device: d, ctx, isSimulated }) {
     resetColWidth,
     totalTableWidth,
   } = ctx
-
           const devPts = pointsOfDevice(d.id)
           const devBusy = busy === d.id
           const pDel = devDeleteId?.split('|')
@@ -389,7 +389,7 @@ export function renderDeviceCard(el, t, { device: d, ctx, isSimulated }) {
                                       addNewPointRow(d.id)
                                     },
                                   },
-                                  '＋ 添加一行点位',
+                                  iconLabel(el, 'plus', '添加一行点位'),
                                 ),
                               ),
                             )
@@ -414,7 +414,7 @@ export function renderDeviceCard(el, t, { device: d, ctx, isSimulated }) {
                         addNewPointRow(d.id)
                       },
                     },
-                    '＋ ' + (t('addPoint') || '添加点位'),
+                    iconLabel(el, 'plus', t('addPoint') || '添加点位'),
                   ),
                 ),
           )

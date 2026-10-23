@@ -1,5 +1,6 @@
 import { getCustomSelect } from '../../components/custom-select.mjs'
 import { createHint, createPanel, createTabs } from '../../components/primitives.mjs'
+import { iconLabel } from '../../components/icons.mjs'
 
 /**
  * Breakpoints and Hardware Watchpoints panel.
@@ -101,7 +102,7 @@ export function createBreakpointPanel(React, t) {
             className: 'dvb-btn dvb-btn-sm dvb-debug-add-bp-btn',
             onClick: () => setAdding((v) => !v),
           },
-          adding ? '取消' : '+ 添加断点',
+          adding ? '取消' : iconLabel(el, 'plus', '添加断点'),
         ),
       ),
       el(
@@ -118,7 +119,7 @@ export function createBreakpointPanel(React, t) {
                   fontSize: '11px',
                 },
               },
-              '⚠️ 硬件观察点资源耗尽：Cortex-M 硬件 DWT 比较器资源已满，请先删除多余的观察点。',
+              iconLabel(el, 'warning'), '硬件观察点资源耗尽：Cortex-M 硬件 DWT 比较器资源已满，请先删除多余的观察点。',
             )
           : null,
         subTab === 'bp' &&
@@ -149,7 +150,7 @@ export function createBreakpointPanel(React, t) {
                       className: 'dvb-btn dvb-btn-sm dvb-btn-primary',
                       disabled: !bpInput.trim(),
                     },
-                    '+ 添加',
+                    iconLabel(el, 'plus', '添加'),
                   ),
                 )
               : null,
@@ -223,7 +224,7 @@ export function createBreakpointPanel(React, t) {
                   className: 'dvb-btn dvb-btn-sm dvb-btn-primary',
                   disabled: !wpExpr.trim(),
                 },
-                '+ 添加',
+                iconLabel(el, 'plus', '添加'),
               ),
             ),
             wpList.length === 0

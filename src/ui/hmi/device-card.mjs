@@ -1,5 +1,6 @@
 import { connTabLabel } from './connection-label.mjs'
 import { renderDeviceCard } from './device-card-item.mjs'
+import { iconLabel } from '../components/icons.mjs'
 
 /** Device cards panel with nested point tables. */
 export function renderDeviceCards(el, t, ctx) {
@@ -47,7 +48,7 @@ export function renderDeviceCards(el, t, ctx) {
           disabled: !cwd || !activeConnId,
           onClick: openAddDevice,
         },
-        '＋添加设备',
+        iconLabel(el, 'plus', '添加设备'),
       ),
       el(
         'button',
@@ -94,7 +95,7 @@ export function renderDeviceCards(el, t, ctx) {
           el(
             'button',
             { type: 'button', className: 'dvb-btn dvb-btn-primary', disabled: !cwd, onClick: openAddDevice },
-            '＋添加设备',
+            iconLabel(el, 'plus', '添加设备'),
           ),
         ),
   )

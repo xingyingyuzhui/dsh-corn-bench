@@ -1,6 +1,7 @@
 // @ts-check
 
 import { createHint, createPanel, createTabs } from '../../components/primitives.mjs'
+import { iconLabel } from '../../components/icons.mjs'
 
 /**
  * Variables, Watches, and Registers panel.
@@ -62,7 +63,7 @@ export function createVariablesPanel(React, t) {
               title: '手动刷新变量',
               onClick: () => onRefresh && onRefresh(),
             },
-            '↻ 刷新',
+            iconLabel(el, 'refresh', '刷新'),
           ),
         ),
         subTab === 'locals'
@@ -114,7 +115,7 @@ export function createVariablesPanel(React, t) {
                   className: 'dvb-btn dvb-btn-sm dvb-btn-primary',
                   disabled: !watchInput.trim(),
                 },
-                '+ 添加',
+                iconLabel(el, 'plus', '添加'),
               ),
             ),
             watches.length === 0

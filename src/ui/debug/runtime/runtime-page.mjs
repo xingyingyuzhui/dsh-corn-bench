@@ -12,6 +12,7 @@ import { createDebugToolbar } from './debug-toolbar.mjs'
 import { createStackPanel } from './stack-panel.mjs'
 import { useDebugEvents } from './use-debug-events.mjs'
 import { createVariablesPanel } from './variables-panel.mjs'
+import { iconLabel } from '../../components/icons.mjs'
 
 
 /**
@@ -188,7 +189,7 @@ export function createRuntimePage(React, t, post) {
                 fontSize: '11px',
               },
             },
-            `⚠️ ${debug.error}`,
+            iconLabel(el, 'warning', debug.error),
           )
         : null,
 
@@ -198,17 +199,13 @@ export function createRuntimePage(React, t, post) {
         ? el(
             'div',
             { className: 'dvb-debug-idle' },
-            el('div', { className: 'dvb-debug-idle-title' }, '调试未启动'),
-            el(
-              'p',
-              { className: 'dvb-debug-idle-text' },
-              '点击上方「启动调试」连接目标板。启动后这里显示调用栈、断点、当前代码行、变量和寄存器；断点和监视需在调试启动后添加。',
-            ),
+            el('div', { className: 'dvb-debug-idle-title' }, t('dbgIdleTitle')),
+            el('p', { className: 'dvb-debug-idle-text' }, t('dbgIdleText')),
             el(
               'ul',
               { className: 'dvb-debug-idle-list' },
-              el('li', null, '先在「工作台」编译出固件'),
-              el('li', null, '在 设置 → Vision 中配置 OpenOCD 和 GDB 路径'),
+              el('li', null, t('dbgIdleNeedBuild')),
+              el('li', null, t('dbgIdleNeedTools')),
             ),
           )
         : null,

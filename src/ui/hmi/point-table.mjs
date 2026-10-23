@@ -1,4 +1,5 @@
 import { DEFAULT_POINT_COL_WIDTHS } from './hooks/use-point-col-widths.mjs'
+import { ALARM_SUMMARY_EXTRA, EDIT_ONLY_COLS } from './point-columns.mjs'
 
 /** Point table header for one device (edit/add may show ops col). */
 export function renderPointThead(el, t, ctx) {
@@ -8,7 +9,9 @@ export function renderPointThead(el, t, ctx) {
   const showOps = editing || adding
 
   const renderTh = (colKey, label) => {
-    const w = colWidths?.[colKey] || DEFAULT_POINT_COL_WIDTHS[colKey]
+    if (!showOps && EDIT_ONLY_COLS.includes(colKey)) return null
+    const base = colWidths?.[colKey] || DEFAULT_POINT_COL_WIDTHS[colKey]
+    const w = !showOps && colKey === 'alarm' ? base + ALARM_SUMMARY_EXTRA : base
     return el(
       'th',
       {

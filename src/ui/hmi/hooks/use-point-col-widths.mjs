@@ -1,3 +1,5 @@
+import { ALARM_SUMMARY_EXTRA, visiblePointCols } from '../point-columns.mjs'
+
 export const DEFAULT_POINT_COL_WIDTHS = {
   name: 140,
   monitor: 70,
@@ -200,9 +202,9 @@ export function usePointColWidths(React) {
     (showOps, devOrKey, connId) => {
       const scopeKey = getPointTableScopeKey(devOrKey, connId)
       const widths = colWidthsByDevice[scopeKey] || DEFAULT_POINT_COL_WIDTHS
-      const keys = ['name', 'fn', 'addr', 'value', 'monitor', 'scale', 'offset', 'unit', 'alarm', 'min', 'max']
-      let total = 0
-      for (const k of keys) {
+      // Sum exactly the rendered columns (deadband used to be left out).
+      let total = showOps ? 0 : ALARM_SUMMARY_EXTRA
+      for (const k of visiblePointCols(Boolean(showOps))) {
         total += widths[k] || DEFAULT_POINT_COL_WIDTHS[k]
       }
       if (showOps) {

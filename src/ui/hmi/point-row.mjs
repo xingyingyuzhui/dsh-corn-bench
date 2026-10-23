@@ -5,6 +5,8 @@ import { renderCustomSelect } from '../components/custom-select.mjs'
 import { AREA_BY_FN_EDIT, fnOptionLabel } from './hmi-ids.mjs'
 import { renderInlineWriteCell } from './inline-write.mjs'
 import { renderFlagSwitch } from './point-flags.mjs'
+import { alarmRangeText, pointRowElement } from './point-columns.mjs'
+import { icon } from '../components/icons.mjs'
 
 /** One point table row (view or edit). */
 export function renderPointRow(el, t, ctx) {
@@ -47,7 +49,9 @@ export function renderPointRow(el, t, ctx) {
     busy,
     writeRunning,
   })
-  return el(
+  const rowEl = pointRowElement(el, showOps)
+  const range = showOps ? '' : alarmRangeText(point)
+  return rowEl(
     'tr',
     {
       key: point.id,
@@ -247,6 +251,7 @@ export function renderPointRow(el, t, ctx) {
           }
         },
       }),
+      range ? el('span', { className: 'dvb-alarm-range', title: t('alarmRangeTitle') }, range) : null,
     ),
     el(
       'td',
@@ -310,7 +315,7 @@ export function renderPointRow(el, t, ctx) {
                 removePointRow(point)
               },
             },
-            '✕',
+            icon(el, 'close', 12),
           ),
         )
       : showOps

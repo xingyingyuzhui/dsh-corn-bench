@@ -1,4 +1,5 @@
 // @ts-check
+import { icon } from '../../components/icons.mjs'
 
 /**
  * Function Detail Panel (函数详情抽屉)
@@ -61,7 +62,7 @@ export function createFunctionDetailPanel(React, t) {
     return el('div', { className: 'dvb-function-detail' },
       el('div', { className: 'dvb-function-detail-head' },
         el('span', { className: 'dvb-function-detail-title' }, '函数详情'),
-        el('button', { type: 'button', className: 'dvb-btn dvb-btn-sm dvb-btn-icon dvb-function-detail-close', 'aria-label': '关闭', onClick: onClose }, '✕'),
+        el('button', { type: 'button', className: 'dvb-btn dvb-btn-sm dvb-btn-icon dvb-function-detail-close', 'aria-label': '关闭', onClick: onClose }, icon(el, 'close')),
       ),
       el('div', { className: 'dvb-function-detail-body' },
         el('div', { className: 'dvb-function-detail-identity' },

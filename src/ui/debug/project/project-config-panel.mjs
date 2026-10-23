@@ -1,3 +1,4 @@
+import { iconLabel } from '../../components/icons.mjs'
 export function createProjectConfigPanel(React, t) {
   return function ProjectConfigPanel({ mapped, counts, cfgOpen, onToggle }) {
     const el = React.createElement
@@ -13,7 +14,7 @@ export function createProjectConfigPanel(React, t) {
           className: 'dvb-btn dvb-btn-sm dvb-map-cfg-toggle',
           onClick: onToggle,
         },
-        `${cfgOpen ? '▾ ' : '▸ '}${t('mapIncludes')} · ${String(counts.includes || mapped.includes.length)} · ${(mapped.defines || []).length} 宏 · ${String(counts.include_edges || (mapped.include_edges || []).length)} 依赖`,
+        iconLabel(el, cfgOpen ? 'chevronDown' : 'chevronRight', `${t('mapIncludes')} · ${String(counts.includes || mapped.includes.length)} · ${(mapped.defines || []).length} 宏 · ${String(counts.include_edges || (mapped.include_edges || []).length)} 依赖`),
       ),
       truncated.include_edges || truncated.includes || truncated.defines
         ? el('div', { className: 'dvb-hint dvb-need' }, t('mapTruncated'))

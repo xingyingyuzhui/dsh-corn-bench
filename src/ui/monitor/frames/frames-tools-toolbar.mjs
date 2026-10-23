@@ -30,12 +30,13 @@ export function createFramesToolsToolbar(React, t) {
       { className: 'dvb-frames-tools' },
       el(
         'div',
-        { className: 'dvb-frames-seg' },
+        { className: 'dvb-frames-seg dvb-seg', role: 'group' },
         el(
           'button',
           {
             type: 'button',
             className: `dvb-btn${mode === 'proto' ? ' is-on' : ''}`,
+            'aria-pressed': mode === 'proto',
             onClick() {
               switchMode('proto')
             },
@@ -47,6 +48,7 @@ export function createFramesToolsToolbar(React, t) {
           {
             type: 'button',
             className: `dvb-btn${mode === 'raw' ? ' is-on' : ''}`,
+            'aria-pressed': mode === 'raw',
             onClick() {
               switchMode('raw')
             },
@@ -56,12 +58,13 @@ export function createFramesToolsToolbar(React, t) {
       ),
       el(
         'div',
-        { className: 'dvb-frames-seg' },
+        { className: 'dvb-frames-seg dvb-seg', role: 'group' },
         el(
           'button',
           {
             type: 'button',
             className: `dvb-btn${encoding === 'hex' ? ' is-on' : ''}`,
+            'aria-pressed': encoding === 'hex',
             onClick() {
               setEncoding('hex')
             },
@@ -73,6 +76,7 @@ export function createFramesToolsToolbar(React, t) {
           {
             type: 'button',
             className: `dvb-btn${encoding === 'text' ? ' is-on' : ''}`,
+            'aria-pressed': encoding === 'text',
             onClick() {
               setEncoding('text')
             },

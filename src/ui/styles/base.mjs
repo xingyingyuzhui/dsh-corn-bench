@@ -83,6 +83,37 @@ export const BASE_CSS = [
     ATTR +
     '] .dvb-setting-switch:focus-visible{outline:var(--dvb-focus-ring,2px solid var(--dvb-color-brand,#3b82f6));outline-offset:2px}',
   'body[' + ATTR + '] .dvb-setting-switch:disabled{cursor:default;opacity:.45}',
+  'body[' + ATTR + '] .dvb-icon{flex:none;display:inline-block;vertical-align:-2px}',
+  'body[' + ATTR + '] .dvb-icon-label{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}',
+  // Selected tab/button text: DSH's info blue is ~2.8:1 on white; darken it in light mode only.
+  'body[' +
+    ATTR +
+    ']:not([data-ds-dark-theme]) .dvb-btn.is-on,body[' +
+    ATTR +
+    ']:not([data-ds-dark-theme]) .dvb-tab.is-on,body[' +
+    ATTR +
+    ']:not([data-ds-dark-theme]) .dvb-ws-tabs .dvb-tab.is-on{color:color-mix(in srgb,var(--dsw-alias-label-info,#4f8ef7) 76%,#000)}',
+  // Segmented control: switches a view in place, unlike the outlined page tabs.
+  'body[' +
+    ATTR +
+    '] .dvb-seg{display:inline-flex;align-items:center;gap:2px;padding:2px;border-radius:8px;background:rgba(128,128,128,.13);flex:none}',
+  'body[' +
+    ATTR +
+    '] .dvb-seg .dvb-btn{height:24px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,inherit);box-shadow:none;font-size:12px;font-weight:500;white-space:nowrap;flex:none}',
+  'body[' +
+    ATTR +
+    '] .dvb-seg .dvb-btn:hover:not(:disabled){background:rgba(128,128,128,.12);border:0;color:var(--dsw-alias-label-primary,inherit)}',
+  'body[' +
+    ATTR +
+    '] .dvb-seg .dvb-btn.is-on,body[' +
+    ATTR +
+    '] .dvb-seg .dvb-btn.is-on:hover:not(:disabled){background:var(--dsw-alias-bg-base,#fff);color:var(--dsw-alias-label-primary,inherit);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.14)}',
+  'body[' +
+    ATTR +
+    '][data-ds-dark-theme] .dvb-seg{background:rgba(255,255,255,.07)}',
+  'body[' +
+    ATTR +
+    '][data-ds-dark-theme] .dvb-seg .dvb-btn.is-on{background:rgba(255,255,255,.14)}',
   // DSH marks its own theme on body; the OS scheme only matters when DSH follows it.
   'body[' +
     ATTR +

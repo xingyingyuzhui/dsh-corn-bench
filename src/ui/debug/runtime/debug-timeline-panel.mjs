@@ -1,6 +1,7 @@
 // @ts-check
 
 import { createHint, createPanel } from '../../components/primitives.mjs'
+import { iconLabel } from '../../components/icons.mjs'
 
 /**
  * Debug Timeline panel showing recent event stream.
@@ -54,7 +55,7 @@ export function createDebugTimelinePanel(React, t) {
       el(
         Panel.Head,
         { onClick: () => setOpen((v) => !v) },
-        el('span', { className: 'dvb-debug-timeline-head-title' }, `${open ? '▾' : '▸'} 调试事件 (最近 ${list.length} 条)`),
+        el('span', { className: 'dvb-debug-timeline-head-title' }, iconLabel(el, open ? 'chevronDown' : 'chevronRight', `调试事件 (最近 ${list.length} 条)`)),
         list.length > 0 && onClear
           ? el(
               'button',

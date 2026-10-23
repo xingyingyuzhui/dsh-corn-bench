@@ -4,7 +4,7 @@ const SEL = { width: '112px', minWidth: '96px', flex: 'none' }
 
 /**
  * @param {any} React
- * @param {(key: string) => string} t
+ * @param {(key: string, params?: any) => string} t
  */
 export function createFramesFilterToolbar(React, t) {
   const el = React.createElement
@@ -25,8 +25,31 @@ export function createFramesFilterToolbar(React, t) {
       onReset,
     } = props
 
-    const protoFilters =
+    // Direction and status are what people filter by; the rest folds away
+    // behind 更多筛选, which counts the hidden filters that are still active.
+    const [moreOpen, setMoreOpen] = React.useState(false)
+    const hiddenActive = mode === 'proto' ? [filters.deviceId, filters.functionCode, filters.source].filter(Boolean).length : 0
+    const statusFilter =
       mode === 'proto'
+        ? [
+            el(CustomSelect, {
+              key: 'status',
+              style: SEL,
+              value: filters.status,
+              options: [
+                { value: '', label: '全部状态' },
+                { value: 'ok', label: '成功' },
+                { value: 'err', label: '失败' },
+              ],
+              onChange(val) {
+                const status = val?.target ? val.target.value : val
+                setFilters((p) => ({ ...p, status }))
+              },
+            }),
+          ]
+        : []
+    const protoFilters =
+      mode === 'proto' && moreOpen
         ? [
             el(CustomSelect, {
               key: 'device',
@@ -55,20 +78,6 @@ export function createFramesFilterToolbar(React, t) {
               onChange(val) {
                 const functionCode = val?.target ? val.target.value : val
                 setFilters((p) => ({ ...p, functionCode }))
-              },
-            }),
-            el(CustomSelect, {
-              key: 'status',
-              style: SEL,
-              value: filters.status,
-              options: [
-                { value: '', label: '全部状态' },
-                { value: 'ok', label: '成功' },
-                { value: 'err', label: '失败' },
-              ],
-              onChange(val) {
-                const status = val?.target ? val.target.value : val
-                setFilters((p) => ({ ...p, status }))
               },
             }),
             el(CustomSelect, {
@@ -115,6 +124,19 @@ export function createFramesFilterToolbar(React, t) {
           setFilters((p) => ({ ...p, direction }))
         },
       }),
+      ...statusFilter,
+      mode === 'proto'
+        ? el(
+            'button',
+            {
+              type: 'button',
+              className: `dvb-btn dvb-frames-more${moreOpen ? ' is-on' : ''}`,
+              'aria-expanded': moreOpen,
+              onClick: () => setMoreOpen((v) => !v),
+            },
+            hiddenActive ? t('framesMoreFiltersN', { n: hiddenActive }) : t('framesMoreFilters'),
+          )
+        : null,
       ...protoFilters,
       el('input', {
         className: 'dvb-input dvb-frames-search',

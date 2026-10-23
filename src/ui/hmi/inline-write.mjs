@@ -19,7 +19,7 @@ export function renderInlineWriteCell(el, t, ctx) {
       el(
         'span',
         { className: 'dvb-inline-write-target' },
-        `${point.name || point.id} · 地址 ${point.address}`,
+        t('inlineWriteTarget', { name: point.name || point.id, addr: point.address }),
       ),
       point.function === 1
         ? el(

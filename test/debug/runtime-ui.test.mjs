@@ -13,6 +13,9 @@ import { createDebugWorkspace } from '../../src/ui/workspace/debug-workspace.mjs
 import { DEBUG_SECTIONS, focusKindOf, isDebugSection, routeForKind } from '../../src/ui/workspace/vision-route.mjs'
 import { translate } from '../../bench-i18n.mjs'
 
+/** Visible text of a mock element tree. @param {any} n @returns {string} */
+const text = (n) => (n == null || n === false ? '' : typeof n !== 'object' ? String(n) : (n.children || []).map(text).join(''))
+
 // Simple mock React for testing pure component render output
 const mockReact = {
   createElement(type, props, ...children) {
@@ -120,7 +123,7 @@ test('debug-toolbar: renders correct action buttons according to status', () => 
   const idleTree = Toolbar({ status: 'idle' })
   assert.equal(idleTree.props.className, 'dvb-debug-toolbar')
   const btnGroupIdle = idleTree.children[1]
-  const idleLabels = btnGroupIdle.children.map((c) => (typeof c.children[0] === 'string' ? c.children[0] : ''))
+  const idleLabels = btnGroupIdle.children.map((c) => text(c))
   assert.ok(
     idleLabels.some((l) => l.includes('启动调试')),
     'Start button must exist in idle state',
@@ -131,7 +134,7 @@ test('debug-toolbar: renders correct action buttons according to status', () => 
   // Running state: Pause & Stop buttons available
   const runningTree = Toolbar({ status: 'running' })
   const btnGroupRunning = runningTree.children[1]
-  const runningLabels = btnGroupRunning.children.map((c) => (typeof c.children[0] === 'string' ? c.children[0] : ''))
+  const runningLabels = btnGroupRunning.children.map((c) => text(c))
   assert.ok(
     runningLabels.some((l) => l.includes('暂停')),
     'Pause button must exist in running state',
@@ -145,7 +148,7 @@ test('debug-toolbar: renders correct action buttons according to status', () => 
   // Paused state: Continue, Step (Over/Into/Out), Reset, Stop available
   const pausedTree = Toolbar({ status: 'paused' })
   const btnGroupPaused = pausedTree.children[1]
-  const pausedLabels = btnGroupPaused.children.map((c) => (typeof c.children[0] === 'string' ? c.children[0] : ''))
+  const pausedLabels = btnGroupPaused.children.map((c) => text(c))
   assert.ok(
     pausedLabels.some((l) => l.includes('继续')),
     'Continue button must exist in paused state',

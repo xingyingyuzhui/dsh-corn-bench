@@ -10,16 +10,19 @@ import { pageWindow as win, useReactPageRuntime } from '../helpers/react-runtime
 
 useReactPageRuntime({ profile: 'page' })
 
-test('点位表列顺序与当前值字体加粗：名称、监视、功能码、地址、当前值、单位、倍率、偏移、告警、告警下限、告警上限', async () => {
+test('点位表：查看时只显示常用列，编辑点位时显示全部列且顺序固定；当前值加粗', async () => {
   const { post } = makePost()
   const Hmi = createHmiView(React, t, post)
   const tree = render(createElement(Hmi, { ...alpha3PageProps({ sessionId: 's1', path: '/tmp/proj' }) }))
   await waitFor(() => assert.ok(tree.container.textContent.includes('C1')), { timeout: 8000 })
   await selectConn(tree)
   await waitFor(() => assert.ok(tree.container.textContent.includes('设备1')), { timeout: 8000 })
-  const thead = tree.container.querySelector('.dvb-point-table thead tr')
-  assert.ok(thead, '点位表表头存在')
-  const thTexts = Array.from(thead.querySelectorAll('th')).map((th) => (th.textContent || '').trim())
+  const colsOf = (/** @type {Element} */ root) =>
+    Array.from(root.querySelectorAll('.dvb-point-table thead tr th')).map(
+      (th) => Array.from(th.classList).find((c) => c.startsWith('dvb-col-')) || th.className,
+    )
+  const card = tree.container.querySelectorAll('.dvb-dev-card')[0]
+  const thTexts = Array.from(card.querySelectorAll('.dvb-point-table thead th')).map((th) => (th.textContent || '').trim())
   for (const banned of ['更新时间', '状态', '写入', '读取', '删除']) {
     assert.equal(
       thTexts.some((txt) => txt === banned || txt.includes(banned)),
@@ -27,10 +30,28 @@ test('点位表列顺序与当前值字体加粗：名称、监视、功能码�
       `点位表不得有独立「${banned}」列`,
     )
   }
-  const thClasses = Array.from(thead.querySelectorAll('th')).map((th) => {
-    return Array.from(th.classList).find((c) => c.startsWith('dvb-col-')) || th.className
+  // View mode: scale/offset/thresholds fold away; the alarm column summarises the range.
+  assert.deepEqual(colsOf(card), [
+    'dvb-col-name',
+    'dvb-col-monitor',
+    'dvb-col-fn',
+    'dvb-col-addr',
+    'dvb-col-value',
+    'dvb-col-unit',
+    'dvb-col-alarm',
+  ])
+  const valueCellEl = tree.container.querySelector('.dvb-point-table tbody .dvb-cell-value')
+  if (valueCellEl) {
+    assert.equal(valueCellEl.style.fontWeight, '600', '当前值单元格字体加粗 (fontWeight: 600)')
+  }
+  // Edit mode: every column, thresholds right of the alarm switch.
+  const editPts = Array.from(card.querySelectorAll('button')).find((b) => b.textContent === '编辑点位')
+  assert.ok(editPts, '设备1有编辑点位按钮')
+  await act(async () => {
+    editPts.dispatchEvent(new win.MouseEvent('click', { bubbles: true }))
   })
-  const expectedCols = [
+  await waitFor(() => assert.ok(colsOf(card).includes('dvb-col-deadband')), { timeout: 6000 })
+  assert.deepEqual(colsOf(card).slice(0, 12), [
     'dvb-col-name',
     'dvb-col-monitor',
     'dvb-col-fn',
@@ -42,21 +63,10 @@ test('点位表列顺序与当前值字体加粗：名称、监视、功能码�
     'dvb-col-alarm',
     'dvb-col-min',
     'dvb-col-max',
-  ]
-  for (let i = 0; i < expectedCols.length; i++) {
-    assert.equal(thClasses[i], expectedCols[i], `第 ${i + 1} 列应为 ${expectedCols[i]}`)
-  }
-  const alarmIdx = thClasses.indexOf('dvb-col-alarm')
-  const minIdx = thClasses.indexOf('dvb-col-min')
-  const maxIdx = thClasses.indexOf('dvb-col-max')
-  assert.ok(alarmIdx !== -1 && minIdx !== -1 && maxIdx !== -1, '告警相关列均存在')
-  assert.equal(minIdx, alarmIdx + 1, '告警下限紧邻告警开关右侧')
-  assert.equal(maxIdx, minIdx + 1, '告警上限紧邻告警下限右侧')
-
-  const valueCellEl = tree.container.querySelector('.dvb-point-table tbody .dvb-cell-value')
-  if (valueCellEl) {
-    assert.equal(valueCellEl.style.fontWeight, '600', '当前值单元格字体加粗 (fontWeight: 600)')
-  }
+    'dvb-col-deadband',
+  ])
+  const firstRow = card.querySelector('.dvb-point-table tbody tr')
+  assert.equal(firstRow?.querySelectorAll('td').length, colsOf(card).length, '每行单元格与表头列数一致')
   tree.unmount()
 })
 

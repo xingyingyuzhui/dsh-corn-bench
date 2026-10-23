@@ -146,6 +146,14 @@ export function createDebugFlashPanel(React, t, CustomSelect) {
               type: 'button',
               className: 'dvb-btn dvb-btn-write',
               disabled: !cwd || openocdFlash.status !== 'ready' || !artifactPath || flash.busy,
+              // A disabled button says why, instead of leaving the reason elsewhere on the page.
+              title: !cwd
+                ? t('needWorkspace')
+                : openocdFlash.status !== 'ready'
+                  ? openocdFlash.reason || t('needOpenocd')
+                  : !artifactPath
+                    ? t('flashNeedArtifact')
+                    : undefined,
               onClick: startFlash,
             },
             flash.busy ? t('flashing') : t('flashBtn'),

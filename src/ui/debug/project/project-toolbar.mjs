@@ -48,7 +48,7 @@ export function createProjectToolbar(React) {
           { className: 'dvb-project-subtoolbar-left' },
           el(
             'div',
-            { className: 'dvb-project-view-toggle' },
+            { className: 'dvb-project-view-toggle dvb-seg', role: 'group', 'aria-label': '视图' },
             ['tree', 'graph'].map((m) =>
               el(
                 'button',
@@ -56,6 +56,7 @@ export function createProjectToolbar(React) {
                   key: m,
                   type: 'button',
                   className: `dvb-btn dvb-btn-sm${viewMode === m ? ' is-on' : ''}`,
+                  'aria-pressed': viewMode === m,
                   onClick: () => onViewMode(m),
                 },
                 m === 'tree' ? '树形' : '图谱',
