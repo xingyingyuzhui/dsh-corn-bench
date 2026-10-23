@@ -24,7 +24,10 @@ test('sim write identity save failure closes the write task and keeps simulation
       values: [],
     },
   })
-  const configPath = join(workspaceDir(home, workspaceKey(cwd)), 'config.json')
+  // write-file-atomic resolves the target with fs.realpathSync before renaming,
+  // so compare against the resolved path: on macOS $TMPDIR is /var/... while
+  // realpath returns /private/var/....
+  const configPath = join(fs.realpathSync(workspaceDir(home, workspaceKey(cwd))), 'config.json')
   // Fail only the atomic rename onto config.json (write-file-atomic resolves
   // fs.renameSync at call time), the same on macOS, Linux and Windows.
   const realRename = fs.renameSync
