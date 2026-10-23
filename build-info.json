@@ -1,7 +1,7 @@
 {
-  "pluginVersion": "0.30.0",
-  "buildId": "9cfadac9f02c940da60f53a389b2b708071dd37f453dc7f3456276c457c44913",
-  "gitSha": "c8d317a",
-  "builtAt": "2026-10-23T13:18:07.966Z",
+  "pluginVersion": "0.30.1",
+  "buildId": "28b1949f3c54afa563345d61c1e5f5fbe71fe14daf75be4f01be7bb5c2139d95",
+  "gitSha": "31f776f",
+  "builtAt": "2026-10-23T13:45:47.548Z",
   "fileCount": 571
 }

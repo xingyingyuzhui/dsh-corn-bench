@@ -1,3 +1,11 @@
+## 0.30.1
+
+需要 DSH 0.2.1-rc.2。
+
+- 修正安装文档：桌面插件窗口**接受** Git 地址、tarball 和本地绝对路径，不只是 registry 包名。此前 README 与验收矩阵都写成「`file:` / `link:` / `github:` / tgz 一律被拒绝」，与实际应用行为不符。按本机 DSH 0.2.1-rc.2 解包 `app.asar` 后 `@deepseek-ai/dsh-plugin-manager` 的 `install-spec.js` 核对。因此已发布的版本可以填 `github:xingyingyuzhui/dsh-vision-bench#v0.30.1` 或 tgz 绝对路径直接装；只有裸包名仍需 npm。
+- 修正一条假通过的测试：`write-task-lifecycle` 依赖 `fs.renameSync` 的 mock，但 `write-file-atomic` 在 rename 前会做 `fs.realpathSync`，macOS 上 `$TMPDIR` 的 `/var/...` 会解析成 `/private/var/...`，mock 从不命中，「保存失败必须关掉写任务」从未被真正验证。改为比对解析后的路径。
+- 该文档修正位于 `files[]` 内，因此 `buildId` 变化；安装包内的文档说明以本版为准。
+
 ## 0.30.0
 
 Requires DSH 0.2.1-rc.2.
