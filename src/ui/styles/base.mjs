@@ -314,7 +314,7 @@ export const BASE_CSS = [
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="err"]{color:var(--dsw-alias-label-danger,#c62828)}',
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="warn"]{color:var(--dsw-alias-label-warning,#b45309)}',
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="live"]{color:var(--dsw-alias-label-success,#2e7d32)}',
-  '@media (max-width:720px){body[' + ATTR + '] .dvb-split{grid-template-columns:1fr}}',
+  '@container dvbpanel (max-width:640px){body[' + ATTR + '] .dvb-split{grid-template-columns:1fr}}',
 ]
 
 export { scopePageCss } from './scope-page-css.mjs'

@@ -203,6 +203,8 @@ export function createDataTable(React) {
                   {
                     type: 'button',
                     className: 'dvb-data-th-sort',
+                    // Narrow columns ellipsize the label; the full name stays on hover.
+                    title: typeof label === 'string' ? label : undefined,
                     onClick: header.column.getToggleSortingHandler?.(),
                   },
                   thLabel,

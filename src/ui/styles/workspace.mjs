@@ -5,7 +5,7 @@ export const WORKSPACE_CSS = [
   `body[${ATTR}] .dvb-ws-tabs{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;overflow:auto;padding:0 0 4px;width:100%;box-sizing:border-box;border-bottom:1px solid var(--dsw-alias-border-l2,rgba(128,128,128,.18));scrollbar-width:thin}`,
   `body[${ATTR}] .dvb-ws-tabs .dvb-tab{border-radius:999px}`,
   `body[${ATTR}] .dvb-ws-tabs .dvb-tab.is-on{background:var(--dsw-alias-bg-layer-2,rgba(128,128,128,.16));border-color:var(--dsw-alias-label-info,#4f8ef7);color:var(--dsw-alias-label-info,#4f8ef7)}`,
-  `body[${ATTR}] .dvb-ws-body{min-width:0;min-height:0;flex:1;display:flex;flex-direction:column;width:100%;overflow:visible;position:relative}`,
+  `body[${ATTR}] .dvb-ws-body{container:dvbpanel/inline-size;min-width:0;min-height:0;flex:1;display:flex;flex-direction:column;width:100%;overflow:visible;position:relative}`,
   `body[${ATTR}] .dvb-ws-body>.dvb-page{padding:0;width:100%;box-sizing:border-box;position:relative;z-index:1;flex:1;min-height:0}`,
   `body[${ATTR}] .dvb-ws-pane{min-width:0;min-height:0;flex:1;display:flex;flex-direction:column;width:100%;height:100%}`,
   // Keep inactive viz mounted (avoid display:none → 140px chart reflow) but never let
