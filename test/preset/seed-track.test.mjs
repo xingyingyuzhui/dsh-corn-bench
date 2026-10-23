@@ -57,9 +57,11 @@ test('dsh search paths follow the running Node prefix, including Windows', () =>
 })
 
 test('dshPackageRootFromResources points at the app packaging, and empty input is inert', () => {
+  // Expect whatever separator `path.join` produces on this platform: the helper
+  // returns a native path, so a POSIX literal would fail the Windows CI legs.
   assert.equal(
     dshPackageRootFromResources('/Applications/DeepSeek Harness.app/Contents/Resources'),
-    '/Applications/DeepSeek Harness.app/Contents/Resources/app.asar/dsh',
+    join('/Applications/DeepSeek Harness.app/Contents/Resources', 'app.asar', 'dsh'),
   )
   // Outside Electron there is no resourcesPath; the helper must not invent one.
   assert.equal(dshPackageRootFromResources(undefined), '')
