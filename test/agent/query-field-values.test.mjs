@@ -1,15 +1,15 @@
 // @ts-check
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { visionBenchTool } from '../../bench-tool.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
 import { postEvidence } from '../../src/ui/common/agent-reference.mjs'
 
 const exec = { agent: { session: { header: { cwd: '/tmp/proj', id: 's1' } } } }
 
 /** @param {any} payload */
 function host(payload) {
-  return executeVisionCommand({
+  return executeCornCommand({
     home: '/tmp/unused-query-values',
     cwd: '/tmp/proj',
     sessionId: 's1',
@@ -20,7 +20,7 @@ function host(payload) {
 }
 
 test('invalid view value names the value and the allowed set', async () => {
-  const tool = visionBenchTool('/tmp/unused-query-values')
+  const tool = cornBenchTool('/tmp/unused-query-values')
   for (const ran of [
     await tool.execute({ action: 'points', op: 'list', view: 'compact' }, exec),
     await host({ action: 'points', op: 'list', view: 'compact' }),
@@ -37,7 +37,7 @@ test('invalid view value names the value and the allowed set', async () => {
 })
 
 test('malformed cursors and non-string views are rejected for Agent callers', async () => {
-  const tool = visionBenchTool('/tmp/unused-query-values')
+  const tool = cornBenchTool('/tmp/unused-query-values')
   const cases = [
     [{ action: 'points', op: 'list', cursor: 42 }, 'cursor', 'INVALID_TYPE'],
     [{ action: 'timeline.list', cursor: 42 }, 'cursor', 'INVALID_TYPE'],
@@ -59,7 +59,7 @@ test('malformed cursors and non-string views are rejected for Agent callers', as
 })
 
 test('non-Agent callers keep lenient view parsing', async () => {
-  const ran = await executeVisionCommand({
+  const ran = await executeCornCommand({
     home: '/tmp/unused-query-values',
     cwd: '/tmp/proj',
     sessionId: 's1',
@@ -79,6 +79,6 @@ test('postEvidence sends the page sessionId when given', async () => {
   }
   await postEvidence(post, '/proj', { kind: 'point', id: 'p1' }, () => {}, { sessionId: ' s-a ' })
   await postEvidence(post, '/proj', { kind: 'point', id: 'p1' }, () => {})
-  assert.deepEqual(calls[0], ['/dsh-vision-bench/evidence', { cwd: '/proj', sessionId: 's-a', evidence: [{ kind: 'point', id: 'p1' }] }])
+  assert.deepEqual(calls[0], ['/dsh-corn-bench/evidence', { cwd: '/proj', sessionId: 's-a', evidence: [{ kind: 'point', id: 'p1' }] }])
   assert.deepEqual(calls[1][1], { cwd: '/proj', evidence: [{ kind: 'point', id: 'p1' }] })
 })

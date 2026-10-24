@@ -44,10 +44,10 @@ export const makePost = (details = MAP_DETAILS) => {
   const calls = []
   const post = async (path, body) => {
     calls.push([path, body || {}])
-    if (/\/dsh-vision-bench\/keil\/map$/.test(path)) {
+    if (/\/dsh-corn-bench\/keil\/map$/.test(path)) {
       return { ok: true, result: { details } }
     }
-    if (/\/dsh-vision-bench\/project\/file$/.test(path)) {
+    if (/\/dsh-corn-bench\/project\/file$/.test(path)) {
       return {
         ok: true,
         rel: String((body && (body.path || body.file)) || ''),
@@ -56,7 +56,7 @@ export const makePost = (details = MAP_DETAILS) => {
         truncated: false,
       }
     }
-    if (/\/dsh-vision-bench\/state$/.test(path)) {
+    if (/\/dsh-corn-bench\/state$/.test(path)) {
       return {
         ok: true,
         workspace: {

@@ -20,7 +20,7 @@ export const CRITICAL_FLOORS = {
   'src/application/flash/flash-service.mjs': { lines: 95, branches: 85 },
   'src/application/flash/openocd-health-service.mjs': { lines: 99, branches: 83 },
   'src/infrastructure/harness/preset-declaration.mjs': { lines: 95, branches: 81 },
-  'src/infrastructure/host/vision-preset-attach.mjs': { lines: 93, branches: 75 },
+  'src/infrastructure/host/corn-preset-attach.mjs': { lines: 93, branches: 75 },
 }
 
 /**

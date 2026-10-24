@@ -19,21 +19,21 @@ const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '../..')
 
 async function sameProcessProbe() {
-  const home = mkdtempSync(join(tmpdir(), 'dsh-vision-b2-'))
+  const home = mkdtempSync(join(tmpdir(), 'dsh-corn-b2-'))
   try {
-    const { createVisionCommandDispatcher } = await import(
-      pathToFileURL(join(root, 'src/interfaces/http/vision-command-routes.mjs')).href
+    const { createCornCommandDispatcher } = await import(
+      pathToFileURL(join(root, 'src/interfaces/http/corn-command-routes.mjs')).href
     )
     const hostClient = await import(
-      pathToFileURL(join(root, 'src/infrastructure/host/vision-host-client.mjs')).href
+      pathToFileURL(join(root, 'src/infrastructure/host/corn-host-client.mjs')).href
     )
     // Second import of the agent entry's dependency path (same URL → same ESM instance).
     const agentClient = await import(
-      pathToFileURL(join(root, 'src/infrastructure/host/vision-host-client.mjs')).href
+      pathToFileURL(join(root, 'src/infrastructure/host/corn-host-client.mjs')).href
     )
 
-    const stop = hostClient.registerVisionHost(createVisionCommandDispatcher(home))
-    const ping = await agentClient.pingVisionHost({ cwd: '', sessionId: 'b2-same' })
+    const stop = hostClient.registerCornHost(createCornCommandDispatcher(home))
+    const ping = await agentClient.pingCornHost({ cwd: '', sessionId: 'b2-same' })
     stop()
 
     const identity = ping.identity
@@ -43,15 +43,15 @@ async function sameProcessProbe() {
       identity?.sameModuleInstance === true &&
       identity?.hasHandle === true &&
       identity?.dispatchPath === 'in-process-handle' &&
-      hostClient.VISION_HOST_CLIENT_INSTANCE_ID === agentClient.VISION_HOST_CLIENT_INSTANCE_ID
+      hostClient.CORN_HOST_CLIENT_INSTANCE_ID === agentClient.CORN_HOST_CLIENT_INSTANCE_ID
 
     return {
       case: 'same-process',
       pass,
-      hostFiber: 'dsh-vision-bench',
-      agentFiber: 'dsh-vision-bench-tools',
+      hostFiber: 'dsh-corn-bench',
+      agentFiber: 'dsh-corn-bench-tools',
       instanceIdsEqual:
-        hostClient.VISION_HOST_CLIENT_INSTANCE_ID === agentClient.VISION_HOST_CLIENT_INSTANCE_ID,
+        hostClient.CORN_HOST_CLIENT_INSTANCE_ID === agentClient.CORN_HOST_CLIENT_INSTANCE_ID,
       ping: {
         ok: ping.ok,
         pid: ping.data?.pid,
@@ -69,12 +69,12 @@ function childProcessNegative() {
   const childScript = `
 import { pathToFileURL } from 'node:url'
 const root = ${JSON.stringify(root)}
-const client = await import(pathToFileURL(root + '/src/infrastructure/host/vision-host-client.mjs').href)
-const ping = await client.pingVisionHost({ cwd: '', sessionId: 'b2-child' })
+const client = await import(pathToFileURL(root + '/src/infrastructure/host/corn-host-client.mjs').href)
+const ping = await client.pingCornHost({ cwd: '', sessionId: 'b2-child' })
 console.log(JSON.stringify({
   childPid: process.pid,
-  hasHandle: Boolean(client.getVisionHost()),
-  localInstanceId: client.VISION_HOST_CLIENT_INSTANCE_ID,
+  hasHandle: Boolean(client.getCornHost()),
+  localInstanceId: client.CORN_HOST_CLIENT_INSTANCE_ID,
   pingOk: ping.ok === true,
   available: ping.available === true,
   errorCode: ping.errorCode || null,
@@ -85,7 +85,7 @@ console.log(JSON.stringify({
     encoding: 'utf8',
     env: {
       ...process.env,
-      VISION_BENCH_HOST_ORIGIN: 'http://127.0.0.1:1',
+      CORN_BENCH_HOST_ORIGIN: 'http://127.0.0.1:1',
     },
   })
   if (ran.status !== 0) {
@@ -109,7 +109,7 @@ async function main() {
   const same = await sameProcessProbe()
   const child = childProcessNegative()
   const report = {
-    event: 'vision.probe.b2.identity',
+    event: 'corn.probe.b2.identity',
     ok: same.pass && child.pass,
     same,
     child,

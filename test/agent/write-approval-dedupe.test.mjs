@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { listPendingWrites } from '../../bench-actions.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { pendingWrites } from '../../src/application/modbus/modbus-runtime-context.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
 import { createBench, pointSeries } from '../helpers/workspace-factory.mjs'
@@ -14,8 +14,8 @@ test('repeating the same agent write reuses the pending request', async (t) => {
   const { home, cwd } = bench
   bench.save({ modbus: { conn: { sim: true }, points: pointSeries('保持', 4) } })
   const args = { action: 'write', function: 3, address: 1, values: [9] }
-  const first = await runVisionBench(home, args, cwd, origin)
-  const second = await runVisionBench(home, args, cwd, origin)
+  const first = await runCornBench(home, args, cwd, origin)
+  const second = await runCornBench(home, args, cwd, origin)
   assert.equal(first.errorCode, ERROR_CODES.APPROVAL_PENDING)
   assert.equal(second.deduped, true)
   assert.equal(second.requestId, first.requestId)
@@ -29,11 +29,11 @@ test('an expired duplicate is not reused', async (t) => {
   const { home, cwd } = bench
   bench.save({ modbus: { conn: { sim: true }, points: pointSeries('保持', 4) } })
   const args = { action: 'write', function: 3, address: 1, values: [3] }
-  const first = await runVisionBench(home, args, cwd, origin)
+  const first = await runCornBench(home, args, cwd, origin)
   for (const entry of pendingWrites.values()) {
     if (entry.id === first.requestId) entry.createdAt = Date.now() - 6 * 60 * 1000
   }
-  const second = await runVisionBench(home, args, cwd, origin)
+  const second = await runCornBench(home, args, cwd, origin)
   assert.equal(second.deduped, undefined)
   assert.notEqual(second.requestId, first.requestId)
   assert.equal(listPendingWrites(cwd, 's1').length, 1)
@@ -44,7 +44,7 @@ test('a workspace cannot queue more than 20 pending writes', async (t) => {
   const { home, cwd } = bench
   bench.save({ modbus: { conn: { sim: true }, points: pointSeries('保持', 4) } })
   for (let value = 1; value <= 20; value += 1) {
-    const ran = await runVisionBench(
+    const ran = await runCornBench(
       home,
       { action: 'write', function: 3, address: 1, values: [value] },
       cwd,
@@ -52,7 +52,7 @@ test('a workspace cannot queue more than 20 pending writes', async (t) => {
     )
     assert.equal(ran.errorCode, ERROR_CODES.APPROVAL_PENDING, ran.error)
   }
-  const full = await runVisionBench(
+  const full = await runCornBench(
     home,
     { action: 'write', function: 3, address: 1, values: [21] },
     cwd,
@@ -61,7 +61,7 @@ test('a workspace cannot queue more than 20 pending writes', async (t) => {
   assert.equal(full.ok, false)
   assert.equal(full.errorCode, ERROR_CODES.APPROVAL_QUEUE_FULL)
   assert.equal(listPendingWrites(cwd, 's1').length, 20)
-  const again = await runVisionBench(
+  const again = await runCornBench(
     home,
     { action: 'write', function: 3, address: 1, values: [1] },
     cwd,

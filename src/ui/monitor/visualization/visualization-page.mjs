@@ -81,7 +81,7 @@ export function createVisualizationPage(React, t, post, hooks) {
       if (!cwd || !post) return undefined
       let stop = false
       const sid = sessionId || ''
-      post('/dsh-vision-bench/state', { cwd, sessionId: sid || undefined })
+      post('/dsh-corn-bench/state', { cwd, sessionId: sid || undefined })
         .then((data) => {
           if (!stop && data) setMb(data.workspace?.modbus || null)
         })

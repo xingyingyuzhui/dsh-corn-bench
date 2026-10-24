@@ -7,20 +7,20 @@ import {
   setSharedDebugRuntime,
 } from '../src/application/debug/debug-runtime.mjs'
 import {
-  dispatchVisionCommand,
-  getVisionHostEpoch,
-  unregisterVisionHost,
-} from '../src/infrastructure/host/vision-host-client.mjs'
+  dispatchCornCommand,
+  getCornHostEpoch,
+  unregisterCornHost,
+} from '../src/infrastructure/host/corn-host-client.mjs'
 import { apply } from '../host.js'
 import { createHostContext, mockRpcHost } from './helpers/rpc-factory.mjs'
 
 test('stage4: dispose clears Fetch route and Host handle; re-apply restores', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   const connection = mockRpcHost()
   const { ctx, stop } = createHostContext(connection)
   apply(ctx)
   assert.ok(connection.hasFetchHandler)
-  const epoch = getVisionHostEpoch()
+  const epoch = getCornHostEpoch()
   assert.ok(epoch)
 
   const live = await connection.invokeFetch('state', {})
@@ -30,7 +30,7 @@ test('stage4: dispose clears Fetch route and Host handle; re-apply restores', as
   assert.equal(connection.fetchDisposed, true)
   assert.equal(connection.hasFetchHandler, false)
 
-  const missing = await dispatchVisionCommand({
+  const missing = await dispatchCornCommand({
     action: 'status',
     cwd: '/tmp/stage4',
     source: 'agent',
@@ -42,7 +42,7 @@ test('stage4: dispose clears Fetch route and Host handle; re-apply restores', as
   const second = createHostContext(connection2)
   apply(second.ctx)
   assert.ok(connection2.hasFetchHandler)
-  assert.notEqual(getVisionHostEpoch(), epoch)
+  assert.notEqual(getCornHostEpoch(), epoch)
   const again = await connection2.invokeFetch('state', {})
   assert.equal(again.status, 200)
   await second.stop()
@@ -50,7 +50,7 @@ test('stage4: dispose clears Fetch route and Host handle; re-apply restores', as
 })
 
 test('stage4: host dispose clears shared DebugRuntime', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
   const connection = mockRpcHost()
   const { ctx, stop } = createHostContext(connection)
@@ -62,7 +62,7 @@ test('stage4: host dispose clears shared DebugRuntime', async () => {
 })
 
 test('stage4: host dispose is idempotent', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   const connection = mockRpcHost()
   const { ctx, stop } = createHostContext(connection)
   apply(ctx)
@@ -72,7 +72,7 @@ test('stage4: host dispose is idempotent', async () => {
 })
 
 test('stage4: late Fetch disposer after fiber stop still runs', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   let resolveReg
   const registration = new Promise((resolve) => {
     resolveReg = resolve

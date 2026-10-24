@@ -49,5 +49,5 @@ jobs:
       - run: npm pack
       - uses: actions/upload-artifact@v4
         with:
-          name: dsh-vision-bench-tgz
+          name: dsh-corn-bench-tgz
           path: '*.tgz'

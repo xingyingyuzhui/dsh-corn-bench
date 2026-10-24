@@ -142,7 +142,7 @@ export const readProjectFile = (cwd, file) => {
 export const readBuildLog = (home, logFile, tailBytes = LOG_TAIL_BYTES) => {
   const raw = String(logFile || '').trim()
   if (!raw) return { ok: false, error: '缺少日志路径' }
-  const logsDir = realpathSync(join(home, 'vision-bench', 'logs'))
+  const logsDir = realpathSync(join(home, 'corn-bench', 'logs'))
   let real
   try {
     real = realpathSync(raw)

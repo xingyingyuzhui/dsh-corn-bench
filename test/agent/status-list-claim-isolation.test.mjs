@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
 import { ensureWorkspaceClaimed } from '../../src/application/modbus/workspace-session-view.mjs'
 import { connection, createBench, pointSeries } from '../helpers/workspace-factory.mjs'
@@ -26,13 +26,13 @@ test('status and points list agree after claim; other session stays isolated', a
   })
 
   const originA = { source: 'agent', sessionId: 'session-a' }
-  const statusA = await runVisionBench(home, { action: 'status' }, cwd, originA)
+  const statusA = await runCornBench(home, { action: 'status' }, cwd, originA)
   assert.equal(statusA.ok, true, statusA.error)
   assert.equal(statusA.configVersion, 7)
   assert.equal(statusA.modbus.configVersion, 7)
   assert.equal(statusA.modbus.points.length, 16)
 
-  const listA = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, originA)
+  const listA = await runCornBench(home, { action: 'points', op: 'list' }, cwd, originA)
   assert.equal(listA.ok, true, listA.error)
   assert.equal(listA.configVersion, statusA.configVersion)
   assert.deepEqual(
@@ -51,7 +51,7 @@ test('status and points list agree after claim; other session stays isolated', a
   assert.equal(loadWorkspace(home, cwd).modbus.points?.length || 0, 16)
   assert.equal(loadWorkspace(home, cwd).modbus.privateClaimSessionId || '', '')
 
-  const statusBPreview = await runVisionBench(home, { action: 'status' }, cwd, {
+  const statusBPreview = await runCornBench(home, { action: 'status' }, cwd, {
     source: 'agent',
     sessionId: 'session-b',
   })
@@ -61,7 +61,7 @@ test('status and points list agree after claim; other session stays isolated', a
   await ensureWorkspaceClaimed(home, cwd, 'session-a')
   assert.equal(loadWorkspace(home, cwd).modbus.points?.length || 0, 0, 'claimed topology leaves flat layer empty')
 
-  const statusB = await runVisionBench(home, { action: 'status' }, cwd, {
+  const statusB = await runCornBench(home, { action: 'status' }, cwd, {
     source: 'agent',
     sessionId: 'session-b',
   })
@@ -73,14 +73,14 @@ test('status and points list agree after claim; other session stays isolated', a
   )
   assert.ok(!statusB.modbus.devices.some((/** @type {any} */ d) => d.id === 'real-d1'))
 
-  const listB = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, {
+  const listB = await runCornBench(home, { action: 'points', op: 'list' }, cwd, {
     source: 'agent',
     sessionId: 'session-b',
   })
   assert.equal(listB.ok, true, listB.error)
   assert.deepEqual(listB.points, [])
 
-  const anon = await runVisionBench(home, { action: 'status' }, cwd, { source: 'agent' })
+  const anon = await runCornBench(home, { action: 'status' }, cwd, { source: 'agent' })
   assert.equal(anon.ok, false)
   assert.equal(anon.errorCode, ERROR_CODES.SESSION_REQUIRED)
 })

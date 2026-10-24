@@ -1,9 +1,9 @@
 // @ts-check
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ACTIONS, visionBenchTool } from '../../bench-tool.mjs'
+import { ACTIONS, cornBenchTool } from '../../bench-tool.mjs'
 
-const tool = visionBenchTool('/tmp/fake-home')
+const tool = cornBenchTool('/tmp/fake-home')
 const props = tool.parameters.properties
 
 /**

@@ -292,13 +292,13 @@ export function createHmiConnectionActions(ctx, core) {
     setConnForm((previous) => ({ ...previous, open: false }))
     persist({ connections, pollingByConnection, version: 3 })
     if (isServer && existingPoll.enabled && post && cwd) {
-      post('/dsh-vision-bench/polling/stop', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
-      post('/dsh-vision-bench/connection/close', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
+      post('/dsh-corn-bench/polling/stop', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
+      post('/dsh-corn-bench/connection/close', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
     } else if (isSim && post && cwd) {
-      post('/dsh-vision-bench/connection/open', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
-      post('/dsh-vision-bench/polling/start', { cwd, sessionId, connectionId: connForm.id, intervalMs }, 15000).catch(() => {})
+      post('/dsh-corn-bench/connection/open', { cwd, sessionId, connectionId: connForm.id }, 15000).catch(() => {})
+      post('/dsh-corn-bench/polling/start', { cwd, sessionId, connectionId: connForm.id, intervalMs }, 15000).catch(() => {})
     } else if (!isServer && existingPoll.enabled && post && cwd) {
-      post('/dsh-vision-bench/polling/start', { cwd, sessionId, connectionId: connForm.id, intervalMs }, 15000).catch(() => {})
+      post('/dsh-corn-bench/polling/start', { cwd, sessionId, connectionId: connForm.id, intervalMs }, 15000).catch(() => {})
     }
   }
 

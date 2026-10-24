@@ -24,7 +24,7 @@ import { asMessage, settlePending, thrownText } from './io-broker-settle.mjs'
 /** @typedef {import('../../types/io-broker.d.ts').IoRequestOpts} IoRequestOpts */
 /** @typedef {import('../../types/io-broker.d.ts').IoBrokerOptions} IoBrokerOptions */
 
-const DEFAULT_WORKER = join(dirname(fileURLToPath(import.meta.url)), '../../../runtime/vision-io-worker.mjs')
+const DEFAULT_WORKER = join(dirname(fileURLToPath(import.meta.url)), '../../../runtime/corn-io-worker.mjs')
 /** Driver timeout and this deadline used to be equal, so the broker cancel closed the shared port before the driver could report MODBUS_TIMEOUT. */
 export const BROKER_GRACE_MS = 1500
 const OUTBOUND_CAP = 32
@@ -32,7 +32,7 @@ const RESTART_WINDOW_MS = 60_000
 const STDERR_CAP = 4000
 
 /** @param {IoBrokerOptions} [options] */
-export function createVisionIoBroker(options = {}) {
+export function createCornIoBroker(options = {}) {
   const workerPath = options.workerPath || DEFAULT_WORKER
   const execPath = options.execPath || process.execPath
   const env = options.env || process.env
@@ -395,15 +395,15 @@ export function createVisionIoBroker(options = {}) {
   }
 }
 
-let singleton = /** @type {ReturnType<typeof createVisionIoBroker> | null} */ (null)
+let singleton = /** @type {ReturnType<typeof createCornIoBroker> | null} */ (null)
 /** @param {IoBrokerOptions & { broker?: NonNullable<typeof singleton> }} [options] */
-export function getVisionIoBroker(options = {}) {
+export function getCornIoBroker(options = {}) {
   if (options.broker) return options.broker
-  if (!singleton) singleton = createVisionIoBroker(options)
+  if (!singleton) singleton = createCornIoBroker(options)
   return singleton
 }
 
-export async function stopVisionIoBroker(reason = 'plugin-dispose') {
+export async function stopCornIoBroker(reason = 'plugin-dispose') {
   if (!singleton) return
   const current = singleton
   singleton = null

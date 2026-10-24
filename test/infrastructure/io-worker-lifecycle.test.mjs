@@ -3,10 +3,10 @@ import { spawn } from 'node:child_process'
 import { createServer } from 'node:net'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { createVisionIoBroker } from '../../bench-io-broker.mjs'
+import { createCornIoBroker } from '../../bench-io-broker.mjs'
 import { IO_PROTOCOL_V } from '../../src/domain/modbus/io-contract.mjs'
 
-const workerPath = fileURLToPath(new URL('../../runtime/vision-io-worker.mjs', import.meta.url))
+const workerPath = fileURLToPath(new URL('../../runtime/corn-io-worker.mjs', import.meta.url))
 const fakeWorker = fileURLToPath(new URL('../fixtures/fake-io-worker.mjs', import.meta.url))
 
 function holdServer() {
@@ -73,7 +73,7 @@ test('worker exits 0 within 2s after stdin closes while a port is held', async (
 test('broker stdin error does not escape as an unhandled exception', async () => {
   /** @type {import('node:stream').Writable | null} */
   let stdin = null
-  const broker = createVisionIoBroker({
+  const broker = createCornIoBroker({
     workerPath: fakeWorker,
     onWorker(proc) {
       stdin = proc.stdin

@@ -1,6 +1,6 @@
 # 020 真实采样时窗与来源信任：修复验证报告
 
-本报告记录 [2026-10-08-020-verify-sampling-provenance-fix-plan.md](./2026-10-08-020-verify-sampling-provenance-fix-plan.md) 相对 [019 落地复审](../reviews/2026-10-08-019-followup-review.md) 的实际执行证据。所有命令在 `dsh-vision-bench/` 内执行；未执行项在 §6 标明，不计入通过。
+本报告记录 [2026-10-08-020-verify-sampling-provenance-fix-plan.md](./2026-10-08-020-verify-sampling-provenance-fix-plan.md) 相对 [019 落地复审](../reviews/2026-10-08-019-followup-review.md) 的实际执行证据。所有命令在 `dsh-corn-bench/` 内执行；未执行项在 §6 标明，不计入通过。
 
 本轮范围：**S1–S6**。**未做 R5/R6（焦点迁移）、R8（幂等失败终态）**；**未推送、未发布**。
 
@@ -52,7 +52,7 @@ npm run -s build:check / pack:check → ok（pack 刷新 build-info）
 git diff --check              → ok
 ```
 
-Harness（`dsh-vision-harness`）`npm test` → **25 pass / 0 fail**。
+Harness（`dsh-corn-harness`）`npm test` → **25 pass / 0 fail**。
 
 ## 5. 新增 / 关键模块（摘要）
 

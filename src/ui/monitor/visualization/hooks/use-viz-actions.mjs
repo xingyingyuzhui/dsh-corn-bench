@@ -61,7 +61,7 @@ export function useVizActions(_React, deps) {
 
   function persistViz(op, component, visualizationId = '') {
     if (rejectIfReadOnly()) return Promise.resolve(false)
-    return post('/dsh-vision-bench/command', {
+    return post('/dsh-corn-bench/command', {
       cwd,
       sessionId: props?.sessionId || '',
       source: 'user',
@@ -175,7 +175,7 @@ export function useVizActions(_React, deps) {
       busy: true,
     }
     setTick((n) => n + 1)
-    post('/dsh-vision-bench/modbus/write', {
+    post('/dsh-corn-bench/modbus/write', {
       cwd,
       source: 'user',
       sessionId: props?.sessionId || '',
@@ -188,7 +188,7 @@ export function useVizActions(_React, deps) {
     })
       .then((data) => {
         setNote(formatSwitchWriteNote(data, wantOn))
-        return post('/dsh-vision-bench/state', { cwd, sessionId: props?.sessionId || undefined })
+        return post('/dsh-corn-bench/state', { cwd, sessionId: props?.sessionId || undefined })
       })
       .then((data) => {
         if (data?.workspace) setMb(data.workspace.modbus)

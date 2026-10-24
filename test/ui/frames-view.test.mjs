@@ -13,7 +13,7 @@ import {
 } from '../../bench-frames-model.mjs'
 import * as framesFacade from '../../bench-frames-view.mjs'
 import { createFramesPage, FRAMES_TAB_ID } from '../../src/ui/monitor/frames/frames-page.mjs'
-import { VISION_HTTP_TO_RPC, VISION_RPC_ENDPOINTS } from '../../src/shared/vision-rpc-contract.mjs'
+import { CORN_HTTP_TO_RPC, CORN_RPC_ENDPOINTS } from '../../src/shared/corn-rpc-contract.mjs'
 import { alpha3PageProps } from '../fixtures/harness-alpha3-props.mjs'
 import { render, useReactPageRuntime } from '../helpers/react-runtime.mjs'
 
@@ -136,8 +136,8 @@ test('frames newest-first auto-follow only at top', async () => {
 })
 
 test('cli wiring: frames/clear endpoint exists in RPC contract', () => {
-  assert.equal(VISION_HTTP_TO_RPC['/dsh-vision-bench/frames/clear'], 'frames/clear')
-  assert.ok(VISION_RPC_ENDPOINTS.includes('frames/clear'))
+  assert.equal(CORN_HTTP_TO_RPC['/dsh-corn-bench/frames/clear'], 'frames/clear')
+  assert.ok(CORN_RPC_ENDPOINTS.includes('frames/clear'))
 })
 
 test('bench-frames-view.mjs re-exports createFramesPage', () => {

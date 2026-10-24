@@ -5,7 +5,7 @@ function joinClass(base, extra) {
 }
 
 /**
- * Shared panel chrome for Vision Client pages.
+ * Shared panel chrome for Corn Client pages.
  * Keep `dvb-debug-panel` class names so existing runtime CSS still applies.
  *
  * @param {any} React

@@ -8,7 +8,7 @@ import { normalizeModbus } from '../../bench-devices.mjs'
 import { ERROR_CODES } from '../../bench-modbus.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { resolveTarget } from '../../bench-targets.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 
 const packFixture = () =>
   normalizeModbus({
@@ -142,50 +142,50 @@ test('resolveTarget is reused by read/write/frames/focus/trend/alarm/evidence (T
     // add trend-friendly points for alarm/evidence
     saveWorkspace(home, cwd, { modbus: pack })
     // read: missing deviceId on multi-device conn -> TARGET_REQUIRED
-    let res = await runVisionBench(home, { action: 'read', connectionId: 'c1', function: 3, address: 0 }, cwd, {
+    let res = await runCornBench(home, { action: 'read', connectionId: 'c1', function: 3, address: 0 }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.errorCode, ERROR_CODES.TARGET_REQUIRED)
     // read: point mismatch
-    res = await runVisionBench(home, { action: 'read', connectionId: 'c2', deviceId: 'd3', pointId: 'p1' }, cwd, {
+    res = await runCornBench(home, { action: 'read', connectionId: 'c2', deviceId: 'd3', pointId: 'p1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.errorCode, ERROR_CODES.TARGET_MISMATCH)
     // frames: frame belongs check
-    res = await runVisionBench(home, { action: 'frames', connectionId: 'c1', frameId: 'f2' }, cwd, {
+    res = await runCornBench(home, { action: 'frames', connectionId: 'c1', frameId: 'f2' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.errorCode, ERROR_CODES.TARGET_MISMATCH)
     // focus: alarm mismatch
-    res = await runVisionBench(home, { action: 'focus', connectionId: 'c2', alarmId: 'a1' }, cwd, {
+    res = await runCornBench(home, { action: 'focus', connectionId: 'c2', alarmId: 'a1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.errorCode, ERROR_CODES.TARGET_MISMATCH)
     // trend: trendKey mismatch
-    res = await runVisionBench(home, { action: 'trend', trendKey: 'c1:d2:p1' }, cwd, {
+    res = await runCornBench(home, { action: 'trend', trendKey: 'c1:d2:p1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.errorCode, 'TARGET_MISMATCH')
     // alarm: alarmId valid
-    res = await runVisionBench(home, { action: 'alarm', connectionId: 'c1', alarmId: 'a1' }, cwd, {
+    res = await runCornBench(home, { action: 'alarm', connectionId: 'c1', alarmId: 'a1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.ok, true)
     // evidence: with valid point should ok, with mismatched should fail
-    res = await runVisionBench(
+    res = await runCornBench(
       home,
       { action: 'evidence', evidence: [{ kind: 'point', id: 'p1', connectionId: 'c2' }] },
       cwd,
       { source: 'agent', sessionId: 's1' },
     )
     assert.equal(res.errorCode, 'TARGET_MISMATCH')
-    res = await runVisionBench(
+    res = await runCornBench(
       home,
       { action: 'evidence', evidence: [{ kind: 'point', id: 'p1', connectionId: 'c1', deviceId: 'd1' }] },
       cwd,

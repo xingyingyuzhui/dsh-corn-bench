@@ -37,14 +37,14 @@ test('清空显示 only resets the page view and does not post frames/clear or c
       status: 'ok',
     }
     const post = async (path) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({ frames: holder.frames, connections: [RTU_C1], serialSources: [SOURCE_C1] })
       }
-      if (path === '/dsh-vision-bench/frames/clear') {
+      if (path === '/dsh-corn-bench/frames/clear') {
         clearCalls.push(path)
         return { ok: true }
       }
-      if (path === '/dsh-vision-bench/serial/close' || path === '/dsh-vision-bench/connection/close') {
+      if (path === '/dsh-corn-bench/serial/close' || path === '/dsh-corn-bench/connection/close') {
         closeCalls.push(path)
         return { ok: true }
       }
@@ -100,14 +100,14 @@ test('Task7: switching connection while paused exits pause and shows only the ne
   await withNullVendor(async () => {
     const holder = { frames: { c1: makeFrames('c1', 3), c2: makeFrames('c2', 4, 100) } }
     const post = async (path) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({
           frames: holder.frames,
           connections: [RTU_C1, RTU_C2],
           serialSources: [SOURCE_C1, SOURCE_C2],
         })
       }
-      if (path === '/dsh-vision-bench/serial/ports') return { ok: true, ports: ['COM3', 'COM4'] }
+      if (path === '/dsh-corn-bench/serial/ports') return { ok: true, ports: ['COM3', 'COM4'] }
       return { ok: true }
     }
     const tmap = (k) => ({ serialPause: '暂停', serialResume: '恢复' })[k] || k

@@ -4,11 +4,11 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { getVisionIoBroker } from '../../bench-io-broker.mjs'
+import { getCornIoBroker } from '../../bench-io-broker.mjs'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 
 test('agent tools reuse the host-registered I/O broker singleton', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-io-'))
@@ -21,17 +21,17 @@ test('agent tools reuse the host-registered I/O broker singleton', async () => {
       devices: [{ id: 'd1', connectionId: 'c1', name: 'D1', unitId: 1 }],
     },
   })
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   try {
-    const hostBroker = getVisionIoBroker()
-    const tool = visionBenchTool(home)
+    const hostBroker = getCornIoBroker()
+    const tool = cornBenchTool(home)
     const ran = await tool.execute({ action: 'status' }, { agent: { session: { header: { cwd, id: 's1' } } } })
     assert.equal(ran.ok, true)
-    assert.equal(getVisionIoBroker(), hostBroker)
+    assert.equal(getCornIoBroker(), hostBroker)
     assert.equal(hostBroker.pid(), 0, 'sim status does not spawn a second worker')
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
     await rm(home, { recursive: true, force: true })
   }
 })

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ERROR_CODES, listFrames, requestFocus } from '../../bench-modbus.mjs'
 import { loadWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { saveSessionModbusPatch } from '../../src/application/modbus/workspace-session-view.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { agentDevice, agentHrPoint, agentRtu } from './ui-fixtures.mjs'
@@ -20,10 +20,10 @@ test('Agent frames requires explicit connectionId (TARGET_REQUIRED) and lists wi
       points: [],
     },
   })
-  const missing = await runVisionBench(home, { action: 'frames' }, cwd, { source: 'agent', sessionId: 's1' })
+  const missing = await runCornBench(home, { action: 'frames' }, cwd, { source: 'agent', sessionId: 's1' })
   assert.equal(missing.ok, false)
   assert.equal(missing.errorCode, ERROR_CODES.TARGET_REQUIRED)
-  const ok = await runVisionBench(home, { action: 'frames', connectionId: 'c1', limit: 10 }, cwd, {
+  const ok = await runCornBench(home, { action: 'frames', connectionId: 'c1', limit: 10 }, cwd, {
     source: 'agent',
     sessionId: 's1',
   })
@@ -54,11 +54,11 @@ test('Agent focus creates highlight with stable IDs, temp watch and badgeOnly', 
       points: [p1, p2],
     },
   })
-  const bad = await runVisionBench(home, { action: 'focus' }, cwd, { source: 'agent', sessionId: 's1' })
+  const bad = await runCornBench(home, { action: 'focus' }, cwd, { source: 'agent', sessionId: 's1' })
   assert.equal(bad.ok, false)
   assert.equal(bad.errorCode, ERROR_CODES.TARGET_REQUIRED)
   const expectedCv = loadWorkspace(home, cwd).modbus.configVersion
-  const ok = await runVisionBench(
+  const ok = await runCornBench(
     home,
     {
       action: 'focus',
@@ -83,7 +83,7 @@ test('Agent focus creates highlight with stable IDs, temp watch and badgeOnly', 
   assert.equal(ws.focus.badgeOnly, true)
   assert.equal(ws.focus.tempWatchIds.length, 2)
   assert.equal(ws.focus.evidence.length, 1)
-  const second = await runVisionBench(home, { action: 'focus', connectionId: 'c1', pointId: 'p2' }, cwd, {
+  const second = await runCornBench(home, { action: 'focus', connectionId: 'c1', pointId: 'p2' }, cwd, {
     source: 'agent',
     sessionId: 's1',
   })

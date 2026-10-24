@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * User policy for Agent-initiated hardware writes (Settings → Vision).
+ * User policy for Agent-initiated hardware writes (Settings → Corn).
  *
  * Only the Settings page writes this file, through the browser `bindings/save`
  * endpoint; no Agent command path reaches it, so an Agent cannot turn its own

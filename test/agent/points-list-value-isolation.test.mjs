@@ -2,13 +2,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../src/interfaces/agent/vision-bench-tool.mjs'
+import { cornBenchTool } from '../../src/interfaces/agent/corn-bench-tool.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench, pointSeries } from '../helpers/workspace-factory.mjs'
 import { pt, seedDualPrivateSamePointId } from './points-value-isolation-helpers.mjs'
 
@@ -52,7 +52,7 @@ test('shared points: matching value available; shadowed private does not fake am
       },
     },
   })
-  const b = await runVisionBench(
+  const b = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['shared-p'] },
     cwd,
@@ -90,7 +90,7 @@ test('legacy record without provenance + dual private stays unavailable after sa
   // Force a real load/normalize cycle.
   const reloaded = loadWorkspace(home, cwd)
   saveWorkspace(home, cwd, reloaded)
-  const got = await runVisionBench(
+  const got = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p'] },
     cwd,
@@ -123,7 +123,7 @@ test('mixed get: safe / missing-value / unavailable / absent keep counters', asy
   ]
   saveWorkspace(home, cwd, ws)
 
-  const got = await runVisionBench(
+  const got = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['safe', 'empty', 'p', 'ghost'] },
     cwd,
@@ -147,13 +147,13 @@ test('Agent tool get/list projection keeps valueStatus and hides foreign raw', a
   const bench = await createBench(t, { prefix: 'dvb-val-iso-tool-' })
   const { home, cwd } = bench
   seedDualPrivateSamePointId(home, cwd)
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const agent = { session: { header: { cwd, id: 'session-a' } } }
   const get = await tool.execute(
     { action: 'points', op: 'get', ids: ['p'], commandId: 'cmd-iso-get' },
@@ -190,7 +190,7 @@ test('list still returns valueStatus on ordinary single-session workspace', asyn
       values: [],
     },
   })
-  const listed = await runVisionBench(
+  const listed = await runCornBench(
     home,
     { action: 'points', op: 'list' },
     cwd,

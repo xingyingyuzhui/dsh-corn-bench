@@ -18,7 +18,7 @@ test('pathInside rejects parents and relatives', async () => {
 test('requireWorkspaceCwd rejects home and relatives', async () => {
   assert.match(requireWorkspaceCwd('proj').error, /工作区/)
   assert.match(requireWorkspaceCwd('/').error, /盘根|主目录/)
-  const room = requireWorkspaceCwd(join('/tmp', 'vision-proj-' + Date.now()))
+  const room = requireWorkspaceCwd(join('/tmp', 'corn-proj-' + Date.now()))
   assert.equal(room.error, undefined)
   assert.ok(room.cwd)
 })

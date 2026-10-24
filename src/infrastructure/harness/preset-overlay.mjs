@@ -1,7 +1,7 @@
 // @ts-check
 import { join } from 'node:path'
 import * as yaml from 'yaml'
-import { LEGACY_VISION_PERSONAS, STANDARD_PERSONA } from './guidance.mjs'
+import { LEGACY_CORN_PERSONAS, STANDARD_PERSONA } from './guidance.mjs'
 import { localPersonaConfigReplica } from './dsh-contract.mjs'
 import { validateCompositionPersona, yamlNodeToPlain } from './preset-validate.mjs'
 import { migrateObsoleteWorkflowWorkerRows } from './preset-workflow-migrate.mjs'
@@ -63,10 +63,10 @@ export function parseCompositionDocument(raw) {
 }
 
 export const OWNERSHIP_TEMPLATE = {
-  owner: 'dsh-vision-bench',
+  owner: 'dsh-corn-bench',
   presetSchemaVersion: 3,
   basePresetId: 'standard',
-  pluginRowId: 'vision-bench-tools',
+  pluginRowId: 'corn-bench-tools',
 }
 
 /**
@@ -84,14 +84,14 @@ export function checkOwnership(dir) {
     return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-unreadable' }
   }
   if (!raw) return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-empty' }
-  if (raw === 'dsh-vision-bench') return { exists: true, owned: true, legacy: true }
+  if (raw === 'dsh-corn-bench') return { exists: true, owned: true, legacy: true }
   let obj = null
   try {
     obj = JSON.parse(raw)
   } catch {
     /* invalid JSON fails closed below */
   }
-  if (!obj || typeof obj !== 'object' || obj.owner !== 'dsh-vision-bench') {
+  if (!obj || typeof obj !== 'object' || obj.owner !== 'dsh-corn-bench') {
     return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-invalid-or-foreign' }
   }
   return { exists: true, owned: true, legacy: false, payload: obj }
@@ -126,8 +126,8 @@ function yamlString(value) {
  * @param {string} hostPluginName
  * @param {string} agentPluginSpec
  */
-export function isVisionToolRow(id, name, hostPluginName, agentPluginSpec) {
-  return id === 'vision-bench-tools' || name === hostPluginName || name === agentPluginSpec
+export function isCornToolRow(id, name, hostPluginName, agentPluginSpec) {
+  return id === 'corn-bench-tools' || name === hostPluginName || name === agentPluginSpec
 }
 
 /** @param {any} doc @param {any} parent @param {string} key */
@@ -196,7 +196,7 @@ export const ensurePresetOverlay = (dir, options) => {
     const id = item.get('id')
     const name = item.get('name')
     if (id === 'persona' || (typeof name === 'string' && name.includes('dsh-persona'))) personaNode = item
-    if (isVisionToolRow(id, name, hostPluginName, agentPluginSpec)) toolRows.push(item)
+    if (isCornToolRow(id, name, hostPluginName, agentPluginSpec)) toolRows.push(item)
   }
 
   let needsReview = false
@@ -215,14 +215,14 @@ export const ensurePresetOverlay = (dir, options) => {
       } else if (!prefix && typeof text === 'string') {
         const cur = text.trim()
         const isStandard = cur === STANDARD_PERSONA.trim()
-        const isLegacy = LEGACY_VISION_PERSONAS.some((p) => p.trim() === cur)
-        const looksVision = cur.includes('Vision 台架') || cur.includes('Vision 台架 agent')
+        const isLegacy = LEGACY_CORN_PERSONAS.some((p) => p.trim() === cur)
+        const looksCorn = cur.includes('Corn 台架') || cur.includes('Corn 台架 agent')
         const next = isLegacy ? STANDARD_PERSONA : text
         cfg.set('prefix', next)
         if (typeof cfg.delete === 'function') cfg.delete('text')
         if (isLegacy) personaRestored = true
         else if (!isStandard) needsReview = true
-        if (looksVision && !isLegacy && !isStandard) needsReview = true
+        if (looksCorn && !isLegacy && !isStandard) needsReview = true
       }
     } catch (e) {
       return {
@@ -238,7 +238,7 @@ export const ensurePresetOverlay = (dir, options) => {
   let addedRow = false
   const keep = toolRows[0]
   if (keep && typeof keep.set === 'function') {
-    keep.set('id', 'vision-bench-tools')
+    keep.set('id', 'corn-bench-tools')
     keep.set('name', agentPluginSpec)
     const cfg = keep.get('config')
     if (cfg && typeof cfg.delete === 'function') {
@@ -247,7 +247,7 @@ export const ensurePresetOverlay = (dir, options) => {
       if (Object.keys(plain).length === 0 && typeof keep.delete === 'function') keep.delete('config')
     }
   } else {
-    seq.items.push(doc.createNode({ id: 'vision-bench-tools', name: agentPluginSpec }))
+    seq.items.push(doc.createNode({ id: 'corn-bench-tools', name: agentPluginSpec }))
     addedRow = true
   }
   for (let i = toolRows.length - 1; i >= 1; i--) {

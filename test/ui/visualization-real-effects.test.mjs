@@ -43,7 +43,7 @@ test('Task4: VisualizationPage 让 Agent 分析组件 uses the input bridge, pre
     const evidenceCalls = []
     const evidenceOkFlag = { ok: true, evidence: [] }
     const post = async (path, body) => {
-      if (path === '/dsh-vision-bench/state')
+      if (path === '/dsh-corn-bench/state')
         return {
           ok: true,
           workspace: {
@@ -81,7 +81,7 @@ test('Task4: VisualizationPage 让 Agent 分析组件 uses the input bridge, pre
           },
           health: {},
         }
-      if (path === '/dsh-vision-bench/evidence') {
+      if (path === '/dsh-corn-bench/evidence') {
         evidenceCalls.push(body.evidence || body.item || [body])
         return evidenceOkFlag
       }
@@ -160,7 +160,7 @@ test('Task4: no input writer → clipboard fallback and no crash', async () => {
   const cwdB = '/tmp/trend-agent-cb-' + Math.random()
   const wall = Date.now()
   const post = async (path) => {
-    if (path === '/dsh-vision-bench/state')
+    if (path === '/dsh-corn-bench/state')
       return {
         ok: true,
         workspace: {

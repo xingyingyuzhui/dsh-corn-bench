@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { mutateConfig } from '../../src/application/config/config-mutation-service.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
 
@@ -134,7 +134,7 @@ test('visualization add is live; proposeAdd is OP_REMOVED', async () => {
       },
     })
     const cv = loadWorkspace(home, cwd).modbus.configVersion
-    const added = await runVisionBench(
+    const added = await runCornBench(
       home,
       {
         action: 'visualization',
@@ -148,7 +148,7 @@ test('visualization add is live; proposeAdd is OP_REMOVED', async () => {
     assert.equal(added.ok, true)
     assert.equal(sessionPack(home, cwd, 's1').visualization.components.length, 1)
 
-    const old = await runVisionBench(
+    const old = await runCornBench(
       home,
       { action: 'visualization', op: 'proposeAdd', component: { name: 'x', type: 'value', pointIds: ['p1'] } },
       cwd,

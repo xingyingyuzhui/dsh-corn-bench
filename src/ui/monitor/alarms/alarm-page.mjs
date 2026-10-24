@@ -150,7 +150,7 @@ export function createAlarmPage(React, t, post, hooks) {
       const next = acknowledgeAlarm(alarmState, id, { by: 'user' })
       if (next?._suggested) return
       setAlarmState(next)
-      if (cwd) post('/dsh-vision-bench/workspace', { cwd, modbus: { alarmState: next, version: 3 } }).catch(() => {})
+      if (cwd) post('/dsh-corn-bench/workspace', { cwd, modbus: { alarmState: next, version: 3 } }).catch(() => {})
     }
 
     // Batch acknowledge
@@ -161,7 +161,7 @@ export function createAlarmPage(React, t, post, hooks) {
         nextState = acknowledgeAlarm(nextState, id, { by: 'user' })
       }
       setAlarmState(nextState)
-      if (cwd) post('/dsh-vision-bench/workspace', { cwd, modbus: { alarmState: nextState, version: 3 } }).catch(() => {})
+      if (cwd) post('/dsh-corn-bench/workspace', { cwd, modbus: { alarmState: nextState, version: 3 } }).catch(() => {})
       setCheckedIds(new Set())
     }
 

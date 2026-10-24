@@ -125,13 +125,13 @@ export function statusBar(el, t, cwd, rows) {
   )
 }
 
-export function visionCollabBar(el, t, opts) {
+export function cornCollabBar(el, t, opts) {
   const cwd = opts?.cwd || ''
   const workspace = opts?.workspace || {}
   const journal = opts?.journal || { tasks: [], running: [], timeline: [] }
   const pendingWrites = opts?.pendingWrites || opts?.pending || []
   const sessionId = opts?.sessionId || ''
-  // Task7/0.19.2: Vision 服务当前 Session — boundId 仅做读取兼容，不再展示
+  // Task7/0.19.2: Corn 服务当前 Session — boundId 仅做读取兼容，不再展示
   const running = journal.running || []
   const pendingCount = Array.isArray(pendingWrites) ? pendingWrites.length : 0
   const manualPending = (workspace.manualRequests || []).filter((m) => m.status === 'pending').length
@@ -139,10 +139,10 @@ export function visionCollabBar(el, t, opts) {
   if (!cwd && !runningCount && !pendingCount && !manualPending) return null
   return el(
     'div',
-    { className: 'dvb-vision-bar' },
+    { className: 'dvb-corn-bar' },
     el(
       'div',
-      { className: 'dvb-vision-chips' },
+      { className: 'dvb-corn-chips' },
       cwd ? el('span', { className: 'dvb-chip', title: cwd }, `${t('workspace')} ${cwd.slice(-32)}`) : null,
       runningCount ? el('span', { className: 'dvb-chip', 'data-kind': 'live' }, `任务 ${runningCount}`) : null,
       pendingCount ? el('span', { className: 'dvb-chip', 'data-kind': 'warn' }, `待确认 ${pendingCount}`) : null,
@@ -150,7 +150,7 @@ export function visionCollabBar(el, t, opts) {
     ),
     el(
       'div',
-      { className: 'dvb-vision-meta' },
+      { className: 'dvb-corn-meta' },
       journal.tasks?.length ? el('span', { className: 'dvb-hint' }, `${t('tasks')} ${journal.tasks.length}`) : null,
     ),
   )

@@ -164,7 +164,7 @@ function renderModule(contract, rows) {
  * \`${contract}\` \`${SOURCE_PATH_IN_REPO}\`.
  *
  * DSH 0.1.7+ presets are self-contained declarations (\`agentPresets.register\`),
- * so the Vision模式 preset restates standard's complete child list and appends
+ * so the Corn模式 preset restates standard's complete child list and appends
  * its own agent tool row (see preset-declaration.mjs). Regenerate and verify:
  *
  *   node scripts/gen-standard-preset-snapshot.mjs --write   # refresh

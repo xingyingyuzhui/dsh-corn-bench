@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { listPendingWrites, resolvePendingWrite } from '../../bench-actions.mjs'
 import { loadWorkspace, workspaceRepository } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { writeLocks } from '../../src/application/modbus/modbus-runtime-context.mjs'
 import { modbusForSession } from '../../src/application/modbus/workspace-session-view.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
@@ -31,7 +31,7 @@ test('approving after a same-address point id change is CONFIG_DRIFT and does no
   bench.save({
     modbus: { version: 3, connections: [tcp], devices: [device], points: [point('p1')], values: [] },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [4] },
     cwd,
@@ -84,7 +84,7 @@ test('approving while a write lock is held returns WRITE_BUSY and keeps the requ
   bench.save({
     modbus: { version: 3, connections: [tcp], devices: [device], points: [point('p1')], values: [] },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [4] },
     cwd,

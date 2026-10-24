@@ -1,6 +1,6 @@
 /**
  * ToggleSwitch
- * Centralized, reusable slider switch component for DSH Vision Bench.
+ * Centralized, reusable slider switch component for DSH Corn Bench.
  * Used for boolean toggles (settings, monitored points selection, share options, etc.).
  *
  * Activation contract (ADR-025 D6/D9): a native `<button>` already turns

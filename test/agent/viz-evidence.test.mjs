@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { agentRefToText, buildAgentRef, dispatchAgentRef, evidenceFromRef } from '../../bench-shared.mjs'
 import { appendEvidence, loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 
 test('剪贴板回退文本是完整 JSON，含 visualizationId/pointIds', async () => {
   const ref = buildAgentRef(
@@ -82,7 +82,7 @@ test('dispatchAgentRef 无输入桥时返回完整 JSON 文本', async () => {
 })
 
 test('tool schema 声明 visualizationId / evidence.visualizationId', async () => {
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const props = tool.parameters.properties
   assert.ok(props.target.properties.visualizationId)
   assert.ok(props.evidence.items.properties.visualizationId)

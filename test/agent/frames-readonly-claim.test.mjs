@@ -7,7 +7,7 @@ import { listFrames } from '../../bench-modbus.mjs'
 import { loadWorkspace, workspaceKey } from '../../bench-store.mjs'
 import { workspaceDir } from '../../src/infrastructure/persistence/workspace-migration.mjs'
 import { ensureWorkspaceClaimed } from '../../src/application/modbus/workspace-session-view.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { agentDevice, agentRtu } from './ui-fixtures.mjs'
 
@@ -76,7 +76,7 @@ test('partitioned frames without a session is SESSION_REQUIRED', async (t) => {
       },
     },
   })
-  const missing = await runVisionBench(home, { action: 'frames', connectionId: 'c1' }, cwd, {
+  const missing = await runCornBench(home, { action: 'frames', connectionId: 'c1' }, cwd, {
     source: 'agent',
     sessionId: '',
   })

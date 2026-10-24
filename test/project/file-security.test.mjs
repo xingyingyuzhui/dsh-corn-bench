@@ -13,7 +13,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 async function setup() {
   const home = await mkdtemp(join(tmpdir(), 'pfs-'))
   const cwd = join(home, 'board')
-  const store = join(home, 'vision-bench', 'workspaces')
+  const store = join(home, 'corn-bench', 'workspaces')
   mkdirSync(join(cwd, 'src'), { recursive: true })
   mkdirSync(store, { recursive: true })
   writeFileSync(join(cwd, 'src', 'main.c'), 'int main(void) { return 0; }\n// 第2行\n')
@@ -34,7 +34,7 @@ async function setup() {
 }
 
 const wsFile = (cwd, name) => {
-  const dir = join(cwd, '.vision-bench')
+  const dir = join(cwd, '.corn-bench')
   mkdirSync(dir, { recursive: true })
   return join(dir, name)
 }
@@ -97,10 +97,10 @@ test('超过 256KB 的文件截断返回 truncated', async () => {
 test('project/file RPC handler exists and host registers command bridge only', async () => {
   const fs = await import('../../bench-fs.mjs')
   assert.equal(typeof fs.readProjectFile, 'function')
-  const router = readFileSync(join(root, 'src/interfaces/rpc/vision-rpc-router.mjs'), 'utf8')
+  const router = readFileSync(join(root, 'src/interfaces/rpc/corn-rpc-router.mjs'), 'utf8')
   const host = readFileSync(join(root, 'host.js'), 'utf8')
-  const webCompat = readFileSync(join(root, 'src/interfaces/web/vision-web-compat.mjs'), 'utf8')
+  const webCompat = readFileSync(join(root, 'src/interfaces/web/corn-web-compat.mjs'), 'utf8')
   assert.ok(router.includes("case 'project/file'"), 'project/file RPC handler exists')
   assert.ok(webCompat.includes('webServer.register'), 'command bridge still registers a disposer')
-  assert.ok(host.includes('mountVisionWebCompat'), 'Web compat module owns the bridge')
+  assert.ok(host.includes('mountCornWebCompat'), 'Web compat module owns the bridge')
 })

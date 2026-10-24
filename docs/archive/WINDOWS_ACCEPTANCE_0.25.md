@@ -9,7 +9,7 @@
 - [ ] 干净 Windows 10
 - [ ] 干净 Windows 11
 - [ ] 已安装 DeepSeek Harness
-- [ ] 安装 `dsh-vision-bench` 的 `.tgz`（不要用开发目录 `link` 代替）
+- [ ] 安装 `dsh-corn-bench` 的 `.tgz`（不要用开发目录 `link` 代替）
 - [ ] 重启 `dsh web`
 - [ ] 三个原生工作区可打开：调试 / 上位机 / 监控
 

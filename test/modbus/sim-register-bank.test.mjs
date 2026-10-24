@@ -2,7 +2,7 @@
 /** A simulated slave keeps written coils and holding registers. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import {
   clearSimRegisterBank,
   forgetSimConnection,
@@ -52,10 +52,10 @@ test('transport sim write is read back by the next sim read', async () => {
 test('an HMI sim write survives the following reads', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-sim-bank-' })
   bench.save({ modbus: { conn: { sim: true }, points: pointSeries('保持', 12) } })
-  const wrote = await runVisionBench(bench.home, { action: 'write', function: 3, address: 10, values: [42] }, bench.cwd, { source: 'user', sessionId: '' })
+  const wrote = await runCornBench(bench.home, { action: 'write', function: 3, address: 10, values: [42] }, bench.cwd, { source: 'user', sessionId: '' })
   assert.equal(wrote.ok, true, wrote.error)
   for (let i = 0; i < 2; i++) {
-    const read = await runVisionBench(bench.home, { action: 'read', function: 3, address: 10, count: 1 }, bench.cwd, { source: 'user', sessionId: '' })
+    const read = await runCornBench(bench.home, { action: 'read', function: 3, address: 10, count: 1 }, bench.cwd, { source: 'user', sessionId: '' })
     assert.equal(read.ok, true, read.error)
     assert.deepEqual(read.readings?.[0]?.raw, [42], JSON.stringify(read).slice(0, 300))
     await new Promise((resolve) => setTimeout(resolve, 1100)) // cross a generator tick
@@ -66,7 +66,7 @@ test('a sim write logs one successful task, never a spurious 写入中断', asyn
   const { loadWorkspace } = await import('../../bench-store.mjs')
   const bench = await createBench(t, { prefix: 'dvb-sim-log-' })
   bench.save({ modbus: { conn: { sim: true }, points: pointSeries('保持', 4) } })
-  const wrote = await runVisionBench(bench.home, { action: 'write', function: 3, address: 1, values: [5] }, bench.cwd, { source: 'user', sessionId: '' })
+  const wrote = await runCornBench(bench.home, { action: 'write', function: 3, address: 1, values: [5] }, bench.cwd, { source: 'user', sessionId: '' })
   assert.equal(wrote.ok, true, wrote.error)
   await new Promise((resolve) => setTimeout(resolve, 50))
   const ws = loadWorkspace(bench.home, bench.cwd)

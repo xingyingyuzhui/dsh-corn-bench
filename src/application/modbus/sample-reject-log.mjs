@@ -30,7 +30,7 @@ export function noteSampleReject(pointId, reason, generationChanged = false) {
   if (!allow(`${pid}|${why}`)) return
   console.info(
     JSON.stringify({
-      event: 'vision.sample.reject',
+      event: 'corn.sample.reject',
       reason: why,
       pointId: pid,
       generationChanged: generationChanged === true,
@@ -47,7 +47,7 @@ export function noteSampleSchemaMigrate(fromVersion, uniqueCount, ambiguousCount
   if (!allow('schema-migrate')) return
   console.info(
     JSON.stringify({
-      event: 'vision.sample.schema-migrate',
+      event: 'corn.sample.schema-migrate',
       from: Number(fromVersion) || 0,
       to: 2,
       unique: uniqueCount,

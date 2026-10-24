@@ -66,7 +66,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
     const seq = ++probeSeqRef.current
     probedPathRef.current = boundPath
     setOpenocdFlash({ status: 'checking', reason: '', versionLine: '', path: boundPath })
-    post('/dsh-vision-bench/openocd/probe', { cwd }, 12000)
+    post('/dsh-corn-bench/openocd/probe', { cwd }, 12000)
       .then((probe) => {
         if (unmountedRef.current || seq !== probeSeqRef.current) return
         if (probe && probe.ready === true) {
@@ -110,7 +110,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
       if (id && !cur.busy && !cancelSentRef.current) {
         cancelSentRef.current = true
         post(
-          '/dsh-vision-bench/keil/download',
+          '/dsh-corn-bench/keil/download',
           { cwd, requestId: id, approved: false, source: 'user', sessionId },
           15000,
         ).catch(() => {})
@@ -123,7 +123,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
     cancelSentRef.current = false
     setFlash((prev) => ({ ...prev, busy: true, result: null, cancelBusy: false }))
     post(
-      '/dsh-vision-bench/keil/download',
+      '/dsh-corn-bench/keil/download',
       {
         cwd,
         source: 'user',
@@ -139,7 +139,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
           return null
         }
         setFlash((prev) => ({ ...prev, busy: false, confirm: null, result: data }))
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => mergeStateRef.current(data))
       .catch((err) => {
@@ -157,7 +157,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
     cancelSentRef.current = true
     setFlash((prev) => ({ ...prev, busy: true, cancelBusy: false }))
     post(
-      '/dsh-vision-bench/keil/download',
+      '/dsh-corn-bench/keil/download',
       {
         cwd,
         source: 'user',
@@ -169,7 +169,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
     )
       .then((data) => {
         setFlash((prev) => ({ ...prev, busy: false, confirm: null, result: data }))
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => mergeStateRef.current(data))
       .catch((err) => {
@@ -187,7 +187,7 @@ export function useDebugFlashActions(React, t, post, cwd, sessionId, mergeState)
     if (!req || !cwd || flash.busy || flash.cancelBusy) return
     setFlash((prev) => ({ ...prev, cancelBusy: true, result: null }))
     post(
-      '/dsh-vision-bench/keil/download',
+      '/dsh-corn-bench/keil/download',
       { cwd, requestId: req.requestId, approved: false, source: 'user', sessionId },
       15000,
     )

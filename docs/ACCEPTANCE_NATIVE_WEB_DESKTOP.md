@@ -1,10 +1,10 @@
 # Native Web / Desktop acceptance matrix (migration stage 5–7)
 
-Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration.md`.
+Companion to plan `docs/plans/2026-09-17-003-corn-native-web-desktop-migration.md`.
 
 > **2026-10-22:** the plugin now pins DSH `0.2.1-rc.2`. The Desktop results recorded earlier (DSH 0.1.6/0.1.7 lab runs, `scripts/probes/RESULTS.md`) were retired; Desktop is re-tested by the maintainer on 0.2.1-rc.2. The probe scripts under `scripts/probes/` remain as tools. Web 0.2.1-rc.2 was exercised end to end in an isolated `DSH_HOME` (Host Fetch, in-process Agent handle, declarative preset, HMI / Monitor / Debug / Settings, Agent write approval on and off).
 
-**Capability claim (ship):** UI + Agent in-process Host + Modbus TCP/sim over Connection Fetch, no Vision listen port.
+**Capability claim (ship):** UI + Agent in-process Host + Modbus TCP/sim over Connection Fetch, no Corn listen port.
 
 **Verified automated (2026-09-19, `feat/native-web-desktop-migration`):**
 
@@ -15,18 +15,18 @@ Companion to plan `docs/plans/2026-09-17-003-vision-native-web-desktop-migration
 | Web compat inject fiber lifecycle | **pass** |
 | Debug idle `waitForOwnerSession` | **pass** |
 | Fetch dispatch contract (no local 64 KiB cap) | **pass** |
-| Real Desktop B2 (pack → temp profile → DesktopHostProcess → agentPresets.mount → vision_bench) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
-| Desktop Vision Fetch (real tarball `/api/vision-bench/dispatch`) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
+| Real Desktop B2 (pack → temp profile → DesktopHostProcess → agentPresets.mount → corn_bench) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
+| Desktop Corn Fetch (real tarball `/api/corn-bench/dispatch`) | **pending** — maintainer re-test on DSH 0.2.1-rc.2 |
 | Desktop Fetch carrier smoke (stub plugin) | **pending** — maintainer re-test (`run-desktop-dispatch-smoke.mts`) |
 | Stage 3 pack / Stage 4 lifecycle | **pass** |
-| Stage 5 Desktop evidence gate | **required** — evidence must match HEAD + fingerprints + identity/cancel fields; dirty trees rejected unless `VISION_STAGE5_ALLOW_DIRTY=1` |
+| Stage 5 Desktop evidence gate | **required** — evidence must match HEAD + fingerprints + identity/cancel fields; dirty trees rejected unless `CORN_STAGE5_ALLOW_DIRTY=1` |
 
 **Not claimed / deferred:**
 
 - Official Desktop full Modbus RTU native (`serialport` not in Desktop `allowBuilds`) — optional RTU package or upstream allowBuilds.
 - Windows hardware / Keil-OpenOCD physical chain — `docs/WINDOWS_ACCEPTANCE_0.27.md`.
 - 10–15 min soak (CPU/log storm) — run manually with isolated `DSH_HOME`; Web XOR Desktop, never both on one Home.
-- Product GUI install by bare registry name — `dsh-vision-bench` is not on npmjs.org (404), so that one form is unavailable. The desktop window also accepts a git tag or a tarball path, verified against `@deepseek-ai/dsh-plugin-manager` `install-spec.js` in the installed 0.2.1-rc.2 app.
+- Product GUI install by bare registry name — `dsh-corn-bench` is not on npmjs.org (404), so that one form is unavailable. The desktop window also accepts a git tag or a tarball path, verified against `@deepseek-ai/dsh-plugin-manager` `install-spec.js` in the installed 0.2.1-rc.2 app.
 
 | Scenario | Web macOS | Desktop macOS | Desktop Windows | Gate |
 | --- | --- | --- | --- | --- |
@@ -48,7 +48,7 @@ Run Web and Desktop **separately** (different `DSH_HOME` / quit the other app).
 
 ### Web
 
-1. Open Vision page; create/switch presets.
+1. Open Corn page; create/switch presets.
 2. Agent starts Debug → page discovers via hung `waitForOwnerSession`.
 3. Stop Debug, start again → rediscovery.
 4. Configure points / monitor / TCP or sim.
@@ -58,9 +58,9 @@ Run Web and Desktop **separately** (different `DSH_HOME` / quit the other app).
 ### Desktop
 
 1. Use packed plugin (lab: `install-desktop-local.mjs`; product: registry).
-2. Same-origin Fetch (`/api/vision-bench/dispatch`).
+2. Same-origin Fetch (`/api/corn-bench/dispatch`).
 3. Agent in-process Host (`system.ping` identity).
-4. Reload Host / toggle `webServer` if present; re-enter Vision.
+4. Reload Host / toggle `webServer` if present; re-enter Corn.
 5. Repeat Debug start/stop; idle CPU back to baseline.
 6. Confirm no duplicate route, infinite wait, reload loop, or continuous log spam.
 
@@ -85,10 +85,10 @@ node scripts/probes/check-stage3-pack.mjs
 node scripts/probes/run-stage4-lifecycle.mjs
 node scripts/probes/run-b2-identity.mjs
 # from deepseek-harness-desktop-official/apps/desktop (writes scripts/probes/evidence/*.json + artifacts):
-pnpm exec tsx /path/to/dsh-vision-bench/scripts/probes/run-desktop-b2-identity.mts
-pnpm exec tsx /path/to/dsh-vision-bench/scripts/probes/run-desktop-dispatch-smoke.mts
-# or: VISION_STAGE5_RUN_DESKTOP=1 node scripts/probes/check-stage5-acceptance.mjs
+pnpm exec tsx /path/to/dsh-corn-bench/scripts/probes/run-desktop-b2-identity.mts
+pnpm exec tsx /path/to/dsh-corn-bench/scripts/probes/run-desktop-dispatch-smoke.mts
+# or: CORN_STAGE5_RUN_DESKTOP=1 node scripts/probes/check-stage5-acceptance.mjs
 node scripts/probes/check-stage5-acceptance.mjs
 ```
 
-Stage 5 reports `labOk` (gates + evidence) and `releaseOk` (labOk ∧ clean Vision/Desktop trees). Exit code follows **`releaseOk`** only. `VISION_STAGE5_ALLOW_DIRTY=1` can make `labOk` true on dirty trees for local experiments, but `releaseOk` stays false until both repos are clean and evidence is regenerated. Desktop B2 claim is `runtime-identity-lab` only; `uiFetchTcpSim` remains `manual` until a dedicated Desktop sim/TCP smoke exists.
+Stage 5 reports `labOk` (gates + evidence) and `releaseOk` (labOk ∧ clean Corn/Desktop trees). Exit code follows **`releaseOk`** only. `CORN_STAGE5_ALLOW_DIRTY=1` can make `labOk` true on dirty trees for local experiments, but `releaseOk` stays false until both repos are clean and evidence is regenerated. Desktop B2 claim is `runtime-identity-lab` only; `uiFetchTcpSim` remains `manual` until a dedicated Desktop sim/TCP smoke exists.

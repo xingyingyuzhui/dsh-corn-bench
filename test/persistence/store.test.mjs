@@ -50,7 +50,7 @@ test('saveBindings writes absolute paths under the home store', async () => {
     const saved = saveBindings(home, { python: abs, uv4: '', openocd: '' })
     assert.equal(saved.ok, true)
     assert.equal(saved.bindings.python, abs)
-    const disk = JSON.parse(await readFile(join(home, 'vision-bench', 'bindings.json'), 'utf8'))
+    const disk = JSON.parse(await readFile(join(home, 'corn-bench', 'bindings.json'), 'utf8'))
     assert.equal(disk.python, abs)
     assert.deepEqual(loadBindings(home).python, abs)
     const rejected = saveBindings(home, { python: 'python3' })
@@ -100,7 +100,7 @@ test('globalShare round-trip, default empty, and atomic save', async () => {
       points: false,
       visualization: true,
     })
-    const disk = JSON.parse(await readFile(join(home, 'vision-bench', 'global-share.json'), 'utf8'))
+    const disk = JSON.parse(await readFile(join(home, 'corn-bench', 'global-share.json'), 'utf8'))
     assert.equal(disk.enabled, true)
     assert.equal(disk.connections, true)
   } finally {

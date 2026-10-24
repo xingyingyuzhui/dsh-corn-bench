@@ -34,7 +34,7 @@ test('a saved project loads its targets once on mount and keeps the saved target
   await new Promise((resolve) => setImmediate(resolve))
   render(Probe)
   flushEffects()
-  const targetCalls = calls.filter(([path]) => path === '/dsh-vision-bench/keil/targets')
+  const targetCalls = calls.filter(([path]) => path === '/dsh-corn-bench/keil/targets')
   assert.equal(targetCalls.length, 1)
   assert.equal(targetCalls[0][1].project, '/ws/MDK-ARM/demo.uvprojx')
   assert.deepEqual(hook.targets.map((/** @type {any} */ t) => t.name), ['Flash', 'RAM'])

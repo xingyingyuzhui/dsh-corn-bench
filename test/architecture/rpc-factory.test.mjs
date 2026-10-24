@@ -18,7 +18,7 @@ import {
   mockRpcHost,
   rpcFail,
   rpcOk,
-  VISION_RPC_CHANNEL,
+  CORN_RPC_CHANNEL,
   _internal,
 } from '../helpers/rpc-factory.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
@@ -87,20 +87,20 @@ test('工厂 envelope 与 host.js 真实返回值一致', async (t) => {
 test('mockConnection 支持成功 / 结构化失败 / transport failure 三种 envelope 形态', async () => {
   // 裸业务结果自动包进 rpcOk
   const okMock = mockConnection(() => businessOk({ endpoint: 'state' }))
-  assert.deepEqual(await okMock.connection.rpc.call(VISION_RPC_CHANNEL, 'state', {}), rpcOk({ ok: true, endpoint: 'state' }))
+  assert.deepEqual(await okMock.connection.rpc.call(CORN_RPC_CHANNEL, 'state', {}), rpcOk({ ok: true, endpoint: 'state' }))
   assert.equal(okMock.calls.length, 1)
   assert.equal(okMock.lastCall().endpoint, 'state')
 
   // 显式 envelope 原样透传（结构化失败）
   const failMock = mockConnection(() => rpcOk(businessFail('CONFIG_DRIFT', '请刷新')))
-  assert.deepEqual(await failMock.connection.rpc.call(VISION_RPC_CHANNEL, 'points/flags', {}), {
+  assert.deepEqual(await failMock.connection.rpc.call(CORN_RPC_CHANNEL, 'points/flags', {}), {
     ok: true,
     value: { ok: false, errorCode: 'CONFIG_DRIFT', error: '请刷新' },
   })
 
   // transport failure 不被包一层
   const transportMock = mockConnection(() => rpcFail('forbidden', 'unauthenticated'))
-  const out = await transportMock.connection.rpc.call(VISION_RPC_CHANNEL, 'state', {})
+  const out = await transportMock.connection.rpc.call(CORN_RPC_CHANNEL, 'state', {})
   assert.equal(out.ok, false)
   assert.equal(out.error.message, 'unauthenticated')
 })
@@ -110,19 +110,19 @@ test('mockConnection 支持取消与跨会话两种场景', async () => {
     signal?.aborted ? rpcFail('cancelled', 'aborted') : businessOk(),
   )
   const live = new AbortController()
-  assert.equal((await cancelling.connection.rpc.call(VISION_RPC_CHANNEL, 'state', {}, live.signal)).ok, true)
+  assert.equal((await cancelling.connection.rpc.call(CORN_RPC_CHANNEL, 'state', {}, live.signal)).ok, true)
   const dead = new AbortController()
   dead.abort()
-  const cancelled = await cancelling.connection.rpc.call(VISION_RPC_CHANNEL, 'state', {}, dead.signal)
+  const cancelled = await cancelling.connection.rpc.call(CORN_RPC_CHANNEL, 'state', {}, dead.signal)
   assert.equal(cancelled.ok, false)
   assert.equal(cancelled.error.code, 'cancelled')
 
   const perSession = mockConnection((_ep, payload) =>
     payload.sessionId === 'a' ? businessOk({ who: 'a' }) : businessFail('SESSION_MISMATCH', '不匹配'),
   )
-  const asA = await perSession.connection.rpc.call(VISION_RPC_CHANNEL, 'state', { sessionId: 'a' })
+  const asA = await perSession.connection.rpc.call(CORN_RPC_CHANNEL, 'state', { sessionId: 'a' })
   assert.equal(asA.value.who, 'a')
-  const asB = await perSession.connection.rpc.call(VISION_RPC_CHANNEL, 'state', { sessionId: 'b' })
+  const asB = await perSession.connection.rpc.call(CORN_RPC_CHANNEL, 'state', { sessionId: 'b' })
   assert.equal(asB.value.errorCode, 'SESSION_MISMATCH')
 })
 
@@ -130,14 +130,14 @@ test('createPost 解包 value 并把 transport failure 抛成异常', async () =
   const { post, calls } = createPost((endpoint) =>
     endpoint === 'state' ? businessOk({ workspace: { modbus: { configVersion: 3 } } }) : businessFail('NOPE', 'x'),
   )
-  const data = await post('/dsh-vision-bench/state', { cwd: '/ws' })
+  const data = await post('/dsh-corn-bench/state', { cwd: '/ws' })
   assert.equal(data.ok, true)
   assert.equal(data.workspace.modbus.configVersion, 3, 'value 被解包')
   assert.equal(calls[0].endpoint, 'state', '路径被映射成端点')
-  assert.equal(calls[0].channel, VISION_RPC_CHANNEL)
+  assert.equal(calls[0].channel, CORN_RPC_CHANNEL)
 
   const broken = createPost(() => rpcFail('forbidden', 'unauthenticated'))
-  await assert.rejects(() => broken.post('/dsh-vision-bench/state', {}), /unauthenticated/)
+  await assert.rejects(() => broken.post('/dsh-corn-bench/state', {}), /unauthenticated/)
 })
 
 test('mockRpcHost 校验频道、暴露注册状态并支持注销', async () => {
@@ -146,7 +146,7 @@ test('mockRpcHost 校验频道、暴露注册状态并支持注销', async () =>
   assert.throws(() => host.invoke('state', {}), /rpc handler missing/)
   assert.throws(() => host.rpc.handle('/wrong-channel', () => {}), /unexpected RPC channel/)
 
-  const dispose = host.rpc.handle(VISION_RPC_CHANNEL, () => rpcOk({ ok: true }))
+  const dispose = host.rpc.handle(CORN_RPC_CHANNEL, () => rpcOk({ ok: true }))
   assert.equal(host.hasHandler, true)
   assert.equal(host.disposed, false)
   assert.deepEqual(await host.invoke('state', {}), { ok: true, value: { ok: true } })
@@ -161,12 +161,12 @@ test('createHostContext 收集路由与工具，overrides 可定制 connection',
   const { ctx, routes, tools, stop } = createHostContext(connection)
   assert.equal(ctx.connection, connection)
   ctx.webServer.register({ path: '/a' })
-  ctx.tools.register({ name: 'vision_bench' })
+  ctx.tools.register({ name: 'corn_bench' })
   assert.deepEqual(
     routes.map((r) => r.path),
     ['/a'],
   )
-  assert.equal(tools[0].name, 'vision_bench')
+  assert.equal(tools[0].name, 'corn_bench')
   assert.equal(stop(), undefined, '没有 effect 时 stop 是安全的空操作')
 
   let cleaned = 0
@@ -201,8 +201,8 @@ test('capabilityHeaders 每次签发一次性凭据，fakeRequest/fakeResponse �
   const b = capabilityHeaders()
   assert.equal(a.origin, CAPABILITY_HEADERS.origin)
   assert.equal(a['content-type'], 'application/json')
-  assert.ok(a['x-dsh-vision-capability'])
-  assert.notEqual(a['x-dsh-vision-capability'], b['x-dsh-vision-capability'], '每次签发都不同')
+  assert.ok(a['x-dsh-corn-capability'])
+  assert.notEqual(a['x-dsh-corn-capability'], b['x-dsh-corn-capability'], '每次签发都不同')
 
   const extra = capabilityHeaders({ origin: 'https://evil.example' })
   assert.equal(extra.origin, 'https://evil.example', '可覆盖默认头')

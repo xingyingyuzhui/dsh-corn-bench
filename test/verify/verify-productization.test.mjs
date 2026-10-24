@@ -4,7 +4,7 @@ import { createTelemetryReader } from '../../src/application/verify/telemetry-re
 import { createVerifyCommandService } from '../../src/application/verify/verify-command-service.mjs'
 import { createVerifyService } from '../../src/application/verify/verify-service.mjs'
 import { createVerifyResult } from '../../src/domain/verify/result.mjs'
-import { visionDebugTool } from '../../src/interfaces/agent/vision-debug-tool.mjs'
+import { cornDebugTool } from '../../src/interfaces/agent/corn-debug-tool.mjs'
 import { createVerifyRpcHandler } from '../../src/interfaces/rpc/verify-rpc-handler.mjs'
 import { flatWorkspace, liveValue, publishStampedScalar, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
@@ -162,7 +162,7 @@ test('verify-command-service and RPC handler: executes and manages verification 
     ],
   }
 
-  const runRes = await rpcHandler['vision.verify.run']({
+  const runRes = await rpcHandler['corn.verify.run']({
     cwd: 'C:/ws',
     sessionId: 'sess-rpc',
     scenario,
@@ -171,7 +171,7 @@ test('verify-command-service and RPC handler: executes and manages verification 
   assert.ok(runRes.ok)
   assert.equal(runRes.result.status, 'pass')
 
-  const statusRes = await rpcHandler['vision.verify.status']({
+  const statusRes = await rpcHandler['corn.verify.status']({
     cwd: 'C:/ws',
     sessionId: 'sess-rpc',
     scenarioId: runRes.result.scenarioId,
@@ -182,8 +182,8 @@ test('verify-command-service and RPC handler: executes and manages verification 
   assert.equal(statusRes.result?.status, 'pass')
 })
 
-test('vision-debug-tool: includes verify action and parameters in tool definition', () => {
-  const tool = visionDebugTool('C:/home')
+test('corn-debug-tool: includes verify action and parameters in tool definition', () => {
+  const tool = cornDebugTool('C:/home')
   assert.ok(tool.parameters.properties.action.enum.includes('verify'))
   assert.ok('scenario' in tool.parameters.properties)
   assert.ok('timeoutMs' in tool.parameters.properties)

@@ -1,11 +1,9 @@
 // @ts-check
 // Corn branding for the Settings → Corn section: icon, author and license.
-// Technical ids (package dsh-vision-bench, preset vision-bench, tool
-// vision_bench) keep their names so installs and upgrades stay intact.
 
 export const BRAND_NAME = 'Corn'
 export const BRAND_AUTHOR = 'xingyingyuzhui'
-export const BRAND_REPO_URL = 'https://github.com/xingyingyuzhui/dsh-vision-bench'
+export const BRAND_REPO_URL = 'https://github.com/xingyingyuzhui/dsh-corn-bench'
 export const BRAND_LICENSE_URL = BRAND_REPO_URL + '/blob/main/LICENSE.md'
 
 /** 40×40 WebP of assets/corn-icon.png, drawn at 20px; inline so the bundle needs no asset route. */

@@ -3,30 +3,30 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { ensurePresetOverlay, inspectPresetHealth, seedVisionBenchPreset } from '../bench-preset.mjs'
+import { ensurePresetOverlay, inspectPresetHealth, seedCornBenchPreset } from '../bench-preset.mjs'
 import { loadOfficialPersonaConfig } from '../src/infrastructure/harness/dsh-contract.mjs'
 import { validatePersonaConfig } from '../src/infrastructure/harness/preset-validate.mjs'
 
 const root = dirname(fileURLToPath(import.meta.url))
-const fixture = join(root, '../test/fixtures/legacy-vision-preset.yml')
+const fixture = join(root, '../test/fixtures/legacy-corn-preset.yml')
 
 const Config = await loadOfficialPersonaConfig()
 const home = await mkdtemp(join(tmpdir(), 'dvb-compat-repro-'))
 const report = []
 
 try {
-  const fresh = await seedVisionBenchPreset(null, home, { personaConfig: Config })
+  const fresh = await seedCornBenchPreset(null, home, { personaConfig: Config })
   report.push({ step: 'fresh-install', ok: fresh.ok === true, error: fresh.error || '' })
   const healthFresh = await inspectPresetHealth(home)
   report.push({ step: 'fresh-health', ok: healthFresh.ok === true, error: healthFresh.error || '' })
 
   const legacyHome = await mkdtemp(join(tmpdir(), 'dvb-compat-legacy-'))
-  const dir = join(legacyHome, '.agent-presets', 'vision-bench')
+  const dir = join(legacyHome, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), await readFile(fixture, 'utf8'))
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
-    JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 2, pluginRowId: 'vision-bench-tools' }),
+    join(dir, '.dsh-corn-bench'),
+    JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 2, pluginRowId: 'corn-bench-tools' }),
   )
   const migrated = ensurePresetOverlay(dir, { personaConfig: Config })
   report.push({ step: 'legacy-migrate', ok: migrated.ok === true, error: migrated.error || '' })

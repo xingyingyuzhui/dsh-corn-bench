@@ -13,7 +13,7 @@ CI and `npm run quality` run on macOS (and Linux) Node. COM ports, ST-LINK/OpenO
 1. Automated gates **do not** claim Windows/COM/OpenOCD/Keil hardware pass. Release notes may say “automation green”; they must not say “Windows accepted” unless the checklist is signed.
 2. Authoritative checklists live under `docs/WINDOWS_ACCEPTANCE_*.md` (current) and `docs/archive/WINDOWS_ACCEPTANCE_*.md` (historical). Status remains pending until a human fills the record.
 3. Path and cwd helpers must stay Windows-safe in unit tests (`path.isAbsolute`, no POSIX-only assumptions), but that only proves string logic—not hardware.
-4. Optional sibling `dsh-vision-harness` and Host apply/dispose tests remain environment-agnostic; they are not a hardware substitute.
+4. Optional sibling `dsh-corn-harness` and Host apply/dispose tests remain environment-agnostic; they are not a hardware substitute.
 5. Deferred markers such as `DEFERRED_WINDOWS_ACCEPTANCE` in docs/code comments stay until a signed acceptance file exists for that version line.
 
 ## Consequences

@@ -1,8 +1,8 @@
 // @ts-check
 /**
- * Which `standard` preset snapshot the Vision模式 declaration restates.
+ * Which `standard` preset snapshot the Corn模式 declaration restates.
  *
- * DSH presets are self-contained, so Vision模式 copies standard's child rows
+ * DSH presets are self-contained, so Corn模式 copies standard's child rows
  * from a snapshot generated per DSH release. The running registry tells the
  * track apart by capability rather than by guessing an install prefix: DSH
  * 0.2.x added `readDocument` (Remote `read`) and `inspectCompositions`;

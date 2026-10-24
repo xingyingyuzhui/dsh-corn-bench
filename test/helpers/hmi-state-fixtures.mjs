@@ -165,7 +165,7 @@ export const makePost = (mb = MB) => {
   const posts = []
   const post = async (path, body) => {
     posts.push([path, body || {}])
-    if (/\/dsh-vision-bench\/state$/.test(path)) {
+    if (/\/dsh-corn-bench\/state$/.test(path)) {
       return {
         ok: true,
         workspace: { modbus: mb, focus: null },
@@ -175,8 +175,8 @@ export const makePost = (mb = MB) => {
         connectionStates: [{ connectionId: 'c1', status: 'connected' }],
       }
     }
-    if (/\/dsh-vision-bench\/serial\/ports$/.test(path)) return { ok: true, ports: ['COM3'] }
-    if (/\/dsh-vision-bench\/modbus\/write$/.test(path)) {
+    if (/\/dsh-corn-bench\/serial\/ports$/.test(path)) return { ok: true, ports: ['COM3'] }
+    if (/\/dsh-corn-bench\/modbus\/write$/.test(path)) {
       return {
         ok: true,
         values: [{ key: body.pointId, pointId: body.pointId, raw: 300, value: 30, ok: true, at: Date.now() }],

@@ -1,7 +1,7 @@
 import { getPreserveNavPreference } from '../../settings/navigation-preference.mjs'
 import { usePointColWidths } from './use-point-col-widths.mjs'
 
-const LAST_POINTS_DEV_KEY = 'dsh-vision-bench:last-editing-points-dev'
+const LAST_POINTS_DEV_KEY = 'dsh-corn-bench:last-editing-points-dev'
 
 export function getLastEditingPointsDeviceId(cwd = '', hmiTab = '') {
   if (!getPreserveNavPreference()) return ''

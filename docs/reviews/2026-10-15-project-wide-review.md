@@ -1,4 +1,4 @@
-# Vision 套件整体审查（2026-10-15）
+# Corn 套件整体审查（2026-10-15）
 
 > 后续状态：N1–N8 已在本地工作树修复，代码、红绿测试和安装边界见 [022 修复验证](../plans/2026-10-15-022-project-wide-fix-verification.md)。下文保留审查时的发现与证据。
 
@@ -10,8 +10,8 @@
 
 审查对象：
 
-- `dsh-vision-bench` 0.29.29，HEAD `dfa68cf`；主要行为更新为 `60b2cf0`（021），此前基线 `bc3fcda`（020）。
-- 可选 `dsh-vision-harness` 0.2.0；位于套件父仓库 `05530de9`。该 guard 本机 Web/Desktop profile **均未安装**，其发现是组件本身的问题，不代表当前 bench 现场正在触发它们。
+- `dsh-corn-bench` 0.29.29，HEAD `dfa68cf`；主要行为更新为 `60b2cf0`（021），此前基线 `bc3fcda`（020）。
+- 可选 `dsh-corn-harness` 0.2.0；位于套件父仓库 `05530de9`。该 guard 本机 Web/Desktop profile **均未安装**，其发现是组件本身的问题，不代表当前 bench 现场正在触发它们。
 - bench 有 476 个 src 文件、7 个 runtime 文件、438 个 test 文件。本次是全量自动门禁加关键调用链审查，没有声称人工逐行证明全部模块。
 - `/Users/qin/DSH` 是工作目录集合，不是 Git 仓库；本报告没有将其它 DSH 插件或官方 Harness 全部纳入。
 
@@ -32,9 +32,9 @@ bench 审查开始时干净。套件父仓库已有 AGENTS.md、bench 子模块�
 | 新增独立复现 | **10 项预期断言，0 通过 / 10 失败**，对应 N1–N8；不计入仓库既有 1827 项 |
 | 生产依赖 audit | `npm audit --omit=dev --json`：1 项 moderate，ECharts；无 high/critical，见第 6 节 |
 
-独立复现：[脚本](/tmp/vision-project-review-20261015-extra.test.mjs)、[日志](/tmp/vision-project-review-20261015-extra.log)。设备相关只在临时 home/cwd 中使用已盖章 fixture 与配置操作，调试全部使用 fake backend；HTML 只检查字符串，使用无脚本的标签探针。没有对用户工作区或真实设备做控制操作。
+独立复现：[脚本](/tmp/corn-project-review-20261015-extra.test.mjs)、[日志](/tmp/corn-project-review-20261015-extra.log)。设备相关只在临时 home/cwd 中使用已盖章 fixture 与配置操作，调试全部使用 fake backend；HTML 只检查字符串，使用无脚本的标签探针。没有对用户工作区或真实设备做控制操作。
 
-其它日志为 `/tmp/vision-project-review-20261015-{unit,coverage,harness,harness-quality,lint,typecheck,deps,structure,assertions,facades,ui,build,critical,build-info,package}.log`；依赖审计为 `/tmp/vision-project-review-20261015-audit.json`。
+其它日志为 `/tmp/corn-project-review-20261015-{unit,coverage,harness,harness-quality,lint,typecheck,deps,structure,assertions,facades,ui,build,critical,build-info,package}.log`；依赖审计为 `/tmp/corn-project-review-20261015-audit.json`。
 
 本次直接调用 build-info/package 检查器，没有执行会重写生成信息的 bench pack:check。覆盖率产物属于忽略文件；未改业务或生成代码。
 
@@ -68,7 +68,7 @@ bench 审查开始时干净。套件父仓库已有 AGENTS.md、bench 子模块�
 
 ### N1 — RPC 配置隔离没有延伸到 values
 
-位置：[vision-rpc-workspace.mjs:121](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/interfaces/rpc/vision-rpc-workspace.mjs:121)、[config-scope-service.mjs:159](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/modbus/config-scope-service.mjs:159)、[caller-projection.mjs:10](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/caller-projection.mjs:10)。
+位置：[corn-rpc-workspace.mjs:121](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/interfaces/rpc/corn-rpc-workspace.mjs:121)、[config-scope-service.mjs:159](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/modbus/config-scope-service.mjs:159)、[caller-projection.mjs:10](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/caller-projection.mjs:10)。
 
 sessionWorkspaceView 调 projectModbusForSession 选择拓扑，随后只移除 sessionConfigs、采样 metadata；runtime 的 values 仍是全局集合。normalizeModbus 在携带所有 sessionConfigs 时按 union points 保留了外国行。
 
@@ -86,7 +86,7 @@ sessionWorkspaceView 调 projectModbusForSession 选择拓扑，随后只移除 
 
 ### N2 — 失效历史行被 points get 当作新地址当前值
 
-位置：[point-query-value.mjs:136](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/modbus/point-query-value.mjs:136)。
+位置：[point-query-value.mjs:136](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/modbus/point-query-value.mjs:136)。
 
 021 保留旧 values 的旧章用于历史兼容，verify reader 已正确检查 fingerprint/generation；selectPointQueryValue 却仍只核 point/connection/device 三元组，不校验章与当前代次。因此 producer/verify 规则与查询规则分裂。
 
@@ -102,7 +102,7 @@ sessionWorkspaceView 调 projectModbusForSession 选择拓扑，随后只移除 
 
 ### N3 — 调试控制入口未真正使用通过授权的解析结果
 
-位置：[debug-command-service.mjs:183](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-command-service.mjs:183)、[debug-command-service.mjs:133](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-command-service.mjs:133)、[debug-session-registry.mjs:72](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-session-registry.mjs:72)。
+位置：[debug-command-service.mjs:183](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-command-service.mjs:183)、[debug-command-service.mjs:133](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-command-service.mjs:133)、[debug-session-registry.mjs:72](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-session-registry.mjs:72)。
 
 findOwnedDebugSession 正确返回 null（缺 owner 或 cwd 不符），但 command service 随后用 `debugSessionId || active?.debugSessionId` 继续派发。runtime.requireSession 又只在 owner 非空时比较归属，所以空 owner 成为绕过。stop 分支也在使用已授权 session 前就选择显式 ID、撤销 lease。
 
@@ -117,7 +117,7 @@ fake backend 端到端复现两条：
 
 ### N4 — 活动调试 ID 没有唯一注册保护
 
-位置：[debug-runtime-lifecycle.mjs:45](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-runtime-lifecycle.mjs:45)、[debug-runtime-lifecycle.mjs:88](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-runtime-lifecycle.mjs:88)、[target-lease.mjs:86](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/debug/target-lease.mjs:86)。
+位置：[debug-runtime-lifecycle.mjs:45](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-runtime-lifecycle.mjs:45)、[debug-runtime-lifecycle.mjs:88](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-runtime-lifecycle.mjs:88)、[target-lease.mjs:86](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/debug/target-lease.mjs:86)。
 
 start 接受外部 debugSessionId，没有在 acquireLease/backendFactory 前判断已有 active/starting ID，直接 sessions.set 覆盖。lease 以物理 target 为键，不保证 debug ID 全局唯一。
 
@@ -127,7 +127,7 @@ start 接受外部 debugSessionId，没有在 acquireLease/backendFactory 前判
 
 ### N5 — 自定义 tooltip 没有转义动态文本
 
-位置：[viz-chart-options.mjs:253](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/ui/monitor/visualization/hooks/viz-chart-options.mjs:253)、[viz-helpers.mjs:92](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/ui/monitor/visualization/viz-helpers.mjs:92)、[trend-model.mjs:61](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/trend-model.mjs:61)。
+位置：[viz-chart-options.mjs:253](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/ui/monitor/visualization/hooks/viz-chart-options.mjs:253)、[viz-helpers.mjs:92](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/ui/monitor/visualization/viz-helpers.mjs:92)、[trend-model.mjs:61](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/trend-model.mjs:61)。
 
 点名进入 trend meta.label，再成为 seriesName；formatter 将 seriesName、yUnit 等直接插入 HTML。ECharts 的 formatter 回调返回值是 raw HTML，[官方安全指南](https://echarts.apache.org/handbook/en/best-practices/security/)明确要求动态文本转义。当前安装库 TooltipHTMLContent 也确实使用 innerHTML。
 
@@ -143,7 +143,7 @@ start 接受外部 debugSessionId，没有在 acquireLease/backendFactory 前判
 
 ### N6 — 断点操作在后端确认前提交权威状态
 
-位置：[debug-command-executor.mjs:157](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/debug/debug-command-executor.mjs:157)。
+位置：[debug-command-executor.mjs:157](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/debug/debug-command-executor.mjs:157)。
 
 addBreakpoint 先写 map 且 verified=true，再 await backend.addBreakpoint。后端抛错时 command 失败，但随后 runtime.state 仍显示该断点 verified=true。复现输出为 `[{id:'bp1',file:'main.c',line:12,verified:true}]`。watchpoint 相同模式；移除先删 map、后端失败时则软件说已删而设备仍可能保留。
 
@@ -151,7 +151,7 @@ addBreakpoint 先写 map 且 verified=true，再 await backend.addBreakpoint。�
 
 ### N7 — 可选 Harness guard 的 pending 发布时序错误
 
-位置：[standing-failure-cache.mjs:182](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-harness/lib/standing-failure-cache.mjs:182)。
+位置：[standing-failure-cache.mjs:182](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-harness/lib/standing-failure-cache.mjs:182)。
 
 两种独立复现：
 
@@ -164,7 +164,7 @@ addBreakpoint 先写 map 且 verified=true，再 await backend.addBreakpoint。�
 
 ### N8 — 持续错误会让 Harness 摘要日志长期静默
 
-位置：[harness-log.mjs:117](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-harness/lib/harness-log.mjs:117)。
+位置：[harness-log.mjs:117](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-harness/lib/harness-log.mjs:117)。
 
 每次被抑制时都更新 prev.lastAt。若同 key 每 500ms 到达、阈值 1000ms，永远达不到输出条件，只有首条日志；不是预期的一秒一条聚合。
 

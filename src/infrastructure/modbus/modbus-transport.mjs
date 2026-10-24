@@ -1,6 +1,6 @@
 // @ts-check
 import { normalizeModbus } from '../../domain/modbus/modbus-migration.mjs'
-import { getVisionIoBroker } from './io-broker.mjs'
+import { getCornIoBroker } from './io-broker.mjs'
 import { clampTimeoutMs, endpointFingerprint, ioError, toEndpoint, validateIoRequest } from '../../domain/modbus/io-contract.mjs'
 import { forgetSimConnection, overlaySimRead, rememberSimWrite } from './sim-register-bank.mjs'
 
@@ -182,9 +182,9 @@ export function notifyConnectionRelease(cwd, ids, extra = {}) {
 }
 
 /**
- * @param {{ broker?: ReturnType<typeof getVisionIoBroker> }} [options]
+ * @param {{ broker?: ReturnType<typeof getCornIoBroker> }} [options]
  */
-export function createModbusTransport({ broker = getVisionIoBroker() } = {}) {
+export function createModbusTransport({ broker = getCornIoBroker() } = {}) {
   /**
    * @param {Record<string, unknown>} payload
    * @param {Record<string, unknown>} [opts]

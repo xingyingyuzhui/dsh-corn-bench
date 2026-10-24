@@ -1,5 +1,5 @@
 // @ts-check
-// Settings → Vision page lifecycle (HappyDOM + react-runtime).
+// Settings → Corn page lifecycle (HappyDOM + react-runtime).
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { act, fireEvent, render, waitFor } from '@testing-library/react'
@@ -22,10 +22,10 @@ function mount(opts = {}) {
   })
   const post = async (/** @type {string} */ path, /** @type {any} */ body) => {
     calls.push([path, body])
-    if (path === '/dsh-vision-bench/state') {
+    if (path === '/dsh-corn-bench/state') {
       return statePromise
     }
-    if (path === '/dsh-vision-bench/bindings') {
+    if (path === '/dsh-corn-bench/bindings') {
       return { ok: true, bindings: STORED, agentPolicy: body.agentPolicy || { agentWriteApproval: true }, globalShare: body.share }
     }
     return { ok: true }
@@ -68,8 +68,8 @@ test('the share toggle saves only share, never the path fields', async () => {
   await act(async () => {
     fireEvent.click(master)
   })
-  await waitFor(() => assert.ok(calls.some(([p]) => p === '/dsh-vision-bench/bindings')))
-  const body = calls.find(([p]) => p === '/dsh-vision-bench/bindings')?.[1]
+  await waitFor(() => assert.ok(calls.some(([p]) => p === '/dsh-corn-bench/bindings')))
+  const body = calls.find(([p]) => p === '/dsh-corn-bench/bindings')?.[1]
   assert.equal('bindings' in body, false)
   assert.equal(body.share.enabled, true)
   view.unmount()
@@ -81,7 +81,7 @@ test('turning Agent write approval off asks first and posts only the policy', as
   await act(async () => {
     fireEvent.click(/** @type {HTMLElement} */ (declined.view.container.querySelector('#agent-write-approval')))
   })
-  assert.equal(declined.calls.some(([p]) => p === '/dsh-vision-bench/bindings'), false)
+  assert.equal(declined.calls.some(([p]) => p === '/dsh-corn-bench/bindings'), false)
   declined.view.unmount()
 
   const { view, load, calls } = mount({ confirm: true })
@@ -89,8 +89,8 @@ test('turning Agent write approval off asks first and posts only the policy', as
   await act(async () => {
     fireEvent.click(/** @type {HTMLElement} */ (view.container.querySelector('#agent-write-approval')))
   })
-  await waitFor(() => assert.ok(calls.some(([p]) => p === '/dsh-vision-bench/bindings')))
-  const body = calls.find(([p]) => p === '/dsh-vision-bench/bindings')?.[1]
+  await waitFor(() => assert.ok(calls.some(([p]) => p === '/dsh-corn-bench/bindings')))
+  const body = calls.find(([p]) => p === '/dsh-corn-bench/bindings')?.[1]
   assert.deepEqual(body, { agentPolicy: { agentWriteApproval: false } })
   await waitFor(() => assert.match(view.container.textContent || '', /agentApprovalOffWarning/))
   view.unmount()
@@ -98,7 +98,7 @@ test('turning Agent write approval off asks first and posts only the policy', as
 
 test('outside a session the share switches are disabled and say where to set them', async () => {
   const post = async (/** @type {string} */ path) =>
-    path === '/dsh-vision-bench/state' ? { ok: true, bindings: STORED, globalShare: { enabled: false } } : { ok: true }
+    path === '/dsh-corn-bench/state' ? { ok: true, bindings: STORED, globalShare: { enabled: false } } : { ok: true }
   const SettingsPage = createSettingsPage(React, (/** @type {string} */ k) => k, post, { getScope: () => ({ cwd: '', sessionId: '' }) })
   const view = render(React.createElement(SettingsPage))
   await act(async () => {

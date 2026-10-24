@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace, workspaceRepository } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { migrateVisualizationToV2 } from '../../bench-visualization-model.mjs'
 import { preVisualizationV2BackupPath } from '../../src/infrastructure/persistence/workspace-migration.mjs'
 
@@ -63,7 +63,7 @@ test('第一次保存布局创建 v2 备份且后续不覆盖；备份失败则�
   try {
     seedV1(home, cwd)
     const dir = workspaceRepository(home).workspaceDir(cwd)
-    const laid = await runVisionBench(
+    const laid = await runCornBench(
       home,
       {
         action: 'visualization',
@@ -82,7 +82,7 @@ test('第一次保存布局创建 v2 备份且后续不覆盖；备份失败则�
     assert.equal(readConfig(home, cwd).modbus.visualization.minimumPluginVersion, '0.25.1')
     assert.deepEqual(loadWorkspace(home, cwd).modbus.visualization.components[0].layout, { x: 2, y: 1, w: 4, h: 3 })
 
-    const second = await runVisionBench(
+    const second = await runCornBench(
       home,
       {
         action: 'visualization',
@@ -109,7 +109,7 @@ test('备份路径被占用时中止 v2 写入且配置仍为 v1', async () => {
     const dir = workspaceRepository(home).workspaceDir(cwd)
     mkdirSync(preVisualizationV2BackupPath(dir))
     const before = readConfig(home, cwd)
-    const laid = await runVisionBench(
+    const laid = await runCornBench(
       home,
       {
         action: 'visualization',
@@ -134,7 +134,7 @@ test('v2 layout 重启后恢复；不支持的 schema 只读失败；备份可�
   const cwd = join(home, 'board')
   try {
     seedV1(home, cwd)
-    const laid = await runVisionBench(
+    const laid = await runCornBench(
       home,
       {
         action: 'visualization',
@@ -168,7 +168,7 @@ test('v2 layout 重启后恢复；不支持的 schema 只读失败；备份可�
       components: cfg.modbus.visualization.components,
     }
     writeFileSync(configPath, JSON.stringify(cfg, null, 2))
-    const listed = await runVisionBench(home, { action: 'visualization', op: 'list' }, cwd, { source: 'agent' })
+    const listed = await runCornBench(home, { action: 'visualization', op: 'list' }, cwd, { source: 'agent' })
     assert.equal(listed.ok, false)
     assert.equal(listed.errorCode, 'VIZ_SCHEMA_UNSUPPORTED')
     const disk = JSON.parse(readFileSync(configPath, 'utf8'))

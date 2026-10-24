@@ -2,12 +2,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { cruise } from 'dependency-cruiser'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { validateAgentToolArgs } from '../../src/interfaces/agent/agent-tool-preflight.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
-test('vision_bench production module does not import the workspace store or host executor', async () => {
-  const result = await cruise(['src/interfaces/agent/vision-bench-tool.mjs'], {
+test('corn_bench production module does not import the workspace store or host executor', async () => {
+  const result = await cruise(['src/interfaces/agent/corn-bench-tool.mjs'], {
     combinedDependencies: true,
     ruleSet: { forbidden: [] },
   })
@@ -42,7 +42,7 @@ test('Host alarmId without a unique connection returns the preflight error shape
       alarmState: { shared: { condition: 'active', pointId: 'px' } },
     },
   })
-  const miss = await runVisionBench(home, { action: 'alarm', alarmId: 'shared' }, cwd, {
+  const miss = await runCornBench(home, { action: 'alarm', alarmId: 'shared' }, cwd, {
     source: 'user',
     sessionId: 's1',
   })
@@ -64,14 +64,14 @@ test('Host alarmId without a unique connection returns the preflight error shape
       alarmState: { shared: { condition: 'active', pointId: 'px', connectionId: 'c1' } },
     },
   })
-  const ok = await runVisionBench(
+  const ok = await runCornBench(
     home,
     { action: 'alarm', alarmId: 'shared', connectionId: 'c1' },
     cwd,
     { source: 'user', sessionId: 's1' },
   )
   assert.equal(ok.ok, true, ok.error)
-  const unique = await runVisionBench(home, { action: 'alarm', alarmId: 'shared' }, cwd, {
+  const unique = await runCornBench(home, { action: 'alarm', alarmId: 'shared' }, cwd, {
     source: 'user',
     sessionId: 's1',
   })
@@ -89,7 +89,7 @@ test('Host trendKey that cannot be resolved returns missingFields and hint', asy
       points: [],
     },
   })
-  const miss = await runVisionBench(home, { action: 'trend', trendKey: 'c1:d1:missing' }, cwd, {
+  const miss = await runCornBench(home, { action: 'trend', trendKey: 'c1:d1:missing' }, cwd, {
     source: 'user',
     sessionId: 's1',
   })

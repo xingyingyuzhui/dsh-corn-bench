@@ -10,14 +10,14 @@
 
 | 项目 | 代码落点 | 最终行为与验证 |
 | --- | --- | --- |
-| N1 RPC 运行态隔离 | `src/application/modbus/caller-runtime-projection.mjs`；`src/interfaces/rpc/vision-rpc-workspace.mjs`、`vision-rpc-router.mjs`；`src/application/config/config-mutation-service.mjs` | 先保留分层身份做可见性/采样校验，再剥离内部元数据。values、alarmState、trend 按可见且身份唯一的点过滤；polling/frames 按可见且唯一归属的连接过滤；报文有显式外国会话时不返回。tasks/timeline/manualRequests/log 按调用方会话过滤；焦点和证据沿用既有读时验证。workspace/get、state、workspace/save、config 返回及 journal 使用同一边界。共享运行值仍可见，私有日志不会随配置共享开放；源工作区/磁盘历史不被删除。 |
+| N1 RPC 运行态隔离 | `src/application/modbus/caller-runtime-projection.mjs`；`src/interfaces/rpc/corn-rpc-workspace.mjs`、`corn-rpc-router.mjs`；`src/application/config/config-mutation-service.mjs` | 先保留分层身份做可见性/采样校验，再剥离内部元数据。values、alarmState、trend 按可见且身份唯一的点过滤；polling/frames 按可见且唯一归属的连接过滤；报文有显式外国会话时不返回。tasks/timeline/manualRequests/log 按调用方会话过滤；焦点和证据沿用既有读时验证。workspace/get、state、workspace/save、config 返回及 journal 使用同一边界。共享运行值仍可见，私有日志不会随配置共享开放；源工作区/磁盘历史不被删除。 |
 | N2 失效历史值当当前值 | `src/application/modbus/point-query-value.mjs`；`src/application/commands/handlers/project-command-handler.mjs`、`visualization-command-handler.mjs` | 在身份唯一和 provenance 匹配之后，比对当前 fingerprint/generation；schema v2 的缺章/错章/旧代次不可用。先选择最新行，更新失败行阻断旧 good 回退。get/list 返回 unavailable 与空当前值；配置点仍计入 returned。status 与可视化当前值复用校验。仅改名保留当前值，改 address/scale 等后隐藏，新的合法采样恢复可用。旧 schema 无代次的唯一点保留既有兼容。 |
 | N3 调试显式 ID 绕过 | `src/application/commands/command-contract.mjs`；`src/application/debug/debug-command-service.mjs`、`debug-session-registry.mjs`、`debug-runtime-lifecycle.mjs` | sessionId/cwd 只来自命令信封，不从嵌套 payload 回填。控制目标只能是归属与工作区校验成功的 session，不用请求里的 ID 作为 fallback。未授权 stop 不撤销控制 lease；匿名 runtime state/events/stop 不再享有空 owner 特权，失败墓碑查询也要求 owner。30 个动作×身份组合中的拒绝路径没有后端或撤销副作用。RPC/inspect 的命令 type 由已路由动作覆盖，不能被 payload 改成别的动作。 |
 | N4 调试会话覆盖/资源泄漏 | `src/application/debug/debug-runtime-lifecycle.mjs`、`debug-runtime.mjs`；`src/domain/debug/target-lease.mjs` | 活跃/starting/stopping ID 被独占，重复 start 在第二次后端创建前返回 DEBUG_COMMAND_REJECTED。失败 ID 在现有 5 分钟墓碑窗口内也不可重用，正常 stop 完成后可再启动；租约重入同时核对 owner/cwd。stop 等待 startupDone 并共享 stopPromise；取消的 start 不能恢复 ready。shutdown 先关闭新 start，再等待所有既有启动/停止清理；控制命令在 starting/stopping 时返回 STALE。实例身份检查避免晚到 cleanup 删除别的记录。 |
 | N5 tooltip HTML 注入 | `src/ui/monitor/visualization/hooks/viz-chart-options.mjs`；生成的 `client.js` | 自定义 HTML formatter 中转义 seriesName、yUnit、标题文本的 &、尖括号、单双引号。保留 ECharts 生成的 marker HTML、中文和数值格式。测试包含 HTML 标签名称、特殊字符单位和 marker 正向控制。没有升级 ECharts 主版本。 |
 | N6 断点/观察点虚假状态 | `src/application/debug/debug-command-executor.mjs` | add/remove 等后端确认后才改权威 Map，异常或明确 `ok:false` 不伪造成功事件。后端不支持则拒绝；后端返回 verified:false 时如实保留 false。删除失败保留原项，随后合法删除可完成。测试覆盖断点创建失败、观察点创建失败、两类删除失败与恢复。 |
-| N7 Standing 挂载竞争/同步异常 | `../dsh-vision-harness/lib/standing-failure-cache.mjs` | await dispose 之后统一读取状态；最终检查到 pending 发布之间没有 await。先发布 deferred promise 再执行 mount，同步 throw 进入 failed，不会被 pending 覆盖。并发首次请求只 mount 一次；显式 retry 可恢复；旧 generation 晚失败不会覆盖新成功结果。 |
-| N8 持续故障日志消失 | `../dsh-vision-harness/lib/harness-log.mjs` | 分开 lastEmittedAt/lastSeenAt，以真正输出时间限流；count 累计，suppressed 只统计上次输出后的抑制数。500ms 连续错误可每秒输出摘要，只有首行携带 stack。close 刷完队列、幂等关闭，晚到 record/微任务不重开流；保留现有队列上限与滚动策略。 |
+| N7 Standing 挂载竞争/同步异常 | `../dsh-corn-harness/lib/standing-failure-cache.mjs` | await dispose 之后统一读取状态；最终检查到 pending 发布之间没有 await。先发布 deferred promise 再执行 mount，同步 throw 进入 failed，不会被 pending 覆盖。并发首次请求只 mount 一次；显式 retry 可恢复；旧 generation 晚失败不会覆盖新成功结果。 |
+| N8 持续故障日志消失 | `../dsh-corn-harness/lib/harness-log.mjs` | 分开 lastEmittedAt/lastSeenAt，以真正输出时间限流；count 累计，suppressed 只统计上次输出后的抑制数。500ms 连续错误可每秒输出摘要，只有首行携带 stack。close 刷完队列、幂等关闭，晚到 record/微任务不重开流；保留现有队列上限与滚动策略。 |
 
 新运行模块已进入 package.json files 和既有 TypeScript 检查范围；未修改结构白名单和覆盖率阈值。
 
@@ -51,7 +51,7 @@ Harness：`test/standing/runtime-boundary.test.mjs`。既有 failure-cache 测�
 | Harness `npm run quality` | 通过，**30/30**；lines/statements **94.25%**，branches **80.62%**，functions **94.28%**；pack 闭包通过 |
 | `git diff --check` | Bench 与父仓库 Harness 修改均通过 |
 
-基线是零失败；没有把新失败归为历史基线。完整日志在 `/tmp/vision-fix-quality-final.log`、`/tmp/vision-fix-harness-quality.log`。原始红测在 `/tmp/vision-fix-red-bench.log`、`/tmp/vision-fix-red-harness.log`。
+基线是零失败；没有把新失败归为历史基线。完整日志在 `/tmp/corn-fix-quality-final.log`、`/tmp/corn-fix-harness-quality.log`。原始红测在 `/tmp/corn-fix-red-bench.log`、`/tmp/corn-fix-red-harness.log`。
 
 ## 本地构建与安装证据
 
@@ -73,7 +73,7 @@ ebf6e5f97d53c32fb494738ba7c244f59d59f20e571f03eedc056174520e606c
 
 Desktop lab 安装命令成功，未启动或关闭用户的 App。Web `dsh plugin --profile web add` 已更新包文件，但命令因既有 `ERR_PNPM_IGNORED_BUILDS`（`@serialport/bindings-cpp` 未获本机构建许可）非零退出；未修改 Web 的 allowBuilds/构建批准策略，**不宣称 Web 安装流程全绿或串口可用**。旧 Web lockfile 指向但已缺失的 0.29.29 tarball，先从 Desktop 缓存核验版本后恢复了原包。
 
-另以两端已安装的 ESM 模块做无硬件 smoke：当前采样可用、改址旧样本拒绝、tooltip 转义、重复调试 ID 拒绝、payload owner 绕过拒绝，Web/Desktop 均通过。该验证是 **installed-module-smoke**，不是运行中的 Harness Agent fiber、页面交互或真实硬件验收。结果见 `/tmp/vision-fix-installed-smoke.log`。
+另以两端已安装的 ESM 模块做无硬件 smoke：当前采样可用、改址旧样本拒绝、tooltip 转义、重复调试 ID 拒绝、payload owner 绕过拒绝，Web/Desktop 均通过。该验证是 **installed-module-smoke**，不是运行中的 Harness Agent fiber、页面交互或真实硬件验收。结果见 `/tmp/corn-fix-installed-smoke.log`。
 
 ## 保留边界
 
@@ -90,4 +90,4 @@ Desktop lab 安装命令成功，未启动或关闭用户的 App。Web `dsh plug
 
 提交后重新执行两组件 `npm run quality`：Bench **1848/1848**、Harness **30/30**，全部门禁通过。Bench `build-info.json` 的 `gitSha` 更新为实际修复提交 `c23e988`，运行文件 `buildId` 仍为 `ebf6e5f97d53c32fb494738ba7c244f59d59f20e571f03eedc056174520e606c`；后续构建信息提交不改变这份业务源码。
 
-目标仓库为 `xingyingyuzhui/dsh-vision-bench` 与 `xingyingyuzhui/dsh-vision-suite` 的 `main` 分支。套件仓库包含 Harness 修复并更新 Bench 子模块指针；父仓库本机 `AGENTS.md` 与 `.cursor/` 状态保留在本地。本次仅同步 GitHub 源码，不创建 npm 发布、GitHub Release 或新的安装验收声明；远端最终提交以 GitHub/Git 引用为准。
+目标仓库为 `xingyingyuzhui/dsh-corn-bench` 与 `xingyingyuzhui/dsh-corn-suite` 的 `main` 分支。套件仓库包含 Harness 修复并更新 Bench 子模块指针；父仓库本机 `AGENTS.md` 与 `.cursor/` 状态保留在本地。本次仅同步 GitHub 源码，不创建 npm 发布、GitHub Release 或新的安装验收声明；远端最终提交以 GitHub/Git 引用为准。

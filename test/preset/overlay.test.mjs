@@ -9,7 +9,7 @@ import {
   ensurePresetOverlay,
   inspectPresetHealth,
   parseCompositionDocument,
-  seedVisionBenchPreset,
+  seedCornBenchPreset,
 } from '../../bench-preset.mjs'
 import { createTempDir } from '../helpers/workspace-factory.mjs'
 import { LEGACY_PERSONA_A, personaComposition, trackBackup, withFsPatched } from '../helpers/preset-fixtures.mjs'
@@ -18,17 +18,17 @@ test('ensurePresetOverlay renames legacy host-named agent row to /agent', async 
   const dir = await createTempDir(t, 'dvb-preset-rename-')
   await writeFile(
     join(dir, 'agent.cordis.yml'),
-    ['- id: vision-bench-tools', '  name: dsh-vision-bench', '  config:', '    role: agent', ''].join('\n'),
+    ['- id: corn-bench-tools', '  name: dsh-corn-bench', '  config:', '    role: agent', ''].join('\n'),
   )
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
-    JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 2, pluginRowId: 'vision-bench-tools' }),
+    join(dir, '.dsh-corn-bench'),
+    JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 2, pluginRowId: 'corn-bench-tools' }),
   )
   const out = ensurePresetOverlay(dir)
   assert.equal(out.ok, true, out.error)
   const text = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
-  assert.match(text, /name: dsh-vision-bench\/agent/)
-  assert.doesNotMatch(text, /name: dsh-vision-bench\n/)
+  assert.match(text, /name: dsh-corn-bench\/agent/)
+  assert.doesNotMatch(text, /name: dsh-corn-bench\n/)
 })
 
 test('ensurePresetOverlay appends the agent-plane row and persona', async (t) => {
@@ -47,11 +47,11 @@ test('ensurePresetOverlay appends the agent-plane row and persona', async (t) =>
   const out = ensurePresetOverlay(dir)
   assert.equal(out.ok, true)
   const text = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
-  assert.match(text, /id: vision-bench-tools/)
-  assert.match(text, /name: dsh-vision-bench\/agent/)
+  assert.match(text, /id: corn-bench-tools/)
+  assert.match(text, /name: dsh-corn-bench\/agent/)
   assert.doesNotMatch(text, /role: agent/)
-  assert.equal(AGENT_PLUGIN_SPEC, 'dsh-vision-bench/agent')
-  // persona should remain standard (not Vision) – check via yaml parse to handle folded style
+  assert.equal(AGENT_PLUGIN_SPEC, 'dsh-corn-bench/agent')
+  // persona should remain standard (not Corn) – check via yaml parse to handle folded style
   const yaml = await import('yaml')
   const doc = yaml.parseDocument(text)
   let personaPrefix = null
@@ -64,18 +64,18 @@ test('ensurePresetOverlay appends the agent-plane row and persona', async (t) =>
   }
   assert.equal(personaPrefix, PRESET_PERSONA)
   assert.equal(personaText, undefined)
-  // Vision guidance is now via host prompt section, not hard-coded persona
-  assert.equal(text.includes('Vision 台架'), false)
+  // Corn guidance is now via host prompt section, not hard-coded persona
+  assert.equal(text.includes('Corn 台架'), false)
   // ownership file should be JSON with Corn模式 metadata
   const presetText = await readFile(join(dir, 'preset.yml'), 'utf8')
   assert.match(presetText, /^name: Corn模式$/m)
-  const marker = await readFile(join(dir, '.dsh-vision-bench'), 'utf8')
+  const marker = await readFile(join(dir, '.dsh-corn-bench'), 'utf8')
   const ownership = JSON.parse(marker)
-  assert.equal(ownership.owner, 'dsh-vision-bench')
+  assert.equal(ownership.owner, 'dsh-corn-bench')
   assert.equal(ownership.presetSchemaVersion, 3)
-  assert.equal(ownership.pluginRowId, 'vision-bench-tools')
+  assert.equal(ownership.pluginRowId, 'corn-bench-tools')
   assert.match(presetText, /Corn 调试与上位机接口/)
-  assert.equal(presetText.includes('Vision 台架接口'), false)
+  assert.equal(presetText.includes('Corn 台架接口'), false)
 })
 test('overlay keeps Cordis !!js tags, never evals them, and migrates to Corn模式', async (t) => {
   const dir = await createTempDir(t, 'dvb-js-tag-')
@@ -96,8 +96,8 @@ test('overlay keeps Cordis !!js tags, never evals them, and migrates to Corn模�
   )
   await writeFile(join(dir, 'preset.yml'), 'name: 台架模式\n')
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
-    JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 1 }),
+    join(dir, '.dsh-corn-bench'),
+    JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 1 }),
   )
   const bare = (await import('yaml')).parseDocument(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'))
   assert.ok(bare.warnings.some((item) => /Unresolved tag: tag:yaml.org,2002:js/.test(String(item))))
@@ -111,7 +111,7 @@ test('overlay keeps Cordis !!js tags, never evals them, and migrates to Corn模�
   assert.equal(parsed.warnings.length, 0)
   const presetText = await readFile(join(dir, 'preset.yml'), 'utf8')
   assert.match(presetText, /^name: Corn模式$/m)
-  assert.equal(after.includes('Vision 台架'), false)
+  assert.equal(after.includes('Corn 台架'), false)
   assert.equal(_internal.CORDIS_JS_TAG.tag, 'tag:yaml.org,2002:js')
 })
 test('inspectPresetHealth reports generation and new-session apply rule', async (t) => {
@@ -130,12 +130,12 @@ test('inspectPresetHealth reports generation and new-session apply rule', async 
   const first = ensurePresetOverlay(dir)
   assert.equal(first.ok, true)
   const home = join(dir, 'home')
-  await mkdir(join(home, '.agent-presets', 'vision-bench'), { recursive: true })
-  const presetDir = join(home, '.agent-presets', 'vision-bench')
-  for (const name of ['agent.cordis.yml', 'preset.yml', '.dsh-vision-bench']) {
+  await mkdir(join(home, '.agent-presets', 'corn-bench'), { recursive: true })
+  const presetDir = join(home, '.agent-presets', 'corn-bench')
+  for (const name of ['agent.cordis.yml', 'preset.yml', '.dsh-corn-bench']) {
     await writeFile(join(presetDir, name), await readFile(join(dir, name), 'utf8'))
   }
-  await seedVisionBenchPreset(null, home)
+  await seedCornBenchPreset(null, home)
   const health = await inspectPresetHealth(home)
   assert.equal(health.ok, true)
   assert.equal(health.appliesOnNewSession, true)
@@ -146,7 +146,7 @@ test('inspectPresetHealth reports generation and new-session apply rule', async 
 })
 test('inspectPresetHealth rejects yaml that parses but fails official persona schema', async (t) => {
   const home = await createTempDir(t, 'dvb-preset-schema-')
-  const dir = join(home, '.agent-presets', 'vision-bench')
+  const dir = join(home, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(
     join(dir, 'agent.cordis.yml'),
@@ -159,11 +159,11 @@ test('inspectPresetHealth rejects yaml that parses but fails official persona sc
     ].join('\n'),
   )
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
+    join(dir, '.dsh-corn-bench'),
     JSON.stringify({
-      owner: 'dsh-vision-bench',
+      owner: 'dsh-corn-bench',
       presetSchemaVersion: 3,
-      pluginRowId: 'vision-bench-tools',
+      pluginRowId: 'corn-bench-tools',
       lastManagedAt: '2026-01-01T00:00:00.000Z',
     }),
   )
@@ -173,7 +173,7 @@ test('inspectPresetHealth rejects yaml that parses but fails official persona sc
 })
 test('inspectPresetHealth uses official Config and rejects wrong complete type', async (t) => {
   const home = await createTempDir(t, 'dvb-preset-complete-')
-  const dir = join(home, '.agent-presets', 'vision-bench')
+  const dir = join(home, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(
     join(dir, 'agent.cordis.yml'),
@@ -183,17 +183,17 @@ test('inspectPresetHealth uses official Config and rejects wrong complete type',
       '  config:',
       '    prefix: You are a coding agent',
       '    complete: wrong-type',
-      '- id: vision-bench-tools',
-      '  name: dsh-vision-bench/agent',
+      '- id: corn-bench-tools',
+      '  name: dsh-corn-bench/agent',
       '',
     ].join('\n'),
   )
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
+    join(dir, '.dsh-corn-bench'),
     JSON.stringify({
-      owner: 'dsh-vision-bench',
+      owner: 'dsh-corn-bench',
       presetSchemaVersion: 3,
-      pluginRowId: 'vision-bench-tools',
+      pluginRowId: 'corn-bench-tools',
       lastManagedAt: '2026-01-01T00:00:00.000Z',
     }),
   )
@@ -203,16 +203,16 @@ test('inspectPresetHealth uses official Config and rejects wrong complete type',
 })
 test('inspectPresetHealth surfaces a broken agent.cordis.yml', async (t) => {
   const home = await createTempDir(t, 'dvb-preset-broken-')
-  const dir = join(home, '.agent-presets', 'vision-bench')
+  const dir = join(home, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), ':\n  - [')
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
+    join(dir, '.dsh-corn-bench'),
     JSON.stringify({
-      owner: 'dsh-vision-bench',
+      owner: 'dsh-corn-bench',
       presetSchemaVersion: 2,
       basePresetId: 'standard',
-      pluginRowId: 'vision-bench-tools',
+      pluginRowId: 'corn-bench-tools',
       lastManagedAt: '2026-01-01T00:00:00.000Z',
     }),
   )
@@ -221,12 +221,12 @@ test('inspectPresetHealth surfaces a broken agent.cordis.yml', async (t) => {
   assert.ok(health.error)
   assert.equal(health.appliesOnNewSession, true)
 })
-test('seedVisionBenchPreset does not overlay a foreign preset', async (t) => {
+test('seedCornBenchPreset does not overlay a foreign preset', async (t) => {
   const home = await createTempDir(t, 'dvb-preset-foreign-')
-  const dir = join(home, '.agent-presets', 'vision-bench')
+  const dir = join(home, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), 'name: other\n')
-  const out = await seedVisionBenchPreset(null, home)
+  const out = await seedCornBenchPreset(null, home)
   assert.equal(out.ok, false)
   const text = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
   assert.equal(text, 'name: other\n')
@@ -247,7 +247,7 @@ test('fully consistent preset is left untouched (no backup, no writes)', async (
   assert.equal(first.ok, true)
   trackBackup(t, first)
   const snapshot = {}
-  for (const n of ['agent.cordis.yml', 'preset.yml', '.dsh-vision-bench']) {
+  for (const n of ['agent.cordis.yml', 'preset.yml', '.dsh-corn-bench']) {
     snapshot[n] = await readFile(join(dir, n), 'utf8')
   }
   const calls = []
@@ -292,7 +292,7 @@ test('invalid or foreign ownership marker fails closed and is never overwritten'
     const sub = join(dir, c.name)
     await mkdir(sub, { recursive: true })
     await writeFile(join(dir, c.name, 'agent.cordis.yml'), standard)
-    await writeFile(join(dir, c.name, '.dsh-vision-bench'), c.marker)
+    await writeFile(join(dir, c.name, '.dsh-corn-bench'), c.marker)
     let writes = 0
     const out = await withFsPatched(
       {
@@ -309,19 +309,19 @@ test('invalid or foreign ownership marker fails closed and is never overwritten'
     assert.equal(out.ok, false, c.name + ' must fail closed')
     assert.match(out.error, /其他预设占用/)
     assert.equal(writes, 0, c.name + ' must not attempt any write')
-    assert.equal(await readFile(join(sub, '.dsh-vision-bench'), 'utf8'), c.marker, c.name + ' marker untouched')
+    assert.equal(await readFile(join(sub, '.dsh-corn-bench'), 'utf8'), c.marker, c.name + ' marker untouched')
     assert.equal(await readFile(join(sub, 'agent.cordis.yml'), 'utf8'), standard, c.name + ' composition untouched')
   }
 })
-test('seedVisionBenchPreset fails closed on invalid ownership marker', async (t) => {
+test('seedCornBenchPreset fails closed on invalid ownership marker', async (t) => {
   const home = await createTempDir(t, 'dvb-seedfail-')
-  const dir = join(home, '.agent-presets', 'vision-bench')
+  const dir = join(home, '.agent-presets', 'corn-bench')
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), personaComposition(PRESET_PERSONA))
   const marker = 'not-json {{{'
-  await writeFile(join(dir, '.dsh-vision-bench'), marker)
-  const out = await seedVisionBenchPreset(null, home)
+  await writeFile(join(dir, '.dsh-corn-bench'), marker)
+  const out = await seedCornBenchPreset(null, home)
   assert.equal(out.ok, false)
   assert.match(out.error, /其他预设占用/)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), marker, 'invalid marker untouched')
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), marker, 'invalid marker untouched')
 })

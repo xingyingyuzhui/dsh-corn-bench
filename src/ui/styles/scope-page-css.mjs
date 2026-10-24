@@ -3,7 +3,7 @@ import { ATTR } from './base-attr.mjs'
 const PAGE = `body[${ATTR}]`
 
 /**
- * Ensure every style rule is under `body[data-dsh-vision-bench]`.
+ * Ensure every style rule is under `body[data-dsh-corn-bench]`.
  * Prefer selector prefixing over CSS-nesting wrap (`body[ATTR]{ … }`): nesting
  * made whole sidebar/alarm sheets fail to apply in Desktop, which looked like
  * “styles disappeared” (stacked filters, flat pills, bare tables).

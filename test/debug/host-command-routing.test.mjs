@@ -6,14 +6,14 @@ import { executeHostCommand } from '../../src/application/commands/host-command-
 import { createDebugRuntime, setSharedDebugRuntime } from '../../src/application/debug/debug-runtime.mjs'
 import {
   dispatchHostCommand,
-  dispatchVisionCommand,
-  dispatchVisionDebugCommand,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher, handleCommand } from '../../src/interfaces/http/vision-command-routes.mjs'
+  dispatchCornCommand,
+  dispatchCornDebugCommand,
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher, handleCommand } from '../../src/interfaces/http/corn-command-routes.mjs'
 
-test('host-command-routing: routes debug.* to debug command service and others to vision command service', async () => {
+test('host-command-routing: routes debug.* to debug command service and others to corn command service', async () => {
   const mockRuntime = createDebugRuntime()
   setSharedDebugRuntime(mockRuntime)
 
@@ -29,21 +29,21 @@ test('host-command-routing: routes debug.* to debug command service and others t
     assert.equal(debugRes.action, 'debug.status')
     assert.equal(debugRes.active, false)
 
-    // 2. non-debug action routes to executeVisionCommand (e.g. system.ping)
-    const visionRes = await executeHostCommand({
+    // 2. non-debug action routes to executeCornCommand (e.g. system.ping)
+    const cornRes = await executeHostCommand({
       action: 'system.ping',
       sessionId: 'sess_1',
     })
 
-    assert.equal(visionRes.ok, true)
-    assert.equal(visionRes.action, 'system.ping')
-    assert.equal(visionRes.data?.service, 'dsh-vision-bench')
+    assert.equal(cornRes.ok, true)
+    assert.equal(cornRes.action, 'system.ping')
+    assert.equal(cornRes.data?.service, 'dsh-corn-bench')
   } finally {
     setSharedDebugRuntime(null)
   }
 })
 
-test('host-command-routing: HTTP handleCommand routes both vision and debug actions via executeHostCommand', async () => {
+test('host-command-routing: HTTP handleCommand routes both corn and debug actions via executeHostCommand', async () => {
   const mockRuntime = createDebugRuntime()
   setSharedDebugRuntime(mockRuntime)
 
@@ -73,25 +73,25 @@ test('host-command-routing: HTTP handleCommand routes both vision and debug acti
   }
 })
 
-test('host-command-routing: dispatcher dispatches both vision and debug commands', async () => {
+test('host-command-routing: dispatcher dispatches both corn and debug commands', async () => {
   const mockRuntime = createDebugRuntime()
   setSharedDebugRuntime(mockRuntime)
 
   try {
-    const dispatcher = createVisionCommandDispatcher('/tmp/dsh-home')
-    const unregister = registerVisionHost(dispatcher)
+    const dispatcher = createCornCommandDispatcher('/tmp/dsh-home')
+    const unregister = registerCornHost(dispatcher)
 
     try {
-      // dispatchVisionCommand for regular vision action
-      const pingRes = await dispatchVisionCommand({
+      // dispatchCornCommand for regular corn action
+      const pingRes = await dispatchCornCommand({
         action: 'system.ping',
         sessionId: 'sess_disp_1',
       })
       assert.equal(pingRes.ok, true)
       assert.equal(pingRes.action, 'system.ping')
 
-      // dispatchVisionDebugCommand auto-prefixes debug.
-      const debugRes = await dispatchVisionDebugCommand({
+      // dispatchCornDebugCommand auto-prefixes debug.
+      const debugRes = await dispatchCornDebugCommand({
         action: 'status',
         sessionId: 'sess_disp_2',
         cwd: '/workspace/embedded',

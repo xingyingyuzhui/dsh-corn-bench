@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * Maps native GDB/MI stop record to standardized Vision stop reason.
+ * Maps native GDB/MI stop record to standardized Corn stop reason.
  * Parity with ADR-013 & Phase 3 Section 7.8.
  *
  * @param {import('./mi-record.mjs').MIRecord | null | undefined} miRecord

@@ -6,7 +6,7 @@ Accepted (0.27.0-dev / Phase 0).
 
 ## Context
 
-Vision 模式计划将调试能力从静态的 Keil 编译/烧录与 Modbus 上位机监控，演进为支持真实的嵌入式断点、单步、Watchpoint、寄存器/局部变量查看及程序快照分析的 AI 原生调试体系。
+Corn 模式计划将调试能力从静态的 Keil 编译/烧录与 Modbus 上位机监控，演进为支持真实的嵌入式断点、单步、Watchpoint、寄存器/局部变量查看及程序快照分析的 AI 原生调试体系。
 
 在增加嵌入式调试能力（GDB、OpenOCD、Keil Simulator）时，存在两种错误的架构诱惑：
 1. 启动一个独立的 Debug Backend Server（如独立 Express/WebSocket 长期常驻服务），造成服务治理与端口冲突；

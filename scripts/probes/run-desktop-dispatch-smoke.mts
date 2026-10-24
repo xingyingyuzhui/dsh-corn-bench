@@ -1,7 +1,7 @@
 /**
  * Desktop Fetch *carrier* smoke: proves DesktopHostProcess can register and
  * abort Connection Fetch routes. Uses a minimal stub plugin — NOT the real
- * dsh-vision-bench vision-fetch-route. Stage 5 Vision Fetch evidence comes
+ * dsh-corn-bench corn-fetch-route. Stage 5 Corn Fetch evidence comes
  * from run-desktop-b2-identity.mts against the packed tarball.
  *
  * Usage:
@@ -25,10 +25,10 @@ const here = dirname(fileURLToPath(import.meta.url))
 const benchRoot = resolve(here, '../..')
 const harnessRoot = resolve(here, '../../../../../deepseek-harness-desktop-official')
 const appRoot = join(harnessRoot, 'apps', 'desktop')
-const buildRoot = join(appRoot, '.desktop-build', 'vision-dispatch-smoke')
+const buildRoot = join(appRoot, '.desktop-build', 'corn-dispatch-smoke')
 const projectDir = join(buildRoot, 'project')
 const evidencePath = join(here, 'evidence', 'desktop-dispatch-smoke.json')
-const pluginName = '@dsh-vision/probe-dispatch'
+const pluginName = '@dsh-corn/probe-dispatch'
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
@@ -80,13 +80,13 @@ function writeDispatchProbe(pluginDir: string): void {
   )
   writeFileSync(
     join(pluginDir, 'cordis.patch.yml'),
-    `- insert:\n    - id: dsh.vision.probe.dispatch\n      name: '${pluginName}'\n`,
+    `- insert:\n    - id: dsh.corn.probe.dispatch\n      name: '${pluginName}'\n`,
   )
   writeFileSync(
     join(pluginDir, 'host.js'),
     `export const name = '${pluginName}'
 export const inject = ['connection']
-const PATH = '/api/vision-bench/dispatch'
+const PATH = '/api/corn-bench/dispatch'
 const ALLOWED = new Set(['state', 'debug/events/wait'])
 const FALLBACK_MS = 20_000
 /** @type {boolean | null} */
@@ -151,14 +151,14 @@ export function apply(ctx) {
       })
     },
   })
-  console.info(JSON.stringify({ event: 'vision.probe.dispatch.start', path: PATH, pid: process.pid, claim: 'desktop-fetch-carrier' }))
+  console.info(JSON.stringify({ event: 'corn.probe.dispatch.start', path: PATH, pid: process.pid, claim: 'desktop-fetch-carrier' }))
 }
 `,
   )
 }
 
 async function main(): Promise<void> {
-  const home = mkdtempSync(join(tmpdir(), 'dsh-vision-dispatch-smoke-'))
+  const home = mkdtempSync(join(tmpdir(), 'dsh-corn-dispatch-smoke-'))
   const profile = join(home, 'profiles', 'desktop')
   const release = {
     schemaVersion: 1 as const,
@@ -177,7 +177,7 @@ async function main(): Promise<void> {
     release,
   })
   createPluginProfile(profile)
-  const pluginDir = join(profile, 'node_modules', '@dsh-vision', 'probe-dispatch')
+  const pluginDir = join(profile, 'node_modules', '@dsh-corn', 'probe-dispatch')
   writeDispatchProbe(pluginDir)
   const manifest = readJson(join(profile, 'package.json')) as {
     dependencies: Record<string, string>
@@ -194,11 +194,11 @@ async function main(): Promise<void> {
     19_261,
     { ...process.env, DSH_HOME: home },
   )
-  const log: Record<string, unknown> = { event: 'vision.probe.desktop.dispatch', dshVersion: release.version }
+  const log: Record<string, unknown> = { event: 'corn.probe.desktop.dispatch', dshVersion: release.version }
   try {
     await host.start()
     const hit = await host.fetch(
-      new Request('dsh-app://app/api/vision-bench/dispatch', {
+      new Request('dsh-app://app/api/corn-bench/dispatch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ endpoint: 'state', payload: {} }),
@@ -211,7 +211,7 @@ async function main(): Promise<void> {
 
     const ac = new AbortController()
     const pending = host.fetch(
-      new Request('dsh-app://app/api/vision-bench/dispatch', {
+      new Request('dsh-app://app/api/corn-bench/dispatch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -247,7 +247,7 @@ async function main(): Promise<void> {
     while (Date.now() < deadline) {
       await new Promise((r) => setTimeout(r, 50))
       const metaHit = await host.fetch(
-        new Request('dsh-app://app/api/vision-bench/dispatch', {
+        new Request('dsh-app://app/api/corn-bench/dispatch', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ endpoint: 'state', payload: {} }),
@@ -286,12 +286,12 @@ async function main(): Promise<void> {
     const pkg = readJson(join(benchRoot, 'package.json')) as { name: string; version: string }
     writeEvidence({
       schemaVersion: 2,
-      event: 'vision.probe.desktop.dispatch.evidence',
+      event: 'corn.probe.desktop.dispatch.evidence',
       ok: true,
       claim: 'desktop-fetch-carrier',
       at: new Date().toISOString(),
       gitCommit: gitHead(benchRoot),
-      visionDirty: gitDirty(benchRoot),
+      cornDirty: gitDirty(benchRoot),
       desktopGitCommit: gitHead(harnessRoot),
       desktopDirty: gitDirty(harnessRoot),
       package: `${pkg.name}@${pkg.version}`,

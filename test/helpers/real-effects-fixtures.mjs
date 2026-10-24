@@ -63,7 +63,7 @@ export function makePost({ frames = {}, openCalls = [], closeCalls = [], serialS
   const sources =
     serialSources !== undefined ? serialSources : [{ connectionId: 'c1', port: 'COM3', state: 'connected', name: 'C1' }]
   const post = async (path, body) => {
-    if (path === '/dsh-vision-bench/state') {
+    if (path === '/dsh-corn-bench/state') {
       calls.state++
       const mb = {
         version: 3,
@@ -80,36 +80,36 @@ export function makePost({ frames = {}, openCalls = [], closeCalls = [], serialS
         serialSources: sources,
       }
     }
-    if (path === '/dsh-vision-bench/serial/ports') return { ok: true, ports: ['COM3'] }
-    if (path === '/dsh-vision-bench/serial/open') {
+    if (path === '/dsh-corn-bench/serial/ports') return { ok: true, ports: ['COM3'] }
+    if (path === '/dsh-corn-bench/serial/open') {
       calls.open++
       openCalls.push(body)
       return { ok: false, error: 'USE_HMI_CONNECT' }
     }
-    if (path === '/dsh-vision-bench/serial/close') {
+    if (path === '/dsh-corn-bench/serial/close') {
       calls.close++
       closeCalls.push(body)
       return { ok: true }
     }
-    if (path === '/dsh-vision-bench/connection/open') {
+    if (path === '/dsh-corn-bench/connection/open') {
       calls.open++
       openCalls.push(body)
       return { ok: true }
     }
-    if (path === '/dsh-vision-bench/connection/close') {
+    if (path === '/dsh-corn-bench/connection/close') {
       calls.close++
       closeCalls.push(body)
       return { ok: true }
     }
-    if (path === '/dsh-vision-bench/serial/feed') {
+    if (path === '/dsh-corn-bench/serial/feed') {
       calls.feed++
       return { ok: true, open: true, error: '', lastId: 1, lines: [] }
     }
-    if (path === '/dsh-vision-bench/frames/clear') {
+    if (path === '/dsh-corn-bench/frames/clear') {
       calls.clear++
       return { ok: true, cleared: (body && body.connectionId) || 'all' }
     }
-    if (path === '/dsh-vision-bench/evidence') {
+    if (path === '/dsh-corn-bench/evidence') {
       calls.evidence++
       return { ok: true, evidence: [] }
     }

@@ -116,23 +116,23 @@ test('client and host inject connection for authenticated transport', () => {
   assert.match(clientEntry, /inject = \['slots', 'locale', 'connection'\]/)
   assert.match(hostSrc, /inject = \['connection'\]/)
   assert.doesNotMatch(hostSrc, /inject = \['connection', 'webServer', 'tools', 'agentPresets', 'systemPrompt'\]/)
-  assert.match(hostSrc, /registerVisionFetchDispatch|vision-fetch-route/)
-  assert.match(hostSrc, /mountVisionWebCompat/)
+  assert.match(hostSrc, /registerCornFetchDispatch|corn-fetch-route/)
+  assert.match(hostSrc, /mountCornWebCompat/)
 })
 
 test('client apply post uses shared Connection Fetch dispatch', () => {
   const src = readFileSync(join(root, 'src/ui/client/client-entry.mjs'), 'utf8')
-  assert.match(src, /createVisionFetchPost/)
-  assert.doesNotMatch(src, /createVisionRpcPost/)
+  assert.match(src, /createCornFetchPost/)
+  assert.doesNotMatch(src, /createCornRpcPost/)
   assert.doesNotMatch(src, /127\.0\.0\.1:3080/)
 })
 
 test('host.js no longer registers browser business HTTP routes', () => {
   const src = readFileSync(join(root, 'host.js'), 'utf8')
-  const webCompat = readFileSync(join(root, 'src/interfaces/web/vision-web-compat.mjs'), 'utf8')
-  assert.doesNotMatch(src, /route\('\/dsh-vision-bench\/state'/)
-  assert.doesNotMatch(src, /route\('\/dsh-vision-bench\/modbus\/write'/)
-  assert.match(webCompat, /\/dsh-vision-bench\/command/)
+  const webCompat = readFileSync(join(root, 'src/interfaces/web/corn-web-compat.mjs'), 'utf8')
+  assert.doesNotMatch(src, /route\('\/dsh-corn-bench\/state'/)
+  assert.doesNotMatch(src, /route\('\/dsh-corn-bench\/modbus\/write'/)
+  assert.match(webCompat, /\/dsh-corn-bench\/command/)
   assert.doesNotMatch(src, /const browser = origin/)
 })
 

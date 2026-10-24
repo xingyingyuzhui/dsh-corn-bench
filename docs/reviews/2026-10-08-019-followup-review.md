@@ -2,9 +2,9 @@
 
 日期：2026-10-08。审查基线：`54581d0`，版本 0.29.28。对比起点：018 的 `ea3057d`。审查开始时工作树干净；019 有六个行为提交、一个 docs 提交和一个 build-info 提交。
 
-依据：[019 计划](../plans/2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md)、[实现方交付报告](../plans/2026-10-08-019-verify-isolation-and-query-contract-fix-verification.md)、[Harness 第九轮实测](/Users/qin/DSH/vision-plugin-round9-verification.md)。原报告和计划未修改。
+依据：[019 计划](../plans/2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md)、[实现方交付报告](../plans/2026-10-08-019-verify-isolation-and-query-contract-fix-verification.md)、[Harness 第九轮实测](/Users/qin/DSH/corn-plugin-round9-verification.md)。原报告和计划未修改。
 
-结论：019 的主要修复确已落地，原先 runId 跨会话查询/取消、scoped miss 裸读回退、undefined 当前值判 changed 通过、顶层 res.value 适配错误等核心复现已有对应覆盖。但当前仍有 **2 项 P1、3 项 P2、1 项 P3**，不能将本轮视为完整验收通过。第九轮仅测 vision_bench 查询，没有测 vision_debug/verify 和游标回填；它发现的字段与 hint 问题是真实的，也不足以排除下列 verify 问题。
+结论：019 的主要修复确已落地，原先 runId 跨会话查询/取消、scoped miss 裸读回退、undefined 当前值判 changed 通过、顶层 res.value 适配错误等核心复现已有对应覆盖。但当前仍有 **2 项 P1、3 项 P2、1 项 P3**，不能将本轮视为完整验收通过。第九轮仅测 corn_bench 查询，没有测 corn_debug/verify 和游标回填；它发现的字段与 hint 问题是真实的，也不足以排除下列 verify 问题。
 
 ## 1. 本次验证
 
@@ -19,7 +19,7 @@
 | 额外独立复现 | **5 个预期行为断言均失败**，证实剩余缺口；未混入现有单测计数 |
 | Web/Desktop 安装、物理硬件 | 本次未执行；第九轮也未提供这些核心场景的验收 |
 
-独立红测：[临时复现脚本](/tmp/vision-review019-extra.test.mjs)，输出：[复现日志](/tmp/vision-review019-extra.log)。脚本只使用内存或临时 home/cwd，真实 points update 使用 sim 配置；没有读写用户工作区或操作物理设备。临时文件便于继续核对，不是已纳入仓库的回归测试。
+独立红测：[临时复现脚本](/tmp/corn-review019-extra.test.mjs)，输出：[复现日志](/tmp/corn-review019-extra.log)。脚本只使用内存或临时 home/cwd，真实 points update 使用 sim 配置；没有读写用户工作区或操作物理设备。临时文件便于继续核对，不是已纳入仓库的回归测试。
 
 本次直接执行 build-info/package 检查器，没有用会重新生成 build-info 的 pack:check。build-info 的 gitSha 为 `5695ba9`，与第九轮标识一致；源码指纹通过，不能因它不是包含生成文件的 HEAD 而误判旧包。第九轮的 pid/configVersion 属于当时运行态观察，本次未再次操作该实际环境。
 
@@ -36,7 +36,7 @@
 
 ### S1：等待经过了，不代表获得了整个时窗的采样
 
-位置：[verify-sampling.mjs:111](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-sampling.mjs:111)、[scoped-point-reader.mjs:122](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/scoped-point-reader.mjs:122)。
+位置：[verify-sampling.mjs:111](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-sampling.mjs:111)、[scoped-point-reader.mjs:122](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/scoped-point-reader.mjs:122)。
 
 stable 采集器每次 readPoint 后取 value 并 push；结束条件使用 Date.now()-sampleStart，却不检查 reading.timestamp 是否前进。默认 reader 会不断返回同一 runtime/cache 记录。一个合法的历史记录就能被重复记成五个样本，经过 80ms 等待后判“持续稳定”。
 
@@ -54,7 +54,7 @@ stable 采集器每次 readPoint 后取 value 并 push；结束条件使用 Date
 
 ### S2：身份指纹不能证明 runtime 值来自当前配置
 
-位置：[scoped-point-reader.mjs:118](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/scoped-point-reader.mjs:118)、[verify-point-scope.mjs:101](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-point-scope.mjs:101)、[point-service.mjs:210](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/modbus/point-service.mjs:210)。
+位置：[scoped-point-reader.mjs:118](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/scoped-point-reader.mjs:118)、[verify-point-scope.mjs:101](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-point-scope.mjs:101)、[point-service.mjs:210](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/modbus/point-service.mjs:210)。
 
 两个实际出口：
 
@@ -75,7 +75,7 @@ reader 选择最新记录时也要保留失败/坏质量状态，不能先过滤
 
 ### S3：旧告警的显式 owner 不能被当前 pointId 可见性取代
 
-位置：[verify-alarm-scope.mjs:53](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-alarm-scope.mjs:53)、[verify-alarm-scope.mjs:93](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-alarm-scope.mjs:93)。
+位置：[verify-alarm-scope.mjs:53](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-alarm-scope.mjs:53)、[verify-alarm-scope.mjs:93](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-alarm-scope.mjs:93)。
 
 legacyAlarmState 把旧行放进 id 字典，不比较 row.sessionId；filterAlarmStateForSession 只按当前连接/点身份筛选。A 当前唯一拥有 p1，不代表一条显式标为 B 的历史 p1 告警属于 A。
 
@@ -85,7 +85,7 @@ legacyAlarmState 把旧行放进 id 字典，不比较 row.sessionId；filterAla
 
 ### S4：changed 的初值只查 null，没有查有效性
 
-位置：[verify-assertion-eval.mjs:49](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-assertion-eval.mjs:49)、[assertion.mjs:289](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/verify/assertion.mjs:289)。
+位置：[verify-assertion-eval.mjs:49](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-assertion-eval.mjs:49)、[assertion.mjs:289](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/verify/assertion.mjs:289)。
 
 当前值已做 scalarProblem，初值仅检查 undefined/null。Infinity 初值、实际合法 10 得到：
 
@@ -99,7 +99,7 @@ legacyAlarmState 把旧行放进 id 字典，不比较 row.sessionId；filterAla
 
 ### S5/S6：第九轮的查询反馈准确，但表尚未收齐
 
-位置：[agent-query-fields.mjs:93](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/commands/agent-query-fields.mjs:93)、[agent-query-fields.mjs:212](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/commands/agent-query-fields.mjs:212)。
+位置：[agent-query-fields.mjs:93](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/commands/agent-query-fields.mjs:93)、[agent-query-fields.mjs:212](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/commands/agent-query-fields.mjs:212)。
 
 inFieldTable 枚举 points/timeline/focus/evidence/frames/alarm/visualization，却没有 status/trend；这两个已知查询因此静默接受无效果的 kind，id 同样缺适用校验。cursor/view 不受此表限制，已有拒绝不能证明 kind/id 已一致。不要以“不扩大到所有参数”解释已知查询遗漏。
 

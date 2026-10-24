@@ -155,7 +155,7 @@ export default {
         pathNot: [
           // journal-store.mjs + serial-monitor.mjs → config-scope-service.mjs (session projection of a stored pack).
           '(^|/)src/application/modbus/config-scope-service\\.mjs$',
-          // vision-host-client.mjs → command-contract / lossless-json / host-command-result
+          // corn-host-client.mjs → command-contract / lossless-json / host-command-result
           // (dispatch errors and correlated result normalization).
           '(^|/)src/application/commands/command-contract\\.mjs$',
           '(^|/)src/application/commands/lossless-json\\.mjs$',
@@ -181,10 +181,10 @@ export default {
       name: 'infrastructure-application-edge-host-client',
       severity: 'error',
       comment:
-        'Only vision-host-client.mjs may import command-contract, lossless-json, and host-command-result.',
+        'Only corn-host-client.mjs may import command-contract, lossless-json, and host-command-result.',
       from: {
         path: '(^|/)src/infrastructure/',
-        pathNot: ['(^|/)src/infrastructure/host/vision-host-client\\.mjs$'],
+        pathNot: ['(^|/)src/infrastructure/host/corn-host-client\\.mjs$'],
       },
       to: {
         path: '(^|/)src/application/commands/(command-contract|lossless-json|host-command-result)\\.mjs$',
@@ -194,7 +194,7 @@ export default {
       name: 'ui-no-application',
       severity: 'error',
       comment:
-        'UI must not import the application layer. ui/client → infrastructure/host/vision-rpc-client is allowed (infrastructure, not application) and is the Fetch dispatch path.',
+        'UI must not import the application layer. ui/client → infrastructure/host/corn-rpc-client is allowed (infrastructure, not application) and is the Fetch dispatch path.',
       from: { path: '(^|/)src/ui/' },
       to: { path: '(^|/)src/application/' },
     },

@@ -1,5 +1,5 @@
 /**
- * Phase-0 Desktop control: @dsh-vision/probe-rpc (rpc.handle) on Desktop Host.
+ * Phase-0 Desktop control: @dsh-corn/probe-rpc (rpc.handle) on Desktop Host.
  * Expectation: apply fails or Host never becomes usable for the RPC channel
  * because rpc.handle still wires through owner.webServer — proves scheme B
  * is not Desktop-ready on dsh 0.1.6-alpha.1.
@@ -18,19 +18,19 @@ import { createPluginProfile } from '../../../../../deepseek-harness-desktop-off
 import { prepareDevelopmentProject } from '../../../../../deepseek-harness-desktop-official/apps/desktop/scripts/development-project.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const probeSrc = join(here, 'vision-probe-rpc')
+const probeSrc = join(here, 'corn-probe-rpc')
 const harnessRoot = resolve(here, '../../../../../deepseek-harness-desktop-official')
 const appRoot = join(harnessRoot, 'apps', 'desktop')
-const buildRoot = join(appRoot, '.desktop-build', 'vision-probe-rpc-b')
+const buildRoot = join(appRoot, '.desktop-build', 'corn-probe-rpc-b')
 const projectDir = join(buildRoot, 'project')
-const pluginName = '@dsh-vision/probe-rpc'
+const pluginName = '@dsh-corn/probe-rpc'
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
 }
 
 async function main(): Promise<void> {
-  const home = mkdtempSync(join(tmpdir(), 'dsh-vision-desktop-rpc-b-'))
+  const home = mkdtempSync(join(tmpdir(), 'dsh-corn-desktop-rpc-b-'))
   const profile = join(home, 'profiles', 'desktop')
   const release = {
     schemaVersion: 1 as const,
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   })
 
   createPluginProfile(profile)
-  const pluginDir = join(profile, 'node_modules', '@dsh-vision', 'probe-rpc')
+  const pluginDir = join(profile, 'node_modules', '@dsh-corn', 'probe-rpc')
   mkdirSync(dirname(pluginDir), { recursive: true })
   cpSync(probeSrc, pluginDir, {
     recursive: true,
@@ -71,14 +71,14 @@ async function main(): Promise<void> {
     projectDir,
     profile,
     19_241,
-    { ...process.env, DSH_HOME: home, DSH_VISION_PROBE_TAG: 'desktop-rpc-b' },
+    { ...process.env, DSH_HOME: home, DSH_CORN_PROBE_TAG: 'desktop-rpc-b' },
     (error) => {
       stderrChunks.push(error.message)
     },
   )
 
   const log: Record<string, unknown> = {
-    event: 'vision.probe.desktop.rpc-b',
+    event: 'corn.probe.desktop.rpc-b',
     home,
     profile,
     dshVersion: release.version,
@@ -111,14 +111,14 @@ async function main(): Promise<void> {
     }
 
     const stdout = stdoutBuf.join('')
-    const applyFailed = /vision\.probe\.rpc\.apply_failed/.test(stdout)
-    const applyStarted = /vision\.probe\.rpc\.start/.test(stdout)
+    const applyFailed = /corn\.probe\.rpc\.apply_failed/.test(stdout)
+    const applyStarted = /corn\.probe\.rpc\.start/.test(stdout)
     log.applyFailed = applyFailed
     log.applyStarted = applyStarted
     log.stdoutHits = stdout
       .split('\n')
       .map((line) => line.trim())
-      .filter((line) => line.includes('vision.probe.rpc'))
+      .filter((line) => line.includes('corn.probe.rpc'))
     log.onFailure = stderrChunks
 
     // Scheme B rejected when: Host boots AND rpc apply failed OR never started;

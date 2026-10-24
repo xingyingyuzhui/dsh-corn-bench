@@ -19,7 +19,7 @@ export function createRuntimeController(post, scope) {
      * @param {string} [debugSessionId]
      */
     async getState(debugSessionId) {
-      return post('/dsh-vision-bench/debug/state', {
+      return post('/dsh-corn-bench/debug/state', {
         cwd: getCwd(),
         sessionId: getSessionId(),
         debugSessionId: debugSessionId || undefined,
@@ -32,7 +32,7 @@ export function createRuntimeController(post, scope) {
      * @param {Record<string, any>} [payload]
      */
     async command(op, payload = {}) {
-      return post('/dsh-vision-bench/debug/command', {
+      return post('/dsh-corn-bench/debug/command', {
         cwd: getCwd(),
         sessionId: getSessionId(),
         op,
@@ -56,12 +56,12 @@ export function createRuntimeController(post, scope) {
       }
       const rpcTimeout = timeoutMs + 5000
       if (signal) {
-        return postWithAbort(post, '/dsh-vision-bench/debug/events/wait', body, signal, {
+        return postWithAbort(post, '/dsh-corn-bench/debug/events/wait', body, signal, {
           timeoutMs: rpcTimeout,
           signal,
         })
       }
-      return post('/dsh-vision-bench/debug/events/wait', body, rpcTimeout)
+      return post('/dsh-corn-bench/debug/events/wait', body, rpcTimeout)
     },
 
     /**
@@ -70,7 +70,7 @@ export function createRuntimeController(post, scope) {
      * @param {Record<string, any>} [payload]
      */
     async approval(op, payload = {}) {
-      return post('/dsh-vision-bench/debug/approval', {
+      return post('/dsh-corn-bench/debug/approval', {
         cwd: getCwd(),
         sessionId: getSessionId(),
         op,

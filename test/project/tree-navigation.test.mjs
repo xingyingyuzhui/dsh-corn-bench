@@ -5,8 +5,8 @@ import React from 'react'
 import { createElement } from 'react'
 import { createMapView } from '../../bench-map.mjs'
 import { createDebugWorkspace } from '../../src/ui/workspace/debug-workspace.mjs'
-import { clearNavStore, navigate } from '../../src/ui/workspace/vision-navigation-store.mjs'
-import { DEBUG_SECTIONS, VIEW_DEBUG } from '../../src/ui/workspace/vision-route.mjs'
+import { clearNavStore, navigate } from '../../src/ui/workspace/corn-navigation-store.mjs'
+import { DEBUG_SECTIONS, VIEW_DEBUG } from '../../src/ui/workspace/corn-route.mjs'
 import { MAP_DETAILS, makePost } from '../helpers/project-tree-fixtures.mjs'
 import { useReactPageRuntime } from '../helpers/react-runtime.mjs'
 
@@ -41,7 +41,7 @@ test('点击编译错误后切到工程结构、展开文件、调用源码接�
   assert.ok(row.className.includes('is-on') || row.querySelector('.dvb-map-jump'), '目标文件展开并高亮')
   assert.ok(tree.container.textContent.includes('line 12'))
   assert.equal(
-    calls.some((row) => row[0] === '/dsh-vision-bench/workspace'),
+    calls.some((row) => row[0] === '/dsh-corn-bench/workspace'),
     false,
     '不再写入 /workspace jumpProject',
   )
@@ -56,14 +56,14 @@ test('工程树晚于导航目标返回时仍完成定位', async () => {
   const calls = []
   const post = async (path, body) => {
     calls.push([path, body || {}])
-    if (/\/dsh-vision-bench\/state$/.test(path)) {
+    if (/\/dsh-corn-bench\/state$/.test(path)) {
       return { ok: true, workspace: { keil: { project: '/proj/x.uvprojx', target: 'Debug' } } }
     }
-    if (/\/dsh-vision-bench\/keil\/map$/.test(path)) {
+    if (/\/dsh-corn-bench\/keil\/map$/.test(path)) {
       await gate
       return { ok: true, result: { details: MAP_DETAILS } }
     }
-    if (/\/dsh-vision-bench\/project\/file$/.test(path)) {
+    if (/\/dsh-corn-bench\/project\/file$/.test(path)) {
       return { ok: true, rel: body.path, text: 'int main(void) { return 0; }\n', lines: 1, truncated: false }
     }
     return { ok: true }

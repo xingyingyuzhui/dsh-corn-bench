@@ -3,8 +3,8 @@ import { createDebugView } from '../debug/debug-view.mjs'
 import { sessionCwd } from '../common/session-scope.mjs'
 import { createMapView } from '../debug/project/project-page.mjs'
 import { createRuntimePage } from '../debug/runtime/runtime-page.mjs'
-import { getNav, navigate, subscribeNav } from './vision-navigation-store.mjs'
-import { DEBUG_SECTIONS, VIEW_DEBUG, isDebugSection } from './vision-route.mjs'
+import { getNav, navigate, subscribeNav } from './corn-navigation-store.mjs'
+import { DEBUG_SECTIONS, VIEW_DEBUG, isDebugSection } from './corn-route.mjs'
 import { renderWorkspaceTabs } from './workspace-tabs.mjs'
 
 function initialSection(sessionId, cwd) {
@@ -12,7 +12,7 @@ function initialSection(sessionId, cwd) {
   if (nav && nav.viewId === VIEW_DEBUG && isDebugSection(nav.section)) return nav.section
   if (getPreserveNavPreference() && typeof window !== 'undefined' && window.sessionStorage) {
     try {
-      const saved = window.sessionStorage.getItem(`dsh-vision-bench:last-debug-section:${sessionId || cwd || ''}`)
+      const saved = window.sessionStorage.getItem(`dsh-corn-bench:last-debug-section:${sessionId || cwd || ''}`)
       if (saved && isDebugSection(saved)) return saved
     } catch {}
   }
@@ -39,7 +39,7 @@ export function createDebugWorkspace(React, t, post, hooks) {
       return localeSubscribe(() => setLocaleTick((n) => n + 1))
     }, [])
     void localeTick
-    // Resolve at render time so host zh preference is not frozen out by provisional en.
+    // Resolve at render time so host zh preference is not frozen out by procornal en.
     const labels = {
       [DEBUG_SECTIONS.WORKBENCH]: t('sectionWorkbench') || t('tabDebug'),
       [DEBUG_SECTIONS.PROJECT]: t('projectMap'),
@@ -72,7 +72,7 @@ export function createDebugWorkspace(React, t, post, hooks) {
           navigate(sessionId, cwd, { viewId: VIEW_DEBUG, section: id }, { source: 'manual' })
           if (getPreserveNavPreference() && typeof window !== 'undefined' && window.sessionStorage) {
             try {
-              window.sessionStorage.setItem(`dsh-vision-bench:last-debug-section:${sessionId || cwd || ''}`, id)
+              window.sessionStorage.setItem(`dsh-corn-bench:last-debug-section:${sessionId || cwd || ''}`, id)
             } catch {}
           }
         },

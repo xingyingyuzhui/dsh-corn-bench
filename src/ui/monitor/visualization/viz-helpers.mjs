@@ -35,7 +35,7 @@ export function seriesIdentityFingerprint(payload) {
 }
 
 export function dataFingerprint(payload, trendStore) {
-  const rev = Number(trendStore?.__rev ?? payload?.revision ?? payload?.__rev)
+  const rev = Number(trendStore?.__rev ?? payload?.recorn ?? payload?.__rev)
   if (Number.isFinite(rev) && rev > 0) return `r:${rev | 0}`
   const data = payload?.data || []
   const xs = data[0]

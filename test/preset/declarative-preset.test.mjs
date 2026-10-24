@@ -6,7 +6,7 @@ import {
   PRESET_ID,
   PRESET_ORDER,
   PRESET_TITLE,
-  buildVisionPresetDefinition,
+  buildCornPresetDefinition,
   isDeclarativeRegistry,
   isDuplicatePresetError,
 } from '../../src/infrastructure/harness/preset-declaration.mjs'
@@ -14,17 +14,17 @@ import { buildStandardPresetChildren } from '../../src/infrastructure/harness/st
 
 const flatten = (rows) => rows.flatMap((row) => (Array.isArray(row.config) ? [row, ...flatten(row.config)] : [row]))
 
-test('vision declaration restates standard children and appends one agent tool row', () => {
-  const definition = buildVisionPresetDefinition({ platform: 'linux' })
+test('corn declaration restates standard children and appends one agent tool row', () => {
+  const definition = buildCornPresetDefinition({ platform: 'linux' })
   assert.equal(definition.id, PRESET_ID)
   assert.equal(definition.name, PRESET_TITLE)
   assert.equal(definition.description, PRESET_DESCRIPTION)
   assert.equal(definition.order, PRESET_ORDER)
 
   const rows = flatten(definition.plugins)
-  const toolRows = rows.filter((row) => row.id === 'vision-bench-tools' || row.name === AGENT_PLUGIN_SPEC)
+  const toolRows = rows.filter((row) => row.id === 'corn-bench-tools' || row.name === AGENT_PLUGIN_SPEC)
   assert.equal(toolRows.length, 1)
-  assert.deepEqual(toolRows[0], { id: 'vision-bench-tools', name: AGENT_PLUGIN_SPEC })
+  assert.deepEqual(toolRows[0], { id: 'corn-bench-tools', name: AGENT_PLUGIN_SPEC })
 
   const standard = buildStandardPresetChildren({ platform: 'linux' })
   assert.equal(definition.plugins.length, standard.length + 1)
@@ -33,7 +33,7 @@ test('vision declaration restates standard children and appends one agent tool r
 })
 
 test('persona row keeps the shipped prefix', () => {
-  const [persona] = buildVisionPresetDefinition({ platform: 'linux' }).plugins
+  const [persona] = buildCornPresetDefinition({ platform: 'linux' }).plugins
   assert.equal(persona.id, 'persona')
   assert.equal(persona.name, '@deepseek-ai/dsh-persona')
   assert.equal(typeof persona.config, 'object')
@@ -44,18 +44,18 @@ test('persona row keeps the shipped prefix', () => {
 })
 
 test('!!js platform rows arrive as plain booleans', () => {
-  const rows = flatten(buildVisionPresetDefinition({ platform: 'win32' }).plugins)
+  const rows = flatten(buildCornPresetDefinition({ platform: 'win32' }).plugins)
   const bash = rows.find((row) => row.id === 'tool-bash')
   const pwsh = rows.find((row) => row.id === 'tool-pwsh')
   assert.equal(bash?.disabled, true)
   assert.equal(pwsh?.disabled, false)
-  const posix = flatten(buildVisionPresetDefinition({ platform: 'linux' }).plugins)
+  const posix = flatten(buildCornPresetDefinition({ platform: 'linux' }).plugins)
   assert.equal(posix.find((row) => row.id === 'tool-bash')?.disabled, false)
   assert.equal(posix.find((row) => row.id === 'tool-pwsh')?.disabled, true)
 })
 
 test('group rows keep their isolate realms and nested children', () => {
-  const groups = buildVisionPresetDefinition({ platform: 'linux' }).plugins.filter((row) => row.group === true)
+  const groups = buildCornPresetDefinition({ platform: 'linux' }).plugins.filter((row) => row.group === true)
   const byId = new Map(groups.map((row) => [row.id, row]))
   assert.deepEqual(byId.get('planning')?.isolate, { planMode: true })
   assert.deepEqual(byId.get('compaction')?.isolate, { compaction: true, toolResultPruner: true })
@@ -68,12 +68,12 @@ test('group rows keep their isolate realms and nested children', () => {
 })
 
 test('definition rows are fresh per call', () => {
-  const first = buildVisionPresetDefinition({ platform: 'linux' })
+  const first = buildCornPresetDefinition({ platform: 'linux' })
   first.plugins[0].name = 'mutated'
   first.plugins[first.plugins.length - 1].id = 'mutated'
-  const second = buildVisionPresetDefinition({ platform: 'linux' })
+  const second = buildCornPresetDefinition({ platform: 'linux' })
   assert.equal(second.plugins[0].name, '@deepseek-ai/dsh-persona')
-  assert.equal(second.plugins[second.plugins.length - 1].id, 'vision-bench-tools')
+  assert.equal(second.plugins[second.plugins.length - 1].id, 'corn-bench-tools')
 })
 
 test('registry contract detection separates 0.1.7 declarations from 0.1.6 directories', () => {
@@ -85,7 +85,7 @@ test('registry contract detection separates 0.1.7 declarations from 0.1.6 direct
 })
 
 test('duplicate preset errors are recognised', () => {
-  assert.equal(isDuplicatePresetError(new Error('Duplicate agent preset: vision-bench')), true)
+  assert.equal(isDuplicatePresetError(new Error('Duplicate agent preset: corn-bench')), true)
   assert.equal(isDuplicatePresetError(new Error('EACCES')), false)
   assert.equal(isDuplicatePresetError('Duplicate agent preset: x'), true)
 })

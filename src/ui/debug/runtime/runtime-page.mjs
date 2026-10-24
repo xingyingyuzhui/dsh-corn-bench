@@ -78,7 +78,7 @@ export function createRuntimePage(React, t, post) {
         }))
 
         try {
-          const res = await postWithAbort(post, '/dsh-vision-bench/project/file', { cwd, path: filePath }, ac.signal)
+          const res = await postWithAbort(post, '/dsh-corn-bench/project/file', { cwd, path: filePath }, ac.signal)
           if (ac.signal.aborted) return
           if (res?.ok) {
             setSourcePreview({

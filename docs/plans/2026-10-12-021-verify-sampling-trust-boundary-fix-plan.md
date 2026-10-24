@@ -1,6 +1,6 @@
 # 021：采样信任链、代次状态机与会话输出边界修复计划
 
-日期：2026-10-12。实施基线：`bc3fcda`，工作区版本 `0.29.28`，目标修复版本 `0.29.29`。本机 DSH、Web、Desktop 分别为 `0.1.7-alpha.2`、`dsh-vision-bench@0.29.28`、`dsh-vision-bench@0.29.28`。
+日期：2026-10-12。实施基线：`bc3fcda`，工作区版本 `0.29.28`，目标修复版本 `0.29.29`。本机 DSH、Web、Desktop 分别为 `0.1.7-alpha.2`、`dsh-corn-bench@0.29.28`、`dsh-corn-bench@0.29.28`。
 
 依据：[020 落地复审](../reviews/2026-10-08-020-followup-review.md)、[020 原计划](2026-10-08-020-verify-sampling-provenance-fix-plan.md)、当前源码上的独立反例。本计划覆盖复审中的 F1–F7；R5/R6 焦点迁移、R8 幂等失败终态、物理串口/RTU 真机验收继续不在本轮范围。编写本计划不修改业务代码、不提交、不推送、不安装。
 
@@ -371,8 +371,8 @@ git diff --check <baseline>..HEAD
 新增低频结构化诊断，默认只在拒绝或迁移时输出：
 
 ```json
-{"event":"vision.sample.reject","reason":"STAMP_MISMATCH","pointId":"p1","generationChanged":true}
-{"event":"vision.sample.schema-migrate","from":1,"to":2,"unique":12,"ambiguous":1}
+{"event":"corn.sample.reject","reason":"STAMP_MISMATCH","pointId":"p1","generationChanged":true}
+{"event":"corn.sample.schema-migrate","from":1,"to":2,"unique":12,"ambiguous":1}
 ```
 
 要求：

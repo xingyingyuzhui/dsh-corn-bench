@@ -1,4 +1,4 @@
-import type { VisionBenchResult } from './modbus'
+import type { CornBenchResult } from './modbus'
 import type { WorkspaceConfig, WorkspaceRuntime } from './workspace'
 
 export type ConnectionRpcFailure = {
@@ -24,7 +24,7 @@ export type ConnectionRpcLike = {
   }
 }
 
-export type VisionRpcTransport = 'connection-rpc' | 'in-process' | 'http' | 'unavailable'
+export type CornRpcTransport = 'connection-rpc' | 'in-process' | 'http' | 'unavailable'
 
 export type HttpRequestLike = {
   method?: string
@@ -32,7 +32,7 @@ export type HttpRequestLike = {
   url?: string
 }
 
-export type HttpStateResponse = VisionBenchResult<{
+export type HttpStateResponse = CornBenchResult<{
   workspace?: {
     modbus?: WorkspaceConfig['modbus'] & WorkspaceRuntime['modbus']
     focus?: unknown
@@ -46,19 +46,19 @@ export type HostBridgeDescriptor = {
   origin: string
   inProcess: boolean
   available?: boolean
-  transport?: VisionRpcTransport
+  transport?: CornRpcTransport
   roundtripMs?: number
   errorCode?: string
   error?: string
 }
 
 export type HostPingData = {
-  service: 'dsh-vision-bench' | string
+  service: 'dsh-corn-bench' | string
   version: string
-  transport: VisionRpcTransport
+  transport: CornRpcTransport
   pid: number
   timestamp: string
-  /** ESM singleton id of vision-host-client.mjs on the Host side (B2). */
+  /** ESM singleton id of corn-host-client.mjs on the Host side (B2). */
   clientInstanceId?: string
   hostFiber?: string
 }
@@ -88,9 +88,9 @@ export type OpenOcdProbeResponse = {
   versionLine?: string
 }
 
-export type HttpApiPaths = '/dsh-vision-bench/command' | string
+export type HttpApiPaths = '/dsh-corn-bench/command' | string
 
-export type VisionRpcEndpoint =
+export type CornRpcEndpoint =
   | 'state'
   | 'bindings/save'
   | 'workspace/save'

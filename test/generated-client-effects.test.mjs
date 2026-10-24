@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 // Task10/0.18.4: verify the GENERATED client.js itself — execute the real
-// ModuleLoader factory, mount the actual `dsh-vision-bench:frames` tab
+// ModuleLoader factory, mount the actual `dsh-corn-bench:frames` tab
 // component with real React + happy-dom, and assert strong virtualized
 // rendering (non-zero rows < 50, no second React, no hook/scroll warnings).
 import { after, before, test } from 'node:test'
@@ -126,7 +126,7 @@ before(async () => {
     if (endpoint === 'serial/feed') return { ok: true, open: true, error: '', lastId: 0, lines: [] }
     return { ok: true }
   }
-  globalThis.__visionRpcBackend = rpcBackend
+  globalThis.__cornRpcBackend = rpcBackend
   let fetchCalls = 0
   const installFetchMock = () => {
     globalThis.fetch = async (_url, init) => {
@@ -138,8 +138,8 @@ before(async () => {
     }
   }
   installFetchMock()
-  globalThis.__visionFetchCalls = () => fetchCalls
-  globalThis.__visionInstallFetchMock = installFetchMock
+  globalThis.__cornFetchCalls = () => fetchCalls
+  globalThis.__cornInstallFetchMock = installFetchMock
   const src = readFileSync(join(root, 'client.js'), 'utf8')
   let loaded = null
   const sandboxWindow = {
@@ -240,7 +240,7 @@ frames = { c1: makeFrames(5000) }
 
 test('Task10: generated client renders the real frames tab with 5000 rows (1–49) and no warnings', async () => {
   stateCalls = 0
-  globalThis.__visionInstallFetchMock?.()
+  globalThis.__cornInstallFetchMock?.()
   let monitorPage = null
   const slots = {
     inject(_name, fn) {
@@ -248,13 +248,13 @@ test('Task10: generated client renders the real frames tab with 5000 rows (1–4
       return typeof d === 'function' ? d : () => {}
     },
     register(def, comp) {
-      if (def && def.id === 'vision-bench-monitor') monitorPage = comp
+      if (def && def.id === 'corn-bench-monitor') monitorPage = comp
       return () => {}
     },
   }
   const ctx = {
     slots,
-    connection: mockConnection(async (endpoint) => globalThis.__visionRpcBackend(endpoint)).connection,
+    connection: mockConnection(async (endpoint) => globalThis.__cornRpcBackend(endpoint)).connection,
     get(key) {
       return key === 'slots' ? slots : null
     },
@@ -265,7 +265,7 @@ test('Task10: generated client renders the real frames tab with 5000 rows (1–4
     effect() {},
   }
   factoryMod.apply(ctx)
-  assert.ok(monitorPage, 'generated bundle registered vision-bench-monitor')
+  assert.ok(monitorPage, 'generated bundle registered corn-bench-monitor')
   assert.equal(typeof monitorPage, 'function')
 
   const tree = render(

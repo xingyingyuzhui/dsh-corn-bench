@@ -20,7 +20,7 @@ export function renderConnectionWorkspace(el, t, ctx) {
     devFormPanel,
     deviceCardsPanel,
     pendingPanel,
-    visionCollabBar,
+    cornCollabBar,
   } = ctx
 
   const activeModal =

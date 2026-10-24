@@ -1,7 +1,7 @@
 // @ts-check
 /**
- * Agent-facing result projection. Host/UI and `runVisionBench` keep full payloads;
- * production `vision_bench` execute projects after dispatch and before finalize.
+ * Agent-facing result projection. Host/UI and `runCornBench` keep full payloads;
+ * production `corn_bench` execute projects after dispatch and before finalize.
  */
 import { AGENT_FRAMES_MAX_LIMIT, AGENT_TEXT_CAPS, utf8ByteLength } from './agent-result-caps.mjs'
 import {

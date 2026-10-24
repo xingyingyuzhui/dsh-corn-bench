@@ -7,7 +7,7 @@ export function registerSettings(ctx, React, t, Page) {
     return slots.register(
       {
         name: 'settings.section',
-        id: 'dsh-vision-bench',
+        id: 'dsh-corn-bench',
         order: 46,
         locale: NS,
         label() {

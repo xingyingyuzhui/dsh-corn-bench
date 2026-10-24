@@ -3,10 +3,10 @@
  * Shared fixtures for points get tests (not a *.test.mjs — excluded from structure budget).
  */
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { loadWorkspace } from '../../bench-store.mjs'
 
 /**
@@ -14,11 +14,11 @@ import { loadWorkspace } from '../../bench-store.mjs'
  * @param {string} home
  */
 export function withRealHost(t, home) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
 }
 

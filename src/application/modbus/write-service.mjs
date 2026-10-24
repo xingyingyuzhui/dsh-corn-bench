@@ -129,7 +129,7 @@ export const modbusWrite = async (home, cwd, body, opts = {}) => {
       }
     }
   }
-  // Settings → Vision can turn Agent write approval off for bench/dev work.
+  // Settings → Corn can turn Agent write approval off for bench/dev work.
   // The policy is read per write and fails safe to "approval required".
   const agentApprovalOff = origin.source === 'agent' && !loadAgentPolicy(home).agentWriteApproval
   if (origin.source === 'agent' && !agentApprovalOff && !(body && body.confirm === true)) {

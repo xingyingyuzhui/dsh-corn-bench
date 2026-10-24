@@ -7,24 +7,24 @@ import {
   HOST_INVALID_RESPONSE,
   HOST_UNAVAILABLE,
 } from '../../src/application/commands/command-contract.mjs'
-import { visionDebugTool } from '../../src/interfaces/agent/vision-debug-tool.mjs'
+import { cornDebugTool } from '../../src/interfaces/agent/corn-debug-tool.mjs'
 import {
-  dispatchVisionCommand,
-  dispatchVisionDebugCommand,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
+  dispatchCornCommand,
+  dispatchCornDebugCommand,
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
 
 /**
  * @param {any} t
  * @param {any} handle
  */
 function withHost(t, handle) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(handle)
+  unregisterCornHost()
+  const stop = registerCornHost(handle)
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
 }
 
@@ -45,7 +45,7 @@ test('abort before dispatch returns cancelled with id; Host unavailable keeps id
   })
   const ac = new AbortController()
   ac.abort()
-  const cancelled = await dispatchVisionCommand({
+  const cancelled = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-cancel',
     cwd: '/tmp',
@@ -58,9 +58,9 @@ test('abort before dispatch returns cancelled with id; Host unavailable keeps id
   assert.equal(cancelled.commandId, 'cmd-cancel')
   assert.equal(calls, 0)
 
-  unregisterVisionHost()
-  t.after(() => unregisterVisionHost())
-  const missing = await dispatchVisionCommand({
+  unregisterCornHost()
+  t.after(() => unregisterCornHost())
+  const missing = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-unavail',
     cwd: '/tmp',
@@ -80,14 +80,14 @@ test('HTTP invalid JSON keeps HOST_INVALID_RESPONSE and commandId', async (t) =>
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   t.after(() => server.close())
   const addr = /** @type {import('node:net').AddressInfo} */ (server.address())
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = `http://127.0.0.1:${addr.port}`
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = `http://127.0.0.1:${addr.port}`
   t.after(() => {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
   })
-  unregisterVisionHost()
-  const ran = await dispatchVisionCommand({
+  unregisterCornHost()
+  const ran = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-http-bad',
     cwd: '/tmp',
@@ -109,14 +109,14 @@ test('HTTP empty object without ok → HOST_INVALID_RESPONSE', async (t) => {
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   t.after(() => server.close())
   const addr = /** @type {import('node:net').AddressInfo} */ (server.address())
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = `http://127.0.0.1:${addr.port}`
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = `http://127.0.0.1:${addr.port}`
   t.after(() => {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
   })
-  unregisterVisionHost()
-  const ran = await dispatchVisionCommand({
+  unregisterCornHost()
+  const ran = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-http-empty',
     cwd: '/tmp',
@@ -130,13 +130,13 @@ test('HTTP empty object without ok → HOST_INVALID_RESPONSE', async (t) => {
   assert.equal(ran.commandId, 'cmd-http-empty')
 })
 
-test('vision_debug through shared client keeps debug action and commandId on failure', async (t) => {
+test('corn_debug through shared client keeps debug action and commandId on failure', async (t) => {
   withHost(t, {
     dispatch() {
       throw new Error('debug-boom')
     },
   })
-  const ran = await dispatchVisionDebugCommand({
+  const ran = await dispatchCornDebugCommand({
     action: 'status',
     commandId: 'cmd-debug-1',
     cwd: '/tmp',
@@ -148,7 +148,7 @@ test('vision_debug through shared client keeps debug action and commandId on fai
   assert.equal(ran.commandId, 'cmd-debug-1')
   assert.equal(ran.action, 'debug.status')
 
-  const tool = visionDebugTool('/tmp')
+  const tool = cornDebugTool('/tmp')
   const via = await tool.execute(
     { action: 'status', commandId: 'cmd-debug-2' },
     { agent: agentOf('/tmp') },

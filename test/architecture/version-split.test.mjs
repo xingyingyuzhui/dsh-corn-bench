@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { normalizeModbus } from '../../bench-devices.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 
 test('Task5: schemaVersion fixed 3, configVersion increments on each connection/device/point change, evidence uses configVersion', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-version-'))
@@ -47,27 +47,27 @@ test('Task5: schemaVersion fixed 3, configVersion increments on each connection/
     const pack = normalizeModbus(ws.modbus)
     const expectedCv = ws.modbus.configVersion
     // run alarm/evidence/trend via tool and check they return configVersion
-    let res = await runVisionBench(home, { action: 'trend', connectionId: 'c1' }, cwd, {
+    let res = await runCornBench(home, { action: 'trend', connectionId: 'c1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.ok, true)
     assert.equal(res.trend.configVersion, expectedCv, 'trend should return configVersion, not schemaVersion')
-    res = await runVisionBench(home, { action: 'alarm', connectionId: 'c1' }, cwd, { source: 'agent', sessionId: 's1' })
+    res = await runCornBench(home, { action: 'alarm', connectionId: 'c1' }, cwd, { source: 'agent', sessionId: 's1' })
     assert.equal(res.ok, true)
     assert.equal(res.configVersion, expectedCv, 'alarm should return configVersion')
-    res = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: 's1' })
+    res = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: 's1' })
     assert.equal(res.ok, true)
     assert.equal(res.configVersion, expectedCv, 'evidence should return configVersion')
     // frames should also return configVersion
-    res = await runVisionBench(home, { action: 'frames', connectionId: 'c1' }, cwd, {
+    res = await runCornBench(home, { action: 'frames', connectionId: 'c1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })
     assert.equal(res.ok, true)
     assert.equal(res.configVersion, expectedCv, 'frames should return configVersion')
     // focus should return configVersion
-    res = await runVisionBench(home, { action: 'focus', connectionId: 'c1', deviceId: 'd1', pointId: 'p1' }, cwd, {
+    res = await runCornBench(home, { action: 'focus', connectionId: 'c1', deviceId: 'd1', pointId: 'p1' }, cwd, {
       source: 'agent',
       sessionId: 's1',
     })

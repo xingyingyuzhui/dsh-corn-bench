@@ -10,7 +10,7 @@ Modbus RTU/TCP and serial capture can block, crash native bindings, or hold port
 
 ## Decision
 
-- Keep Modbus / serial I/O in an **independent Worker** (`runtime/vision-io-worker.mjs` + `runtime/io/*`).
+- Keep Modbus / serial I/O in an **independent Worker** (`runtime/corn-io-worker.mjs` + `runtime/io/*`).
 - Host talks to the worker only through the existing I/O contract (`bench-io-contract.mjs` / broker).
 - UI and Agent never import `serialport` / `modbus-serial` directly.
 - Worker owns live handles; Host owns workspace config and user-visible state snapshots.

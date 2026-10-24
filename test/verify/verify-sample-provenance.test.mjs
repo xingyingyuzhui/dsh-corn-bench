@@ -10,7 +10,7 @@ import { modbusRead } from '../../bench-modbus.mjs'
 import { prepareConfigPersistence } from '../../src/domain/modbus/prepare-config-persistence.mjs'
 import { createVerifyTelemetryAdapter } from '../../src/application/verify/verify-telemetry-adapter.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
 test('prepareConfigPersistence: address change clears value and bumps generation', () => {
@@ -105,7 +105,7 @@ test('production address update must not reuse the previous address runtime valu
   assert.equal(before.source, 'poll-cache')
 
   const expectedConfigVersion = loadWorkspace(b.home, b.cwd).modbus.configVersion
-  const update = await runVisionBench(
+  const update = await runCornBench(
     b.home,
     { action: 'points', op: 'update', expectedConfigVersion, points: [{ id: 'p1', address: 5 }] },
     b.cwd,

@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { BROKER_GRACE_MS, createVisionIoBroker } from '../../bench-io-broker.mjs'
+import { BROKER_GRACE_MS, createCornIoBroker } from '../../bench-io-broker.mjs'
 const workerPath = fileURLToPath(new URL('../fixtures/timeout-io-worker.mjs', import.meta.url))
 
 const readPayload = (timeoutMs) => ({
@@ -25,9 +25,9 @@ const readPayload = (timeoutMs) => ({
  * @param {string} log
  */
 function brokerFor(mode, log) {
-  return createVisionIoBroker({
+  return createCornIoBroker({
     workerPath,
-    env: { ...process.env, VISION_IO_TIMEOUT_MODE: mode, VISION_IO_OPLOG: log },
+    env: { ...process.env, CORN_IO_TIMEOUT_MODE: mode, CORN_IO_OPLOG: log },
   })
 }
 

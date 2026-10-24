@@ -1,10 +1,10 @@
-# Vision Agent 第三轮只读实测复核与修复计划
+# Corn Agent 第三轮只读实测复核与修复计划
 
 ## 1. 基线与结论
 
 审查基线：`bb67176`，工作树审查开始时干净；插件版本 `0.29.28`。`build-info.json` 的 `gitSha=79d8768`、`buildId=eb337abca092b553…` 与本轮 Harness 报告一致。当前 HEAD 比该 SHA 多一条只刷新构建信息的提交，因此 `gitSha` 不是“当前 HEAD 必须完全相等”的断言；内容指纹才是同版本实验构建的可靠标识。此处无需再修版本识别逻辑。报告中的 pid 更换仅证明 Host 进程重启。
 
-这轮七次调用的只读结果与主要代码路径相符，但“七个调用全通”应表述为六个成功查询加一个符合预期的 `frames` 缺参错误；`vision_debug status` 属另一工具。报告把 A-12 归为“`points list` 没有默认 limit”与代码不符：Agent 默认 **20**、最大 **50**；总数 16 时返回全部 16 是正常行为。已用 25 点复核默认返回 20 且带 `nextCursor`。`status.log=[]/logHiddenCount=8` 是保护无会话归属短日志的既定设计；`timeline.list` 是可归属事件的查询入口，不应恢复全局日志文本。
+这轮七次调用的只读结果与主要代码路径相符，但“七个调用全通”应表述为六个成功查询加一个符合预期的 `frames` 缺参错误；`corn_debug status` 属另一工具。报告把 A-12 归为“`points list` 没有默认 limit”与代码不符：Agent 默认 **20**、最大 **50**；总数 16 时返回全部 16 是正常行为。已用 25 点复核默认返回 20 且带 `nextCursor`。`status.log=[]/logHiddenCount=8` 是保护无会话归属短日志的既定设计；`timeline.list` 是可归属事件的查询入口，不应恢复全局日志文本。
 
 仍有三项确定的接口缺陷，以及两项相邻读路径问题：
 
@@ -20,15 +20,15 @@
 
 ## 2. P1：公开工具参数与 Host 查询契约对齐
 
-`src/interfaces/agent/vision-bench-tool.mjs` 的 `parameters.additionalProperties=false`，却没有 `cursor`、`view` 属性。Host 已在 `handlers/config-command-handler.mjs` 将二者转给点位列表，`agent-observe-queries.mjs` 也消费 `cursor`；现有分页测试调用 `runVisionBench`，绕开了真实工具 schema，因此没有发现此断层。`offset` 虽已公开，却不被点位/时间线读取为游标，不能代替 `cursor`。
+`src/interfaces/agent/corn-bench-tool.mjs` 的 `parameters.additionalProperties=false`，却没有 `cursor`、`view` 属性。Host 已在 `handlers/config-command-handler.mjs` 将二者转给点位列表，`agent-observe-queries.mjs` 也消费 `cursor`；现有分页测试调用 `runCornBench`，绕开了真实工具 schema，因此没有发现此断层。`offset` 虽已公开，却不被点位/时间线读取为游标，不能代替 `cursor`。
 
 实施：
 
-1. 在 `visionBenchTool().parameters.properties` 加 `cursor:{type:'string'}`，描述它只用于支持游标的查询；加 `view:{type:'string',enum:['full','summary']}`，说明适用于 `points op=list`，默认 `full`，`summary` 不含运行值。保留当前 `offset` 给 `frames`/`alarm` 的数字偏移分页。
+1. 在 `cornBenchTool().parameters.properties` 加 `cursor:{type:'string'}`，描述它只用于支持游标的查询；加 `view:{type:'string',enum:['full','summary']}`，说明适用于 `points op=list`，默认 `full`，`summary` 不含运行值。保留当前 `offset` 给 `frames`/`alarm` 的数字偏移分页。
 2. 同步工具描述：`points list` Agent 默认 20/最大 50；`timeline.list` 默认 20/最大 50，按 `nextCursor` 续查；`status.log` 隐藏无归属日志，`logHiddenCount` 不是可直接读取的日志条数；`focus.get` 与 `timeline.list` 是只读动作。修正 `status` 描述中“任务时间线”暗示全量事件的措辞，以及 `limit` 字段只提 frames/trend 的过时说明。
 3. 不新增 `points list` 默认 limit：`points-list-page.mjs` 已实现。不要为了 A-12 再做一次分页改造。
 
-测试必须从 `visionBenchTool(home).parameters` 取 schema，并经真实工具 `execute`/Host 路径完成 **45 点三页**与 **>20 条时间线两页**；确认 schema 允许 `view/cursor` 且拒绝其他未知字段，跨会话/过滤条件/配置版本的游标仍被拒绝或提示刷新。单测只调用内部函数不足以验收 Agent 可用性。
+测试必须从 `cornBenchTool(home).parameters` 取 schema，并经真实工具 `execute`/Host 路径完成 **45 点三页**与 **>20 条时间线两页**；确认 schema 允许 `view/cursor` 且拒绝其他未知字段，跨会话/过滤条件/配置版本的游标仍被拒绝或提示刷新。单测只调用内部函数不足以验收 Agent 可用性。
 
 ## 3. P1：告警预算分页保持无漏页
 
@@ -80,7 +80,7 @@
 ## 8. 实施决策（2026-09-27 补充）
 
 1. **不适用参数明确拒绝。** `cursor` 仅用于 `points op=list` 和 `timeline.list`；`view` 仅用于 `points op=list`。例如 `frames+cursor`、`alarm+view`、`points op=get+view` 返回 `ok:false,errorCode:'INVALID_FIELD'`，给出 `details.field/action/supportedBy` 和可操作 `hint`。Agent preflight 可提前报同形错误，Host 分发仍须独立校验；沿用 envelope 保留 `commandId`。不静默忽略，也不让 `offset` 假扮点位/时间线游标。先检查现有直连调用是否误传这些字段，并调整调用方。
-2. **单条超预算用精确失败。** 新增 `RESULT_TOO_LARGE`（当前错误码表没有适合此语义的码），统一形状为 `ok:false,errorCode:'RESULT_TOO_LARGE',overrun:true,truncated:true,retryable:false,returned:0`，并保留 `commandId/action/total`。告警含 `alarmId`，时间线含 `eventId`；ID 自身若极端过长，返回可容纳的诊断指纹，不让错误体再次超预算。失败时 `nextCursor:null`，表示本页**未消费**该条，不能假装可以跳页。文案明确“单条记录超过 Agent 输出上限，当前查询无法完整返回；请到 Vision UI 查看/导出该记录”，不要建议重复同一请求或用更小 `limit`。`alarmId` 详情同样失败，不裁掉审计字段后声称成功。常规缩页仍返回 `ok:true`，按最后实际返回条目重算游标。
+2. **单条超预算用精确失败。** 新增 `RESULT_TOO_LARGE`（当前错误码表没有适合此语义的码），统一形状为 `ok:false,errorCode:'RESULT_TOO_LARGE',overrun:true,truncated:true,retryable:false,returned:0`，并保留 `commandId/action/total`。告警含 `alarmId`，时间线含 `eventId`；ID 自身若极端过长，返回可容纳的诊断指纹，不让错误体再次超预算。失败时 `nextCursor:null`，表示本页**未消费**该条，不能假装可以跳页。文案明确“单条记录超过 Agent 输出上限，当前查询无法完整返回；请到 Corn UI 查看/导出该记录”，不要建议重复同一请求或用更小 `limit`。`alarmId` 详情同样失败，不裁掉审计字段后声称成功。常规缩页仍返回 `ok:true`，按最后实际返回条目重算游标。
 3. **A-12 不立项。** Agent 默认 `limit:20`、最大 50；16 个点全量返回符合契约，只补 schema/说明与 25/45 点端到端用例。
 4. **隐藏短日志保持。** `status.log=[]` 且 `logHiddenCount=8` 不变。`timeline.list` 只展示有当前会话归属的结构化事件；不能宣称它能读回那 8 条无归属旧短日志，`logHiddenCount` 也不是未读计数。
 5. **版本和轮询状态暂不立项。** `444→448` 与 `pollingByConnection.c1.enabled=false` 是观察值，不等于 `connections.c1.enabled=false`，更不能仅凭时间相邻归因于两次人工更新。若后续发现无提交却涨版本或无停轮询命令却关闭，再用结构化事件与配置前后快照单独复现。

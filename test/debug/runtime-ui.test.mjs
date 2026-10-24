@@ -10,7 +10,7 @@ import { createRuntimeController } from '../../src/ui/debug/runtime/runtime-cont
 import { createStackPanel } from '../../src/ui/debug/runtime/stack-panel.mjs'
 import { createVariablesPanel } from '../../src/ui/debug/runtime/variables-panel.mjs'
 import { createDebugWorkspace } from '../../src/ui/workspace/debug-workspace.mjs'
-import { DEBUG_SECTIONS, focusKindOf, isDebugSection, routeForKind } from '../../src/ui/workspace/vision-route.mjs'
+import { DEBUG_SECTIONS, focusKindOf, isDebugSection, routeForKind } from '../../src/ui/workspace/corn-route.mjs'
 import { translate } from '../../bench-i18n.mjs'
 
 /** Visible text of a mock element tree. @param {any} n @returns {string} */
@@ -67,7 +67,7 @@ test('runtime-controller: dispatches correct RPC endpoints with scope', async ()
 
   // 1. getState
   await controller.getState('ds-1')
-  assert.equal(calls[0]?.path, '/dsh-vision-bench/debug/state')
+  assert.equal(calls[0]?.path, '/dsh-corn-bench/debug/state')
   assert.deepEqual(calls[0]?.body, {
     cwd: '/workspace/project',
     sessionId: 'sess-123',
@@ -76,7 +76,7 @@ test('runtime-controller: dispatches correct RPC endpoints with scope', async ()
 
   // 2. command
   await controller.command('continue', { targetSpec: { target: 'stm32' } })
-  assert.equal(calls[1]?.path, '/dsh-vision-bench/debug/command')
+  assert.equal(calls[1]?.path, '/dsh-corn-bench/debug/command')
   assert.equal(calls[1]?.body.op, 'continue')
   assert.equal(calls[1]?.body.cwd, '/workspace/project')
   assert.equal(calls[1]?.body.sessionId, 'sess-123')
@@ -84,18 +84,18 @@ test('runtime-controller: dispatches correct RPC endpoints with scope', async ()
 
   // 3. waitEvents
   await controller.waitEvents(42, undefined, 15000)
-  assert.equal(calls[2]?.path, '/dsh-vision-bench/debug/events/wait')
+  assert.equal(calls[2]?.path, '/dsh-corn-bench/debug/events/wait')
   assert.equal(calls[2]?.body.cursor, 42)
   assert.equal(calls[2]?.body.timeoutMs, 15000)
 
   // 4. approval
   await controller.approval('approve', { requestId: 'req-42' })
-  assert.equal(calls[3]?.path, '/dsh-vision-bench/debug/approval')
+  assert.equal(calls[3]?.path, '/dsh-corn-bench/debug/approval')
   assert.equal(calls[3]?.body.op, 'approve')
   assert.equal(calls[3]?.body.requestId, 'req-42')
 })
 
-test('vision-route: handles RUNTIME section, focusKindOf, and routeForKind', () => {
+test('corn-route: handles RUNTIME section, focusKindOf, and routeForKind', () => {
   assert.equal(DEBUG_SECTIONS.RUNTIME, 'runtime')
   assert.equal(isDebugSection('runtime'), true)
   assert.equal(isDebugSection('unknown'), false)
@@ -104,7 +104,7 @@ test('vision-route: handles RUNTIME section, focusKindOf, and routeForKind', () 
   const debugKinds = ['debug', 'breakpoint', 'watchpoint', 'snapshot', 'debug-event', 'runtime']
   for (const kind of debugKinds) {
     const route = routeForKind(kind)
-    assert.equal(route.viewId, 'vision-bench-debug')
+    assert.equal(route.viewId, 'corn-bench-debug')
     assert.equal(route.section, 'runtime')
     assert.equal(route.tab, 'runtime')
   }

@@ -1,5 +1,5 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto'
-import { stopVisionIoBroker } from './bench-io-broker.mjs'
+import { stopCornIoBroker } from './bench-io-broker.mjs'
 import { setAgentsRegistry } from './bench-notify.mjs'
 import { resetPollingService, stopAllPolling } from './bench-polling-service.mjs'
 import { disposeAlarmNotifyRuntime, startAlarmNotifyRuntime } from './src/application/modbus/poll-alarm-notify.mjs'
@@ -23,15 +23,16 @@ import {
 import { clearDebugApprovals } from './src/application/debug/debug-approval-service.mjs'
 import { clearFlashApprovals } from './src/application/flash/flash-approval-service.mjs'
 import { createVerifyCommandService } from './src/application/verify/verify-command-service.mjs'
-import { registerVisionHost } from './src/infrastructure/host/vision-host-client.mjs'
-import { createAgentPresetAttacher } from './src/infrastructure/host/vision-preset-attach.mjs'
+import { registerCornHost } from './src/infrastructure/host/corn-host-client.mjs'
+import { createAgentPresetAttacher } from './src/infrastructure/host/corn-preset-attach.mjs'
 import { createVerifyTelemetryAdapter } from './src/application/verify/verify-telemetry-adapter.mjs'
-import { registerVisionFetchDispatch } from './src/interfaces/fetch/vision-fetch-route.mjs'
-import { createVisionCommandDispatcher } from './src/interfaces/http/vision-command-routes.mjs'
-import { createVisionRpcRouter } from './src/interfaces/rpc/vision-rpc-router.mjs'
-import { mountVisionWebCompat } from './src/interfaces/web/vision-web-compat.mjs'
+import { registerCornFetchDispatch } from './src/interfaces/fetch/corn-fetch-route.mjs'
+import { createCornCommandDispatcher } from './src/interfaces/http/corn-command-routes.mjs'
+import { migrateLegacyDataDir } from './src/infrastructure/store/legacy-data-dir.mjs'
+import { createCornRpcRouter } from './src/interfaces/rpc/corn-rpc-router.mjs'
+import { mountCornWebCompat } from './src/interfaces/web/corn-web-compat.mjs'
 
-export const name = 'dsh-vision-bench'
+export const name = 'dsh-corn-bench'
 // Host fiber: connection only. Web RPC + Agent HTTP bridge mount under optional webServer.
 // Agent tools live in tools.js under a different loader name.
 export const inject = ['connection']
@@ -45,7 +46,7 @@ let activeHostLease = null
 const issueBridgeCapability = () => {
   startAlarmNotifyRuntime()
   bridgeCapability = randomUUID()
-  process.env.VISION_BENCH_CAPABILITY = bridgeCapability
+  process.env.CORN_BENCH_CAPABILITY = bridgeCapability
   return bridgeCapability
 }
 
@@ -64,7 +65,7 @@ const clearBridgeCapability = (expectedCapability) => {
     return false
   }
   bridgeCapability = ''
-  delete process.env.VISION_BENCH_CAPABILITY
+  delete process.env.CORN_BENCH_CAPABILITY
   return true
 }
 
@@ -140,9 +141,10 @@ function rollbackUncommitted(partial) {
 
 export function apply(ctx) {
   dshHome = defaultDshHome()
+  migrateLegacyDataDir(dshHome)
 
   if (!ctx.connection?.fetch?.register || typeof ctx.connection.fetch.register !== 'function') {
-    throw new Error('dsh-vision-bench: Host requires ctx.connection.fetch.register')
+    throw new Error('dsh-corn-bench: Host requires ctx.connection.fetch.register')
   }
 
   // Phase 1 — local construction only. Do not publish capability / Host / lease yet.
@@ -195,8 +197,8 @@ export function apply(ctx) {
       ).catch(() => {})
     },
   })
-  const router = createVisionRpcRouter({ getHome: () => dshHome, debugRuntime, verifyCommandService })
-  const commandDispatcher = createVisionCommandDispatcher(dshHome, { debugRuntime, verifyCommandService })
+  const router = createCornRpcRouter({ getHome: () => dshHome, debugRuntime, verifyCommandService })
+  const commandDispatcher = createCornCommandDispatcher(dshHome, { debugRuntime, verifyCommandService })
 
   /** @type {(() => void | Promise<void>) | null} */
   let stopFetch = null
@@ -215,7 +217,7 @@ export function apply(ctx) {
   const attachWebCompat = (webCtx) => {
     const effectHost = typeof webCtx?.effect === 'function' ? webCtx : ctx
     effectHost.effect(() => {
-      const compat = mountVisionWebCompat({
+      const compat = mountCornWebCompat({
         connection: webCtx.connection || ctx.connection,
         webServer: webCtx.webServer,
         router,
@@ -236,14 +238,14 @@ export function apply(ctx) {
 
   try {
     // Fallible registrations first — must not steal the active lease on throw.
-    stopFetch = registerVisionFetchDispatch(ctx.connection, router)
+    stopFetch = registerCornFetchDispatch(ctx.connection, router)
 
     if (typeof ctx.inject === 'function') {
       ctx.inject(['webServer'], attachWebCompat)
       ctx.inject(['agentPresets'], attachAgentPreset)
     } else {
       if (ctx.webServer) {
-        legacyWebCompat = mountVisionWebCompat({
+        legacyWebCompat = mountCornWebCompat({
           connection: ctx.connection,
           webServer: ctx.webServer,
           router,
@@ -266,7 +268,7 @@ export function apply(ctx) {
     } catch {
       /* agent registry is optional */
     }
-    stopHost = registerVisionHost(commandDispatcher)
+    stopHost = registerCornHost(commandDispatcher)
     lease = {
       epoch: randomUUID(),
       capability,
@@ -282,7 +284,7 @@ export function apply(ctx) {
     })
     console.info(
       JSON.stringify({
-        event: 'vision.host.apply-failed',
+        event: 'corn.host.apply-failed',
         fiber: name,
         pid: process.pid,
         error: String(error && /** @type {Error} */ (error).message ? error.message : error).slice(0, 300),
@@ -293,7 +295,7 @@ export function apply(ctx) {
     throw error
   }
 
-  logHostLifecycle('vision.host.start', {
+  logHostLifecycle('corn.host.start', {
     epoch: lease.epoch,
     pid: process.pid,
     fetch: true,
@@ -310,7 +312,7 @@ export function apply(ctx) {
     const isCurrentLease = activeHostLease?.epoch === lease.epoch
     const stale = !isCurrentLease
 
-    logHostLifecycle('vision.host.stop', {
+    logHostLifecycle('corn.host.stop', {
       epoch: lease.epoch,
       pid: process.pid,
       fetch: true,
@@ -337,7 +339,7 @@ export function apply(ctx) {
         loggedStaleDispose = true
         console.info(
           JSON.stringify({
-            event: 'vision.host.stale-dispose',
+            event: 'corn.host.stale-dispose',
             fiber: name,
             epoch: lease.epoch,
             activeEpoch: activeHostLease?.epoch ?? null,
@@ -355,7 +357,7 @@ export function apply(ctx) {
     clearFlashApprovals()
     clearDebugApprovals()
     disposeAlarmNotifyRuntime()
-    const brokerStop = stopVisionIoBroker('plugin-dispose')
+    const brokerStop = stopCornIoBroker('plugin-dispose')
     const runtimeStop =
       peekSharedDebugRuntime() === lease.debugRuntime
         ? lease.debugRuntime.shutdown('plugin-dispose').catch(() => {})
@@ -381,9 +383,9 @@ export const _internal = {
   clearBridgeCapability,
   capabilityMatches,
   getActiveHostLease: () => activeHostLease,
-  snapshot: (cwd) => createVisionRpcRouter({ getHome: () => dshHome }).snapshot(cwd),
+  snapshot: (cwd) => createCornRpcRouter({ getHome: () => dshHome }).snapshot(cwd),
   dispatchRpc: (endpoint, payload, signal) =>
-    createVisionRpcRouter({ getHome: () => dshHome }).dispatch(endpoint, payload, signal),
+    createCornRpcRouter({ getHome: () => dshHome }).dispatch(endpoint, payload, signal),
   cwdOf,
   journalView,
 }

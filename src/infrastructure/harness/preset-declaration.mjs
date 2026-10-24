@@ -1,12 +1,12 @@
 // @ts-check
 /**
- * Vision模式 as a declarative Agent preset (DSH 0.1.7+).
+ * Corn模式 as a declarative Agent preset (DSH 0.1.7+).
  *
  * DSH 0.1.7 replaced directory presets (`$DSH_HOME/.agent-presets/<id>/`) with
  * `@deepseek-ai/dsh-agent-preset` declarations carried by Cordis compositions;
  * "nothing reads that directory any more". The declaration is self-contained:
  * it restates the shipped `standard` child list (generated snapshot) and appends
- * the Vision agent tool row. Registration happens through the public
+ * the Corn agent tool row. Registration happens through the public
  * `agentPresets.register()` API from the Host plugin, so older harnesses that
  * only offer the directory contract (`agentPresets.copy`) keep the legacy seed
  * path untouched.
@@ -18,19 +18,19 @@ import { describeStandardDrift, selectStandardSnapshot, standardDrift } from './
 import { checkOwnership } from './preset-overlay.mjs'
 import { _existsSync, _renameSync } from './preset-transaction.mjs'
 
-export const PRESET_ID = 'vision-bench'
+export const PRESET_ID = 'corn-bench'
 export const PRESET_TITLE = 'Corn模式'
 export const PRESET_DESCRIPTION = '标准编码能力，外加 Corn 调试与上位机接口：查询现场工程、编译、Modbus 读点和受控写点。'
 /** Roster position behind the shipped presets (standard 1 … cordis 4). */
 export const PRESET_ORDER = 10
 /** Preset composition `name` — a package subpath, not the host plugin id. */
-export const AGENT_PLUGIN_SPEC = 'dsh-vision-bench/agent'
-export const HOST_PLUGIN_NAME = 'dsh-vision-bench'
+export const AGENT_PLUGIN_SPEC = 'dsh-corn-bench/agent'
+export const HOST_PLUGIN_NAME = 'dsh-corn-bench'
 
 export const REBUILD_INSTRUCTIONS_DECLARATIVE =
-  '安全重建：Corn模式预设由插件声明注册（id: vision-bench，出现在 Agent presets roster）。' +
-  '若 roster 行显示 broken，按其诊断修复插件包后重装/重载 dsh-vision-bench；' +
-  '旧目录式预设在声明生效后会被整体改名备份到 .vision-bench.backup.<ISO>，请勿手工删除或复用该 id。'
+  '安全重建：Corn模式预设由插件声明注册（id: corn-bench，出现在 Agent presets roster）。' +
+  '若 roster 行显示 broken，按其诊断修复插件包后重装/重载 dsh-corn-bench；' +
+  '旧目录式预设在声明生效后会被整体改名备份到 .corn-bench.backup.<ISO>，请勿手工删除或复用该 id。'
 
 const DUPLICATE_RETRY_ATTEMPTS = 3
 const DUPLICATE_RETRY_DELAY_MS = 50
@@ -98,7 +98,7 @@ let declarationState = idleDeclarationState()
  * @property {Promise<void>} settled
  */
 
-const PRESET_DECLARATION_SLOT = Symbol.for('dsh-vision-bench.preset-declaration')
+const PRESET_DECLARATION_SLOT = Symbol.for('dsh-corn-bench.preset-declaration')
 
 /** @returns {PresetDeclarationSlot} */
 export function presetDeclarationSlot() {
@@ -158,19 +158,19 @@ export function isDuplicatePresetError(error) {
 }
 
 /**
- * The self-contained Vision preset: shipped `standard` children plus the Vision
+ * The self-contained Corn preset: shipped `standard` children plus the Corn
  * agent tool row. Rows are fresh per call so a caller may adapt them.
  *
  * @param {{ platform?: string, standard?: import('./standard-preset-track.mjs').StandardSnapshot }} [options]
  *   `standard` defaults to the DSH 0.2.x snapshot.
  * @returns {PresetDefinition}
  */
-export function buildVisionPresetDefinition(options = {}) {
+export function buildCornPresetDefinition(options = {}) {
   const standard = options.standard || selectStandardSnapshot(null)
   /** @type {PresetChildRow[]} */
   const plugins = [
     ...standard.build(options),
-    { id: 'vision-bench-tools', name: AGENT_PLUGIN_SPEC },
+    { id: 'corn-bench-tools', name: AGENT_PLUGIN_SPEC },
   ]
   return {
     id: PRESET_ID,
@@ -200,9 +200,9 @@ export function buildVisionPresetDefinition(options = {}) {
  * @param {{ definition?: PresetDefinition, platform?: string, duplicateRetries?: number, retryDelayMs?: number }} [options]
  * @returns {Promise<RegistrationResult>}
  */
-export async function registerVisionPreset(agentPresets, options = {}) {
+export async function registerCornPreset(agentPresets, options = {}) {
   const standard = selectStandardSnapshot(agentPresets)
-  const definition = options.definition || buildVisionPresetDefinition({ ...options, standard })
+  const definition = options.definition || buildCornPresetDefinition({ ...options, standard })
   const attempts = options.duplicateRetries ?? DUPLICATE_RETRY_ATTEMPTS
   const delayMs = options.retryDelayMs ?? DUPLICATE_RETRY_DELAY_MS
   for (let attempt = 0; ; attempt += 1) {
@@ -305,10 +305,10 @@ export const userPresetDir = (/** @type {string} */ home) => join(home, '.agent-
  * @param {{ definition?: PresetDefinition, platform?: string, duplicateRetries?: number, retryDelayMs?: number, epoch?: number }} [options]
  * @returns {Promise<DeclarationActivation>}
  */
-export async function activateVisionPresetDeclaration(agentPresets, home, options = {}) {
+export async function activateCornPresetDeclaration(agentPresets, home, options = {}) {
   const epoch = options.epoch
   setDeclarationState({ mode: 'declarative', phase: 'pending', via: '', at: '', error: '', migrationWarning: '', backupDir: '' }, epoch)
-  const registration = await registerVisionPreset(agentPresets, options)
+  const registration = await registerCornPreset(agentPresets, options)
   if (!registration.ok) {
     setDeclarationState({ phase: 'failed', via: registration.via, error: registration.error || 'Corn预设声明注册失败' }, epoch)
     return {
@@ -322,7 +322,7 @@ export async function activateVisionPresetDeclaration(agentPresets, home, option
     }
   }
   const roster = await describeDeclaredPreset(agentPresets)
-  // Compare standard's rows only: the appended Vision tool row is ours by design.
+  // Compare standard's rows only: the appended Corn tool row is ours by design.
   const standardRows = registration.definition.plugins.filter((row) => row.name !== AGENT_PLUGIN_SPEC)
   const drift = await standardDrift(agentPresets, standardRows)
   // Only the declaration this fiber just registered may displace the legacy

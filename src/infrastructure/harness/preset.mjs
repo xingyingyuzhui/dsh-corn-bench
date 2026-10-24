@@ -1,6 +1,6 @@
 // @ts-check
 import { join } from 'node:path'
-import { LEGACY_VISION_PERSONAS, PRESET_PERSONA, STANDARD_PERSONA, VISION_GUIDANCE } from './guidance.mjs'
+import { LEGACY_CORN_PERSONAS, PRESET_PERSONA, STANDARD_PERSONA, CORN_GUIDANCE } from './guidance.mjs'
 import {
   loadOfficialPersonaConfig,
   readInstalledDshVersion,
@@ -13,12 +13,12 @@ import {
   PRESET_ID,
   PRESET_TITLE,
   REBUILD_INSTRUCTIONS_DECLARATIVE,
-  activateVisionPresetDeclaration,
+  activateCornPresetDeclaration,
   getDeclarationState,
   isDeclarativeRegistry,
   userPresetDir,
 } from './preset-declaration.mjs'
-import { validateManagedVisionComposition } from './preset-validate.mjs'
+import { validateManagedCornComposition } from './preset-validate.mjs'
 import { STANDARD_PRESET_SNAPSHOT_CONTRACT } from './standard-preset-snapshot.mjs'
 import {
   MARKER,
@@ -37,7 +37,7 @@ import {
   OWNERSHIP_TEMPLATE,
   checkOwnership,
   ensurePresetOverlay as ensurePresetOverlayCore,
-  isVisionToolRow,
+  isCornToolRow,
   parseCompositionDocument,
   templateFieldsMatch,
 } from './preset-overlay.mjs'
@@ -97,7 +97,7 @@ export {
   userPresetDir,
 }
 
-export { LEGACY_VISION_PERSONAS, PRESET_PERSONA, STANDARD_PERSONA, VISION_GUIDANCE }
+export { LEGACY_CORN_PERSONAS, PRESET_PERSONA, STANDARD_PERSONA, CORN_GUIDANCE }
 
 export const PRESET_METADATA = [
   'name: ' + PRESET_TITLE,
@@ -106,7 +106,7 @@ export const PRESET_METADATA = [
 ].join('\n')
 
 export const REBUILD_INSTRUCTIONS =
-  '安全重建：备份 $DSH_HOME/.agent-presets/vision-bench 到带时间戳目录(.vision-bench.backup.<ISO>含 agent.cordis.yml/preset.yml/.dsh-vision-bench)，删除旧目录后 agentPresets.copy("standard","vision-bench","Corn模式")并重启'
+  '安全重建：备份 $DSH_HOME/.agent-presets/corn-bench 到带时间戳目录(.corn-bench.backup.<ISO>含 agent.cordis.yml/preset.yml/.dsh-corn-bench)，删除旧目录后 agentPresets.copy("standard","corn-bench","Corn模式")并重启'
 
 /**
  * @param {string} dir
@@ -221,7 +221,7 @@ export async function inspectPresetHealth(home, options = {}) {
       if (parsed.errors && parsed.errors.length) {
         parseError = String(parsed.errors[0].message || parsed.errors[0])
       } else {
-        const contract = validateManagedVisionComposition(
+        const contract = validateManagedCornComposition(
           /** @type {{ items?: unknown[] } | null | undefined} */ (parsed.contents),
           personaConfig,
         )
@@ -282,12 +282,12 @@ async function copyStandardSource(agentPresets, dir, options) {
 }
 
 /** @param {any} agentPresets @param {string} home @param {string} dir @param {PresetCallOptions} options */
-async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) {
+async function _seedCornBenchPresetInternal(agentPresets, home, dir, options) {
   // DSH 0.1.7+: the preset is a registered declaration, and the caller keeps
   // the returned disposer (registration is process-local — a standalone script
   // cannot seed a harness that is not its own process).
   if (isDeclarativeRegistry(agentPresets)) {
-    const activation = await activateVisionPresetDeclaration(agentPresets, home, options)
+    const activation = await activateCornPresetDeclaration(agentPresets, home, options)
     const result = {
       ok: activation.ok,
       via: activation.via,
@@ -352,14 +352,14 @@ async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) 
 }
 
 /** @param {any} agentPresets @param {string} home @param {PresetCallOptions} [options] */
-export async function seedVisionBenchPreset(agentPresets, home, options = {}) {
+export async function seedCornBenchPreset(agentPresets, home, options = {}) {
   const dir = userPresetDir(home)
   if (inFlightSeeds.has(dir)) {
     return inFlightSeeds.get(dir)
   }
   const promise = (async () => {
     try {
-      return await _seedVisionBenchPresetInternal(agentPresets, home, dir, options)
+      return await _seedCornBenchPresetInternal(agentPresets, home, dir, options)
     } finally {
       inFlightSeeds.delete(dir)
     }
@@ -370,8 +370,8 @@ export async function seedVisionBenchPreset(agentPresets, home, options = {}) {
 
 export const _internal = {
   STANDARD_PERSONA,
-  VISION_GUIDANCE,
-  LEGACY_VISION_PERSONAS,
+  CORN_GUIDANCE,
+  LEGACY_CORN_PERSONAS,
   OWNERSHIP_TEMPLATE,
   MARKER,
   REBUILD_INSTRUCTIONS,
@@ -381,5 +381,5 @@ export const _internal = {
   templateFieldsMatch,
   writeAtomic,
   copyDirRecursive,
-  isVisionToolRow: (/** @type {unknown} */ id, /** @type {unknown} */ name) => isVisionToolRow(id, name, HOST_PLUGIN_NAME, AGENT_PLUGIN_SPEC),
+  isCornToolRow: (/** @type {unknown} */ id, /** @type {unknown} */ name) => isCornToolRow(id, name, HOST_PLUGIN_NAME, AGENT_PLUGIN_SPEC),
 }

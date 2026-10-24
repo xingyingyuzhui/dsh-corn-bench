@@ -4,18 +4,18 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { PRESET_METADATA } from '../../bench-preset.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import { apply as applyAgent } from '../../tools.js'
 import { LEGACY_PERSONA_A, LEGACY_PERSONA_B } from '../helpers/preset-fixtures.mjs'
 import { connection, createBench, pointSeries } from '../helpers/workspace-factory.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 
-test('agent role registers vision_bench and skips HTTP routes', async () => {
+test('agent role registers corn_bench and skips HTTP routes', async () => {
   const tools = []
   const sections = []
   applyAgent({
@@ -43,9 +43,9 @@ test('agent role registers vision_bench and skips HTTP routes', async () => {
   })
   assert.equal(tools.length, 2)
   assert.equal(sections.length, 1)
-  assert.equal(sections[0].name, 'vision-bench:guidance')
-  const benchTool = tools.find((t) => t.name === 'vision_bench')
-  const debugTool = tools.find((t) => t.name === 'vision_debug')
+  assert.equal(sections[0].name, 'corn-bench:guidance')
+  const benchTool = tools.find((t) => t.name === 'corn_bench')
+  const debugTool = tools.find((t) => t.name === 'corn_debug')
   assert.ok(benchTool)
   assert.ok(debugTool)
   assert.equal(benchTool.parameters.type, 'object')
@@ -56,7 +56,7 @@ test('agent role registers vision_bench and skips HTTP routes', async () => {
 })
 test('agent loader uses a distinct name and injects tools plus systemPrompt', async () => {
   const { name, inject } = await import('../../tools.js')
-  assert.equal(name, 'dsh-vision-bench-tools')
+  assert.equal(name, 'dsh-corn-bench-tools')
   assert.deepEqual(inject, ['tools', 'systemPrompt'])
   const src = await readFile(new URL('../../tools.js', import.meta.url), 'utf8')
   assert.doesNotMatch(src, /bench-preset\.mjs/)
@@ -66,25 +66,25 @@ test('agent loader uses a distinct name and injects tools plus systemPrompt', as
 test('new Corn copy does not show 台架; legacy personas still contain 台架 for migration', () => {
   assert.match(PRESET_METADATA, /^name: Corn模式$/m)
   assert.match(PRESET_METADATA, /Corn 调试与上位机接口/)
-  assert.equal(PRESET_METADATA.includes('Vision 台架'), false)
-  const tool = visionBenchTool('/tmp')
+  assert.equal(PRESET_METADATA.includes('Corn 台架'), false)
+  const tool = cornBenchTool('/tmp')
   assert.match(tool.description, /Corn 调试与上位机快速接口/)
   assert.match(tool.description, /所有配置修改必须携带最近一次 status\/list\/get 返回的 configVersion/)
-  assert.equal(tool.description.includes('Vision 台架'), false)
-  assert.equal(LEGACY_PERSONA_A.includes('Vision 台架'), true)
-  assert.equal(LEGACY_PERSONA_B.includes('Vision 台架'), true)
+  assert.equal(tool.description.includes('Corn 台架'), false)
+  assert.equal(LEGACY_PERSONA_A.includes('Corn 台架'), true)
+  assert.equal(LEGACY_PERSONA_B.includes('Corn 台架'), true)
 })
-test('runVisionBench status and select stay inside the workspace', async (t) => {
+test('runCornBench status and select stay inside the workspace', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-tool-' })
   const { home, cwd } = bench
-  const miss = await runVisionBench(home, { action: 'status' }, '')
+  const miss = await runCornBench(home, { action: 'status' }, '')
   assert.equal(miss.ok, false)
   const project = join(cwd, 'app.uvprojx')
   await writeFile(project, '<Project/>')
-  const selected = await runVisionBench(home, { action: 'select', path: project }, cwd)
+  const selected = await runCornBench(home, { action: 'select', path: project }, cwd)
   assert.equal(selected.ok, true)
   assert.equal(selected.keil.project, project)
-  const status = await runVisionBench(home, { action: 'status' }, cwd)
+  const status = await runCornBench(home, { action: 'status' }, cwd)
   assert.equal(status.ok, true)
   assert.equal(status.keil.project, project)
   assert.ok(status.log.some((item) => item.action === 'select-project'))
@@ -93,7 +93,7 @@ test('runVisionBench status and select stay inside the workspace', async (t) => 
   assert.ok(Array.isArray(status.modbus.points))
   assert.ok(status.modbus.conn && typeof status.modbus.conn === 'object')
   assert.ok(status.timeline.some((item) => item.kind === 'select-project'))
-  const escaped = await runVisionBench(home, { action: 'select', path: join(home, 'other.uvprojx') }, cwd)
+  const escaped = await runCornBench(home, { action: 'select', path: join(home, 'other.uvprojx') }, cwd)
   assert.equal(escaped.ok, false)
 })
 test('agent single-point read patches the active device address', async (t) => {
@@ -105,7 +105,7 @@ test('agent single-point read patches the active device address', async (t) => {
       points: [{ name: 'p', function: 3, address: 0 }],
     },
   })
-  const ran = await runVisionBench(home, { action: 'read', function: 3, address: 10, count: 1 }, cwd, {
+  const ran = await runCornBench(home, { action: 'read', function: 3, address: 10, count: 1 }, cwd, {
     source: 'agent',
   })
   assert.equal(ran.ok, true)
@@ -116,7 +116,7 @@ test('agent single-point read patches the active device address', async (t) => {
   assert.equal(ws.modbus.points.length, 1)
 })
 test('Task3/0.20.1: 工具 Schema 完整开放 visualization / component / op 全合法值 / 点位字段', async () => {
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const props = tool.parameters.properties
   assert.ok(props.action.enum.includes('visualization'), 'action.enum 含 visualization')
   assert.ok(props.visualizationId, 'visualizationId 顶层参数')
@@ -166,7 +166,7 @@ test('Task3/0.20.1: status 点位含 runtimeStatus（复用 pointRuntimeStatus�
       alarmState: {},
     },
   })
-  const res = await runVisionBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 's1' })
+  const res = await runCornBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 's1' })
   const pt = res.modbus.points.find((x) => x.id === 'p1')
   assert.equal(pt.monitorEnabled, true)
   assert.equal(pt.alarmEnabled, false)
@@ -179,7 +179,7 @@ test('Task3/0.20.1: status 点位含 runtimeStatus（复用 pointRuntimeStatus�
 })
 
 test('Agent tool schema marks preferred fields and aliases; focus/evidence are not read-only', () => {
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const props = tool.parameters.properties
   assert.match(props.connectionId.description, /规范/)
   assert.match(props.connId.description, /别名/)
@@ -194,14 +194,14 @@ test('Agent tool schema marks preferred fields and aliases; focus/evidence are n
 })
 
 test('Agent execute preflight returns missingFields once for read/frames', async () => {
-  unregisterVisionHost()
-  const stop = registerVisionHost({
+  unregisterCornHost()
+  const stop = registerCornHost({
     dispatch() {
       throw new Error('host must not run when preflight fails')
     },
   })
   try {
-    const tool = visionBenchTool('/tmp')
+    const tool = cornBenchTool('/tmp')
     const read = await tool.execute(
       { action: 'read', pointId: 'p1' },
       { agent: { session: { header: { cwd: '/tmp', id: 's1' } } } },
@@ -219,11 +219,11 @@ test('Agent execute preflight returns missingFields once for read/frames', async
     assert.deepEqual(frames.missingFields, ['connectionId'])
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   }
 })
 
-test('Agent execute projects status/read; Host runVisionBench keeps full status points', async (t) => {
+test('Agent execute projects status/read; Host runCornBench keeps full status points', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-proj-' })
   const { home, cwd } = bench
   const conn = connection('c1', 'tcp', '', { sim: true })
@@ -247,10 +247,10 @@ test('Agent execute projects status/read; Host runVisionBench keeps full status 
       alarmState: { p0: { condition: 'normal', pointId: 'p0' } },
     },
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   try {
-    const tool = visionBenchTool(home)
+    const tool = cornBenchTool(home)
     const agent = { session: { header: { cwd, id: 's1' } } }
     const status = await tool.execute({ action: 'status' }, { agent })
     assert.equal(status.ok, true, status.error)
@@ -258,8 +258,8 @@ test('Agent execute projects status/read; Host runVisionBench keeps full status 
     assert.equal('framesByConnection' in status.modbus, false)
     assert.equal('points' in status.modbus, false)
 
-    const full = await runVisionBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 's1' })
-    assert.equal(full.modbus.points.length, 16, 'runVisionBench keeps full Host status')
+    const full = await runCornBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 's1' })
+    assert.equal(full.modbus.points.length, 16, 'runCornBench keeps full Host status')
 
     const read = await tool.execute(
       { action: 'read', connectionId: 'c1', deviceId: 'd1', pointId: 'p0' },
@@ -271,6 +271,6 @@ test('Agent execute projects status/read; Host runVisionBench keeps full status 
     assert.ok(read.values.every((/** @type {any} */ v) => v.pointId === 'p0' || v.key === 'p0'))
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   }
 })

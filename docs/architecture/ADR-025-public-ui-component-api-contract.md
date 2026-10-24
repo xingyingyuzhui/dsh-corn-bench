@@ -135,4 +135,4 @@ Public modules are imported by direct file path. No `src/ui/components/index.mjs
 
 - ADR-001 (modular monolith), ADR-024 (client primitives and facade retirement)
 - `docs/plans/2026-09-15-002-component-and-pattern-inventory.md` (caller evidence and per-component gaps)
-- `docs/VISION_COMPONENT_REUSE_AND_ENGINEERING_PLAN.md` §5.2, §5.4, §5.5
+- `docs/CORN_COMPONENT_REUSE_AND_ENGINEERING_PLAN.md` §5.2, §5.4, §5.5

@@ -41,7 +41,7 @@ test('连接总览挂载 connListPanel，单连接工作区挂载 deviceCardsPan
     deviceCardsPanel: el('div', { 'data-panel': 'device-cards' }),
     pendingPanel: null,
     statusBar: () => null,
-    visionCollabBar: () => null,
+    cornCollabBar: () => null,
   }
   const overview = renderConnectionOverview(el, t, ctx)
   const workspace = renderConnectionWorkspace(el, t, ctx)
@@ -87,7 +87,7 @@ test('renderConnectionOverview 和 renderConnectionWorkspace 面对 object error
     deviceCardsPanel: null,
     pendingPanel: null,
     statusBar: () => null,
-    visionCollabBar: () => null,
+    cornCollabBar: () => null,
   }
   const tree1 = renderConnectionOverview(el, t, ctx)
   const maskEl1 = tree1.children.find((c) => c && c.props && c.props.className === 'dvb-mask')

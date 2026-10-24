@@ -2,8 +2,8 @@ import { createInterface } from 'node:readline'
 import { appendFileSync } from 'node:fs'
 
 const write = (obj) => process.stdout.write(JSON.stringify(obj) + '\n')
-const delayMs = Number(process.env.VISION_IO_DELAY_MS || 0)
-const logPath = process.env.VISION_IO_OPLOG || ''
+const delayMs = Number(process.env.CORN_IO_DELAY_MS || 0)
+const logPath = process.env.CORN_IO_OPLOG || ''
 const pending = new Map()
 
 const log = (row) => {
@@ -34,7 +34,7 @@ const handle = async (msg) => {
     return
   }
   if (msg.op === 'health') {
-    write({ v: 1, id, ok: true, data: { protocol: Number(process.env.VISION_IO_PROTOCOL || 1), tcp: true, rtu: true } })
+    write({ v: 1, id, ok: true, data: { protocol: Number(process.env.CORN_IO_PROTOCOL || 1), tcp: true, rtu: true } })
     return
   }
   if (msg.op === 'shutdown') {

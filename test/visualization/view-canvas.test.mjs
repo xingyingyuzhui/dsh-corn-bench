@@ -158,7 +158,7 @@ test('组件编辑弹窗锁在视口内，不把整页撑出滚动', async () =>
   // Must beat body[…] .dvb-dialog { width:min(400px,…) } — editor dialog has both classes.
   assert.match(
     css,
-    /body\[data-dsh-vision-bench\] \.dvb-dialog\.dvb-viz-modal\{[^}]*width:min\(960px,calc\(100vw - 32px\)\)/,
+    /body\[data-dsh-corn-bench\] \.dvb-dialog\.dvb-viz-modal\{[^}]*width:min\(960px,calc\(100vw - 32px\)\)/,
   )
   assert.match(css, /\.dvb-dialog\.dvb-viz-modal\{[^}]*height:calc\(100vh - 32px\)/)
   assert.match(css, /\.dvb-dialog\.dvb-viz-modal\{[^}]*max-height:calc\(100vh - 32px\)/)

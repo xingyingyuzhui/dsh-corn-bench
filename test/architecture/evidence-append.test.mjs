@@ -122,9 +122,9 @@ test('Task7: POST /evidence merges and validates via host', async () => {
     const p1 = { id: 'p1', connectionId: 'c1', deviceId: 'd1', area: 'holdingRegister', function: 3, address: 0 }
     saveWorkspace(home, cwd, { modbus: { version: 3, connections: [c1], devices: [d1], points: [p1] } })
     const cv = loadWorkspace(home, cwd).modbus.configVersion
-    // use bench-tool via host-like call: runVisionBench evidence should use appendEvidence internally
-    const { runVisionBench } = await import('../helpers/run-vision-bench.mjs')
-    let res = await runVisionBench(
+    // use bench-tool via host-like call: runCornBench evidence should use appendEvidence internally
+    const { runCornBench } = await import('../helpers/run-corn-bench.mjs')
+    let res = await runCornBench(
       home,
       {
         action: 'evidence',
@@ -137,7 +137,7 @@ test('Task7: POST /evidence merges and validates via host', async () => {
     let ws = loadWorkspace(home, cwd)
     assert.ok(ws.focus.evidence.length >= 1)
     // second call should merge, not overwrite
-    res = await runVisionBench(
+    res = await runCornBench(
       home,
       {
         action: 'evidence',

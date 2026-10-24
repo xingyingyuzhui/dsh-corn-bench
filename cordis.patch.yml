@@ -1,6 +1,6 @@
 # dsh bundle layer: Corn host UI. Agent tools are mounted by the Corn模式 preset.
 - insert:
-    - id: dsh-vision-bench
-      name: dsh-vision-bench
+    - id: dsh-corn-bench
+      name: dsh-corn-bench
       config:
         role: host

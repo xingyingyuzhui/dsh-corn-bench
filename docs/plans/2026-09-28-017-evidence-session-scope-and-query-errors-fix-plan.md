@@ -1,4 +1,4 @@
-# Vision 证据引用会话隔离与查询错误修复计划
+# Corn 证据引用会话隔离与查询错误修复计划
 
 ## 1. 基线与问题边界
 
@@ -8,7 +8,7 @@
 
 另两条确定的写路径问题：`handlers/evidence-command-handler.mjs` 在没有 `evidence[]` 的查询中仍调用 `ensureWorkspaceClaimed`，可把 legacy 拓扑落盘归属 A 而不涨版本；`journal-store.mjs::appendEvidence` 对 `kind=log/build` 等非严格类型只检查“有 ID”，不验证目标会话。我复现 A 将 B 的 `log:b-event` 追加到了仍归 B 所有的全局 `focus.evidence`，返回 `ok:true`。UI 的 `postEvidence` 请求体又没有 `sessionId`，在分区工作区不能依赖 Host 猜当前会话。
 
-同一漏洞还有另一条写入口：`focus-service.mjs::requestFocus` 直接截取 `body.evidence`，随后以 `origin.sessionId || body.sessionId` 写入全局 focus；既能绕开 `appendEvidence` 校验，也能覆盖别的会话的焦点。读取侧的 `vision-rpc-workspace.mjs::sessionWorkspaceView` 只投影 modbus，`project-command-handler.mjs::status` 直接带回 `workspace.focus`，`ui/common/focus-store.mjs` 又原样展示历史 evidence。修复必须同时覆盖 focus 写入与所有会话可见的 focus 读取。
+同一漏洞还有另一条写入口：`focus-service.mjs::requestFocus` 直接截取 `body.evidence`，随后以 `origin.sessionId || body.sessionId` 写入全局 focus；既能绕开 `appendEvidence` 校验，也能覆盖别的会话的焦点。读取侧的 `corn-rpc-workspace.mjs::sessionWorkspaceView` 只投影 modbus，`project-command-handler.mjs::status` 直接带回 `workspace.focus`，`ui/common/focus-store.mjs` 又原样展示历史 evidence。修复必须同时覆盖 focus 写入与所有会话可见的 focus 读取。
 
 查询字段尚有两项次级问题：`view=compact` 被正确判为 `INVALID_FIELD`，顶层错误却错误地称“view 不适用于 points 查询”；数字 `cursor:42` 通过共享校验后被点位/时间线服务当作空游标，静默回到第一页。`points list` 默认 20、最大 50 已实现，`status.log` 隐藏无归属短日志也是现有安全契约，不列为缺陷。
 
@@ -47,7 +47,7 @@
 
 非空追加分支以 `origin.sessionId` 调用带授权的 `appendEvidence`；引用列表应在提交成功后按同一会话重新取得，失败时不返回全局引用。`commandId/action` 仍由既有 envelope 补齐。`evidence[]` 是写操作，若以后接入重试/幂等，不能在发送后失败时声称未执行。
 
-UI 的 `src/ui/common/agent-reference.mjs::postEvidence` 以末尾可选参数 `{sessionId}` 扩展现有签名并放入请求体，保留旧未分区调用兼容；五个调用点（HMI、报文、告警、日志、可视化）从已有 `pageSessionId(props)` 或其等价作用域传入。`src/interfaces/rpc/vision-rpc-router.mjs` 的 `evidence` 分支消费该 sid；分区工作区无 sid 不从 `workspace.session.boundId`、focus owner、首个 sessionConfigs 行猜测。UI RPC 的 sessionId 是本地协作作用域标识，不把它宣传成对不受信客户端的独立身份认证。对 helper 用 fake post 做参数断言，页面结构测试用 `react-unit`；无必要不加 HappyDOM。
+UI 的 `src/ui/common/agent-reference.mjs::postEvidence` 以末尾可选参数 `{sessionId}` 扩展现有签名并放入请求体，保留旧未分区调用兼容；五个调用点（HMI、报文、告警、日志、可视化）从已有 `pageSessionId(props)` 或其等价作用域传入。`src/interfaces/rpc/corn-rpc-router.mjs` 的 `evidence` 分支消费该 sid；分区工作区无 sid 不从 `workspace.session.boundId`、focus owner、首个 sessionConfigs 行猜测。UI RPC 的 sessionId 是本地协作作用域标识，不把它宣传成对不受信客户端的独立身份认证。对 helper 用 fake post 做参数断言，页面结构测试用 `react-unit`；无必要不加 HappyDOM。
 
 ## 5. P0：追加时验证真实来源与焦点归属
 
@@ -59,7 +59,7 @@ UI 的 `src/ui/common/agent-reference.mjs::postEvidence` 以末尾可选参数 `
 
 `requestFocus` 也必须调用这套批量证据解析器。将目标解析、版本检查、现有 focus owner 检查、`body.evidence` 全量验证与保存放入同一个 repository update 临界区；在任何可能落盘的 legacy claim 之前完成拒绝判断，拒绝时 0 写盘。把 `requestFocus(home,cwd,body,origin)` 的身份与业务 body 分开：Agent 入口传 Host command origin，UI RPC 入口显式传页面的 session scope；移除函数内部 `origin.sessionId || body.sessionId` 的再次回退。两种入口都不允许通过 `source:'user'` 隐式覆盖别人的 owner。若当前焦点归 B，A 的 focus 请求一律失败且 request/evidence/prev 不变。新焦点成功时仅保存已验证、带受控 sid 的 evidence。这里的 UI RPC sessionId 仍只是本地页面作用域，不是对恶意本机 RPC 客户端的强认证；不要把隔离测试宣传成跨信任边界安全证明。
 
-读取也复用同一**纯**解析器，增加 `projectVisibleFocus(workspace,sessionId,scope)`，接入 `vision-rpc-workspace.mjs::sessionWorkspaceView`、`workspace-session-view.mjs::workspaceViewForSession` 和 `project-command-handler.mjs::status` 等输出边界，再由 UI `focus-store` 接收过滤后的内容。B 的 focus 对 A 返回空焦点；同 owner 的旧 evidence 逐条解析，不能验证的行过滤并只报告数量，不返回 id/时间。不得只在 UI 组件里过滤，因为 RPC/Host 原始结果仍可读取。红测要从旧磁盘 fixture 构造无 owner/伪 owner/B 的证据，分别覆盖 Host status、RPC snapshot、UI focus store；验证纯读取不改磁盘。
+读取也复用同一**纯**解析器，增加 `projectVisibleFocus(workspace,sessionId,scope)`，接入 `corn-rpc-workspace.mjs::sessionWorkspaceView`、`workspace-session-view.mjs::workspaceViewForSession` 和 `project-command-handler.mjs::status` 等输出边界，再由 UI `focus-store` 接收过滤后的内容。B 的 focus 对 A 返回空焦点；同 owner 的旧 evidence 逐条解析，不能验证的行过滤并只报告数量，不返回 id/时间。不得只在 UI 组件里过滤，因为 RPC/Host 原始结果仍可读取。红测要从旧磁盘 fixture 构造无 owner/伪 owner/B 的证据，分别覆盖 Host status、RPC snapshot、UI focus store；验证纯读取不改磁盘。
 
 红测至少覆盖：A 追加 B 的 log/build/debug snapshot、A 向 B focus 写证据、同 ID 双私有点、跨连接 frame/alarm、空会话、错误版本、批次第二条失败、并发两次追加无丢失；合法单会话 point/frame/alarm/trend/viz/connection/device 及 UI copy-ref 仍成功。当前已确认的复现是 `A append log:b-event → ok:true，B focus.evidence 多一条`，修后必须变为失败且文件不变。
 
@@ -67,7 +67,7 @@ UI 的 `src/ui/common/agent-reference.mjs::postEvidence` 以末尾可选参数 `
 
 `agent-query-fields.mjs` 将“不支持该字段”和“取值非法”都走 `invalidField()`，统一写“字段不适用于当前查询”。拆成 `unsupportedField()`、`invalidValue()`、`invalidType()`，保留 `INVALID_FIELD` 与 `details.field/action/supportedBy`；`view=compact` 的顶层 `error` 改为“view 取值无效：compact；合法值 full / summary”，`details.reason='INVALID_VALUE'`、`allowedValues=['full','summary']`。过长输入只回显有界片段，避免错误响应本身超预算。
 
-`cursor` 仅 `undefined` 或 `''` 表示第一页；提供了非字符串、纯空白字符串就返回 `INVALID_FIELD`，不调用点位/时间线服务。Agent 的 `view` 提供了非字符串（包括 `[]`、显式 `null`）也返回 `INVALID_FIELD`；非 Agent 的 UI/内部调用仍沿用现有宽松解析，不因本轮新增拒绝。Agent preflight 与 Host 的 Agent 来源共用同一校验，Host 是权威出口；保留 `commandId`。测试从 `visionBenchTool.execute` 和 `executeVisionCommand` 两条入口跑 `compact`、`cursor:42`、空白游标、`view:[]`、`view:null`，再测 UI/内部 null 兼容，断言 Agent 非法游标不重读第一页；合法 `cursor` 继续跨页无漏项。A-12 不改默认 limit。
+`cursor` 仅 `undefined` 或 `''` 表示第一页；提供了非字符串、纯空白字符串就返回 `INVALID_FIELD`，不调用点位/时间线服务。Agent 的 `view` 提供了非字符串（包括 `[]`、显式 `null`）也返回 `INVALID_FIELD`；非 Agent 的 UI/内部调用仍沿用现有宽松解析，不因本轮新增拒绝。Agent preflight 与 Host 的 Agent 来源共用同一校验，Host 是权威出口；保留 `commandId`。测试从 `cornBenchTool.execute` 和 `executeCornCommand` 两条入口跑 `compact`、`cursor:42`、空白游标、`view:[]`、`view:null`，再测 UI/内部 null 兼容，断言 Agent 非法游标不重读第一页；合法 `cursor` 继续跨页无漏项。A-12 不改默认 limit。
 
 ## 7. 提交、门禁与验收
 

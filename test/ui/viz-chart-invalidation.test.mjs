@@ -115,7 +115,7 @@ test('chartState splits series / data / option fingerprints', () => {
   assert.notEqual(a.option, theme.option)
 })
 
-test('dataFingerprint falls back to window hash without revision', () => {
+test('dataFingerprint falls back to window hash without recorn', () => {
   const payload = {
     data: [
       [10, 20, 30],

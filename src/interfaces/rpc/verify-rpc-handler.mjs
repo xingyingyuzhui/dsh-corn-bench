@@ -101,8 +101,8 @@ export function createVerifyRpcHandler(deps = {}) {
     'verify/status': handleStatus,
 
     // Backward compatibility aliases
-    'vision.verify.run': handleRun,
-    'vision.verify.cancel': handleCancel,
-    'vision.verify.status': handleStatus,
+    'corn.verify.run': handleRun,
+    'corn.verify.cancel': handleCancel,
+    'corn.verify.status': handleStatus,
   }
 }

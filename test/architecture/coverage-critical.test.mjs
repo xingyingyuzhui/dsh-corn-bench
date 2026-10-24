@@ -86,7 +86,7 @@ test('committed floors cover write, flash, preset declaration, and preset attach
     ...write,
     ...flash,
     'src/infrastructure/harness/preset-declaration.mjs',
-    'src/infrastructure/host/vision-preset-attach.mjs',
+    'src/infrastructure/host/corn-preset-attach.mjs',
   ].sort()
   assert.deepEqual(Object.keys(CRITICAL_FLOORS).sort(), expected)
   for (const floor of Object.values(CRITICAL_FLOORS)) {

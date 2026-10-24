@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { validateAgentToolArgs } from '../../src/interfaces/agent/agent-tool-preflight.mjs'
 
 test('alarm watch:false unsubscribe needs no connectionId; FIELD_CONFLICT on opposite flags', () => {
@@ -25,7 +25,7 @@ test('alarm watch:false unsubscribe needs no connectionId; FIELD_CONFLICT on opp
   assert.equal(subscribeStillNeedsTarget?.errorCode, 'TARGET_REQUIRED')
 })
 
-test('production visionBenchTool alarm watch:false clears only this session without connectionId', async (t) => {
+test('production cornBenchTool alarm watch:false clears only this session without connectionId', async (t) => {
   const { createBench } = await import('../helpers/workspace-factory.mjs')
   const { setAgentAlarmWatch, getAgentAlarmWatch, disposeAlarmNotifyRuntime } = await import(
     '../../src/application/modbus/poll-alarm-notify.mjs'
@@ -33,12 +33,12 @@ test('production visionBenchTool alarm watch:false clears only this session with
   const bench = await createBench(t, { prefix: 'dvb-unsub-' })
   const { home, cwd } = bench
   disposeAlarmNotifyRuntime()
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   try {
     setAgentAlarmWatch(cwd, { followup: true, sessionId: 'sess-a', pointIds: [] })
     setAgentAlarmWatch(cwd, { followup: true, sessionId: 'sess-b', pointIds: [] })
-    const tool = visionBenchTool(home)
+    const tool = cornBenchTool(home)
     const exec = {
       agent: { session: { header: { cwd, id: 'sess-a' } } },
     }
@@ -57,7 +57,7 @@ test('production visionBenchTool alarm watch:false clears only this session with
     assert.equal(bad.errorCode, 'FIELD_CONFLICT')
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
     disposeAlarmNotifyRuntime()
   }
 })

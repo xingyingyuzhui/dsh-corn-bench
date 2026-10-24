@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { ensurePresetOverlay, seedVisionBenchPreset } from '../../bench-preset.mjs'
+import { ensurePresetOverlay, seedCornBenchPreset } from '../../bench-preset.mjs'
 import {
   SUPPORTED_DSH_CONTRACT,
   loadOfficialPersonaConfig,
@@ -13,13 +13,13 @@ import {
 import { validatePersonaConfig } from '../../src/infrastructure/harness/preset-validate.mjs'
 
 const fixtureDir = dirname(fileURLToPath(import.meta.url))
-const legacyFixture = join(fixtureDir, '..', 'fixtures', 'legacy-vision-preset.yml')
+const legacyFixture = join(fixtureDir, '..', 'fixtures', 'legacy-corn-preset.yml')
 
 async function ownedDir() {
   const dir = await mkdtemp(join(tmpdir(), 'dvb-contract-'))
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
-    JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 2, pluginRowId: 'vision-bench-tools' }),
+    join(dir, '.dsh-corn-bench'),
+    JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 2, pluginRowId: 'corn-bench-tools' }),
   )
   return dir
 }
@@ -42,7 +42,7 @@ test('real legacy preset migrates text→prefix and host row→/agent, then pass
     await writeFile(join(dir, 'agent.cordis.yml'), await readFile(legacyFixture, 'utf8'))
     const before = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
     assert.match(before, /text:/)
-    assert.match(before, /name: dsh-vision-bench\n/)
+    assert.match(before, /name: dsh-corn-bench\n/)
     assert.match(before, /role: agent/)
     assert.throws(
       () => validatePersonaConfig({ text: 'You are a coding agent powered by the {{model}} model.' }, Config),
@@ -52,8 +52,8 @@ test('real legacy preset migrates text→prefix and host row→/agent, then pass
     const out = ensurePresetOverlay(dir, { personaConfig: Config })
     assert.equal(out.ok, true, out.error)
     const after = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
-    assert.match(after, /name: dsh-vision-bench\/agent/)
-    assert.doesNotMatch(after, /name: dsh-vision-bench\n/)
+    assert.match(after, /name: dsh-corn-bench\/agent/)
+    assert.doesNotMatch(after, /name: dsh-corn-bench\n/)
     assert.doesNotMatch(after, /role: agent/)
     const yaml = await import('yaml')
     const doc = yaml.parseDocument(after)
@@ -97,15 +97,15 @@ test('fresh DSH_HOME copies shipped-standard fixture then passes official Config
       ].join('\n'),
     )
     await writeFile(join(standardDir, 'preset.yml'), 'name: 标准模式\n')
-    const out = await seedVisionBenchPreset(null, home, {
+    const out = await seedCornBenchPreset(null, home, {
       standardDir,
       personaConfig: Config,
     })
     assert.equal(out.ok, true, out.error)
-    const composition = await readFile(join(home, '.agent-presets', 'vision-bench', 'agent.cordis.yml'), 'utf8')
+    const composition = await readFile(join(home, '.agent-presets', 'corn-bench', 'agent.cordis.yml'), 'utf8')
     assert.match(composition, /prefix:/)
     assert.doesNotMatch(composition, /^\s+text:/m)
-    assert.match(composition, /name: dsh-vision-bench\/agent/)
+    assert.match(composition, /name: dsh-corn-bench\/agent/)
     const yaml = await import('yaml')
     const doc = yaml.parseDocument(composition)
     for (const item of doc.contents.items) {
@@ -122,7 +122,7 @@ test('fresh DSH_HOME copies shipped-standard fixture then passes official Config
 test('seed without standard source fails instead of claiming success', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-nostandard-'))
   try {
-    const out = await seedVisionBenchPreset(null, home, {
+    const out = await seedCornBenchPreset(null, home, {
       standardDir: join(home, 'missing-standard'),
       personaConfig: localPersonaConfigReplica,
     })

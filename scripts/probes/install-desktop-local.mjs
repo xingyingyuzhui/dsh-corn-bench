@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Install current dsh-vision-bench into ~/.dsh/profiles/desktop via a local tarball.
+ * Install current dsh-corn-bench into ~/.dsh/profiles/desktop via a local tarball.
  * Does NOT publish to npm. Quit DeepSeek Harness Desktop first.
  *
  *   node scripts/probes/install-desktop-local.mjs
@@ -120,7 +120,7 @@ manifest.dsh.profile.bundles = [...DESKTOP_PROFILE_BUNDLES, ...Object.keys(exact
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`)
 
 console.log(JSON.stringify({
-  event: 'vision.desktop.local-install',
+  event: 'corn.desktop.local-install',
   profile,
   package: `${pkg.name}@${pkg.version}`,
   tarball: tarballPath,

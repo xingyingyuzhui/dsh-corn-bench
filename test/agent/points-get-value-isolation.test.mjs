@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import {
   assertHiddenValue,
@@ -17,7 +17,7 @@ test('get/list: A does not receive B runtime value for same pointId', async (t) 
   const before = runtimeFingerprint(seedDualPrivateSamePointId(home, cwd))
   const originA = { source: 'agent', sessionId: 'session-a' }
 
-  const got = await runVisionBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, originA)
+  const got = await runCornBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, originA)
   assert.equal(got.ok, true, got.error)
   assert.equal(got.returned, 1)
   assert.equal(got.points[0].id, 'p')
@@ -25,7 +25,7 @@ test('get/list: A does not receive B runtime value for same pointId', async (t) 
   assert.equal(got.points[0].deviceId, 'dc1')
   assertHiddenValue(got.points[0], { expectConn: 'c1', expectDev: 'dc1' })
 
-  const listed = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, originA)
+  const listed = await runCornBench(home, { action: 'points', op: 'list' }, cwd, originA)
   assert.equal(listed.ok, true, listed.error)
   const row = listed.points.find((/** @type {any} */ p) => p.id === 'p')
   assert.ok(row)
@@ -80,7 +80,7 @@ test('get: reverse session/value order still hides foreign value', async (t) => 
   ]
   saveWorkspace(home, cwd, ws)
 
-  const got = await runVisionBench(
+  const got = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p'] },
     cwd,
@@ -123,7 +123,7 @@ test('get: identical private triples still unavailable; sessionId cannot resolve
       sessionConfigs: { 'session-a': twin, 'session-b': structuredClone(twin) },
     },
   })
-  const got = await runVisionBench(
+  const got = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p'] },
     cwd,
@@ -160,7 +160,7 @@ test('get: unique matching triple returns available; conn/dev mismatch hides', a
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const ok = await runVisionBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
+  const ok = await runCornBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
   assert.equal(ok.ok, true, ok.error)
   assert.equal(ok.points[0].valueStatus, 'available')
   assert.equal(ok.points[0].raw, 7)
@@ -180,7 +180,7 @@ test('get: unique matching triple returns available; conn/dev mismatch hides', a
     },
   ]
   saveWorkspace(home, cwd, ws)
-  const badConn = await runVisionBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
+  const badConn = await runCornBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
   assert.equal(badConn.points[0].valueStatus, 'unavailable')
   assert.equal(badConn.points[0].raw, null)
 
@@ -197,7 +197,7 @@ test('get: unique matching triple returns available; conn/dev mismatch hides', a
     },
   ]
   saveWorkspace(home, cwd, ws)
-  const badDev = await runVisionBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
+  const badDev = await runCornBench(home, { action: 'points', op: 'get', ids: ['p'] }, cwd, origin)
   assert.equal(badDev.points[0].valueStatus, 'unavailable')
   assert.equal(badDev.points[0].raw, null)
 })

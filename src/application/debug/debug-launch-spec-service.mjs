@@ -337,7 +337,7 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
   }
 
   // 4. Settings bindings: resolve tool paths. Executables come only from the
-  //    user's Settings → Vision bindings, never from the launch request, so a
+  //    user's Settings → Corn bindings, never from the launch request, so a
   //    caller (Agent included) cannot choose what gets spawned.
   const openocdBin = bindings.openocd ? String(bindings.openocd).trim() : 'openocd'
 

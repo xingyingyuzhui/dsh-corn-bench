@@ -37,7 +37,7 @@ test('viz grid and echarts runtimes do not talk to Host or wrap React DOM', () =
   const chartRt = readFileSync(join(root, 'src/ui/vendor/echarts-runtime.mjs'), 'utf8')
   const vendor = readFileSync(join(root, 'scripts/vendor-entry.mjs'), 'utf8')
   for (const src of [grid, gridRt, chartRt]) {
-    assert.doesNotMatch(src, /\/dsh-vision-bench\//)
+    assert.doesNotMatch(src, /\/dsh-corn-bench\//)
     assert.doesNotMatch(src, /from\s+['"]react['"]/)
     assert.doesNotMatch(src, /\.addWidget\(/)
   }
@@ -54,7 +54,7 @@ test('DataTable and table-runtime do not talk to Host or third-party React', () 
   const table = readFileSync(join(root, 'src/ui/components/data-table.mjs'), 'utf8')
   const runtime = readFileSync(join(root, 'src/ui/vendor/table-runtime.mjs'), 'utf8')
   for (const src of [table, runtime]) {
-    assert.doesNotMatch(src, /\/dsh-vision-bench\//)
+    assert.doesNotMatch(src, /\/dsh-corn-bench\//)
     assert.doesNotMatch(src, /subscribeState/)
     assert.doesNotMatch(src, /useReactTable/)
     assert.doesNotMatch(src, /flexRender/)
@@ -79,7 +79,7 @@ test('visualization renderers do not talk to Host', () => {
   const dir = join(root, 'src/ui/monitor/visualization/renderers')
   for (const file of readdirSync(dir)) {
     const src = readFileSync(join(dir, file), 'utf8')
-    assert.doesNotMatch(src, /\/dsh-vision-bench\/(state|command|modbus\/write)/)
+    assert.doesNotMatch(src, /\/dsh-corn-bench\/(state|command|modbus\/write)/)
     assert.doesNotMatch(src, /subscribeState/)
     const lines = src.split('\n').length
     assert.ok(lines <= 200, file + ' renderer is ' + lines + ' lines')
@@ -195,7 +195,7 @@ test('pure models filter frames and project files without React', () => {
 
 test('source-editor does not talk to Host', () => {
   const src = readFileSync(join(root, 'src/ui/components/source-editor.mjs'), 'utf8')
-  assert.doesNotMatch(src, /\/dsh-vision-bench\//)
+  assert.doesNotMatch(src, /\/dsh-corn-bench\//)
   assert.doesNotMatch(src, /from\s+['"]react['"]/)
   assert.match(src, /EditorView/)
   assert.match(src, /readOnly/)

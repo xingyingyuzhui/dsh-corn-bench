@@ -2,8 +2,8 @@ import { createInterface } from 'node:readline'
 import { appendFileSync } from 'node:fs'
 
 const write = (obj) => process.stdout.write(JSON.stringify(obj) + '\n')
-const logPath = process.env.VISION_IO_OPLOG || ''
-const mode = process.env.VISION_IO_TIMEOUT_MODE === 'stuck' ? 'stuck' : 'reply'
+const logPath = process.env.CORN_IO_OPLOG || ''
+const mode = process.env.CORN_IO_TIMEOUT_MODE === 'stuck' ? 'stuck' : 'reply'
 const pending = new Map()
 
 const log = (row) => {

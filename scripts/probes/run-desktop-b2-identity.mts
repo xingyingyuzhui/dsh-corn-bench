@@ -1,9 +1,9 @@
 /**
- * Real Desktop B2 (runtime-identity lab): pack dsh-vision-bench → install into
+ * Real Desktop B2 (runtime-identity lab): pack dsh-corn-bench → install into
  * an isolated Desktop profile (file: tarball, not source link:) → boot
- * DesktopHostProcess → seed `$DSH_HOME/.agent-presets/vision-b2` →
- * `agents.create` + official `agentPresets.mount` → `tools.execute(vision_bench)`
- * system.ping, then exercise real `/api/vision-bench/dispatch` cancel.
+ * DesktopHostProcess → seed `$DSH_HOME/.agent-presets/corn-b2` →
+ * `agents.create` + official `agentPresets.mount` → `tools.execute(corn_bench)`
+ * system.ping, then exercise real `/api/corn-bench/dispatch` cancel.
  *
  * Claim: runtime-identity-lab only. Install temporarily widens allowBuilds for
  * serialport and uses strict-dep-builds=false — NOT official Desktop product
@@ -40,12 +40,12 @@ const here = dirname(fileURLToPath(import.meta.url))
 const benchRoot = resolve(here, '../..')
 const harnessRoot = resolve(here, '../../../../../deepseek-harness-desktop-official')
 const appRoot = join(harnessRoot, 'apps', 'desktop')
-const buildRoot = join(appRoot, '.desktop-build', 'vision-b2-identity')
+const buildRoot = join(appRoot, '.desktop-build', 'corn-b2-identity')
 const projectDir = join(buildRoot, 'project')
 const evidencePath = join(here, 'evidence', 'desktop-b2-identity.json')
 const evidenceDir = join(here, 'evidence')
-const pluginName = 'dsh-vision-bench'
-const probeName = '@dsh-vision/probe-b2-agent'
+const pluginName = 'dsh-corn-bench'
+const probeName = '@dsh-corn/probe-b2-agent'
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
@@ -72,14 +72,14 @@ function writeEvidence(payload: Record<string, unknown>): void {
   writeFileSync(evidencePath, `${JSON.stringify(payload, null, 2)}\n`)
 }
 
-const PRESET_ID = 'vision-b2'
+const PRESET_ID = 'corn-b2'
 
-function writeVisionB2Preset(home: string): void {
+function writeCornB2Preset(home: string): void {
   const dir = join(home, '.agent-presets', PRESET_ID)
   mkdirSync(dir, { recursive: true })
   writeFileSync(
     join(dir, 'agent.cordis.yml'),
-    '- id: vision-bench-tools\n  name: dsh-vision-bench/agent\n',
+    '- id: corn-bench-tools\n  name: dsh-corn-bench/agent\n',
   )
 }
 
@@ -102,9 +102,9 @@ function writeAgentProbe(pluginDir: string): void {
   )
   writeFileSync(
     join(pluginDir, 'cordis.patch.yml'),
-    `- insert:\n    - id: dsh.vision.probe.b2\n      name: '${probeName}'\n`,
+    `- insert:\n    - id: dsh.corn.probe.b2\n      name: '${probeName}'\n`,
   )
-  // Official path: agents.create → agentPresets.mount(preset) → tools.execute(vision_bench).
+  // Official path: agents.create → agentPresets.mount(preset) → tools.execute(corn_bench).
   writeFileSync(
     join(pluginDir, 'host.js'),
     `import { readFileSync } from 'node:fs'
@@ -116,7 +116,7 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 export const name = '${probeName}'
 export const inject = ['connection', 'agents', 'agentPresets', 'tools']
 
-const PATH = '/api/vision-b2-identity'
+const PATH = '/api/corn-b2-identity'
 const PRESET_ID = '${PRESET_ID}'
 
 export function apply(ctx) {
@@ -130,10 +130,10 @@ export function apply(ctx) {
     methods: ['POST'],
     requestBody: 'buffered',
     fetch: async () => {
-      const pkgRoot = dirname(fileURLToPath(import.meta.resolve('dsh-vision-bench/package.json')))
+      const pkgRoot = dirname(fileURLToPath(import.meta.resolve('dsh-corn-bench/package.json')))
       const pkg = JSON.parse(readFileSync(join(pkgRoot, 'package.json'), 'utf8'))
       const client = await import(
-        pathToFileURL(join(pkgRoot, 'src/infrastructure/host/vision-host-client.mjs')).href
+        pathToFileURL(join(pkgRoot, 'src/infrastructure/host/corn-host-client.mjs')).href
       )
 
       /** @type {Record<string, unknown> | null} */
@@ -142,7 +142,7 @@ export function apply(ctx) {
       console.info = (...args) => {
         try {
           const raw = args[0]
-          if (typeof raw === 'string' && raw.includes('vision.tools.start')) {
+          if (typeof raw === 'string' && raw.includes('corn.tools.start')) {
             toolsStartLog = JSON.parse(raw)
           }
         } catch {
@@ -155,7 +155,7 @@ export function apply(ctx) {
       try {
         handle = await ctx.agents.create({
           sessionId: SessionId('desktop-b2'),
-          meta: { cwd: '/tmp/vision-desktop-b2', agentPreset: PRESET_ID },
+          meta: { cwd: '/tmp/corn-desktop-b2', agentPreset: PRESET_ID },
           setup: async (agentCtx) => {
             await ctx.agentPresets.mount(agentCtx, PRESET_ID)
           },
@@ -165,19 +165,19 @@ export function apply(ctx) {
       }
 
       try {
-        if (!toolsStartLog || toolsStartLog.event !== 'vision.tools.start') {
+        if (!toolsStartLog || toolsStartLog.event !== 'corn.tools.start') {
           return Response.json({
             ok: false,
-            error: 'vision.tools.start was not emitted while mounting preset',
+            error: 'corn.tools.start was not emitted while mounting preset',
             toolsStartLog,
           }, { status: 500 })
         }
 
         const registeredToolNames = ctx.tools.schemas(handle.agent).map((s) => s.name)
-        if (!registeredToolNames.includes('vision_bench')) {
+        if (!registeredToolNames.includes('corn_bench')) {
           return Response.json({
             ok: false,
-            error: 'vision_bench missing after agentPresets.mount',
+            error: 'corn_bench missing after agentPresets.mount',
             registeredToolNames,
           }, { status: 500 })
         }
@@ -194,7 +194,7 @@ export function apply(ctx) {
         const toolExec = await ctx.tools.execute({
           signal: AbortSignal.timeout(15_000),
           callId: ToolCallId('b2-system-ping'),
-          name: 'vision_bench',
+          name: 'corn_bench',
           arguments: { action: 'system.ping' },
           agent: handle.agent,
         })
@@ -206,24 +206,24 @@ export function apply(ctx) {
         const pingData = toolResult && typeof toolResult === 'object' ? toolResult.data : null
         const sameModule =
           Boolean(pingData?.clientInstanceId) &&
-          pingData.clientInstanceId === client.VISION_HOST_CLIENT_INSTANCE_ID
+          pingData.clientInstanceId === client.CORN_HOST_CLIENT_INSTANCE_ID
         const samePid = Number(pingData?.pid) === process.pid
-        const hostOrigin = String(process.env.VISION_BENCH_HOST_ORIGIN || process.env.DSH_WEB_ORIGIN || '')
+        const hostOrigin = String(process.env.CORN_BENCH_HOST_ORIGIN || process.env.DSH_WEB_ORIGIN || '')
 
         const body = {
           ok: true,
           pid: process.pid,
           presetId,
           presetMount: 'agentPresets.mount',
-          agentFiber: toolsStartLog.fiber || 'dsh-vision-bench-tools',
+          agentFiber: toolsStartLog.fiber || 'dsh-corn-bench-tools',
           agentApplyRan: true,
           toolsStartLog,
           registeredToolNames,
           packageName: pkg.name,
           packageVersion: pkg.version,
-          clientInstanceId: client.VISION_HOST_CLIENT_INSTANCE_ID,
-          hostEpoch: client.getVisionHostEpoch(),
-          hasHandle: Boolean(client.getVisionHost()),
+          clientInstanceId: client.CORN_HOST_CLIENT_INSTANCE_ID,
+          hostEpoch: client.getCornHostEpoch(),
+          hasHandle: Boolean(client.getCornHost()),
           pingOk: toolResult?.ok === true && toolExec?.isError !== true,
           toolResult,
           toolExecMeta: {
@@ -234,22 +234,22 @@ export function apply(ctx) {
             agentPid: process.pid,
             hostPid: Number(pingData?.pid) || null,
             samePid,
-            localClientInstanceId: client.VISION_HOST_CLIENT_INSTANCE_ID,
+            localClientInstanceId: client.CORN_HOST_CLIENT_INSTANCE_ID,
             hostClientInstanceId: pingData?.clientInstanceId || null,
             sameModuleInstance: sameModule,
-            hasHandle: Boolean(client.getVisionHost()),
-            hostEpoch: client.getVisionHostEpoch(),
+            hasHandle: Boolean(client.getCornHost()),
+            hostEpoch: client.getCornHostEpoch(),
             agentFiber: toolsStartLog.fiber || null,
             presetId,
             dispatchPath: 'in-process-handle',
-            via: 'agentPresets.mount→tools.execute(vision_bench,system.ping)',
+            via: 'agentPresets.mount→tools.execute(corn_bench,system.ping)',
           },
           hostOrigin: hostOrigin || null,
           usedWebPortGuess: /127\\.0\\.0\\.1:3080|localhost:3080/.test(hostOrigin),
           dispatchPath: 'in-process-handle',
           claim: 'runtime-identity-lab',
         }
-        console.info(JSON.stringify({ event: 'vision.probe.b2.agent', ...body, at: Date.now() }))
+        console.info(JSON.stringify({ event: 'corn.probe.b2.agent', ...body, at: Date.now() }))
         return Response.json(body)
       } finally {
         if (handle && typeof handle.dispose === 'function') await handle.dispose().catch(() => undefined)
@@ -257,7 +257,7 @@ export function apply(ctx) {
     },
   })
   console.info(JSON.stringify({
-    event: 'vision.probe.b2.start',
+    event: 'corn.probe.b2.start',
     path: PATH,
     presetId: PRESET_ID,
     pid: process.pid,
@@ -286,12 +286,12 @@ function childProcessNegative(installedRoot: string): Record<string, unknown> {
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 const root = ${JSON.stringify(installedRoot)}
-const client = await import(pathToFileURL(join(root, 'src/infrastructure/host/vision-host-client.mjs')).href)
-const ping = await client.pingVisionHost({ cwd: '', sessionId: 'b2-child' })
+const client = await import(pathToFileURL(join(root, 'src/infrastructure/host/corn-host-client.mjs')).href)
+const ping = await client.pingCornHost({ cwd: '', sessionId: 'b2-child' })
 console.log(JSON.stringify({
   childPid: process.pid,
-  hasHandle: Boolean(client.getVisionHost()),
-  localInstanceId: client.VISION_HOST_CLIENT_INSTANCE_ID,
+  hasHandle: Boolean(client.getCornHost()),
+  localInstanceId: client.CORN_HOST_CLIENT_INSTANCE_ID,
   pingOk: ping.ok === true,
   available: ping.available === true,
   errorCode: ping.errorCode || null,
@@ -302,7 +302,7 @@ console.log(JSON.stringify({
     encoding: 'utf8',
     env: {
       ...process.env,
-      VISION_BENCH_HOST_ORIGIN: 'http://127.0.0.1:1',
+      CORN_BENCH_HOST_ORIGIN: 'http://127.0.0.1:1',
     },
   })
   if (ran.status !== 0) {
@@ -322,9 +322,9 @@ console.log(JSON.stringify({
   return { case: 'child-process-negative', pass, parentPid: process.pid, ...body }
 }
 
-async function probeRealVisionFetch(host: DesktopHostProcess): Promise<Record<string, unknown>> {
+async function probeRealCornFetch(host: DesktopHostProcess): Promise<Record<string, unknown>> {
   const stateHit = await host.fetch(
-    new Request('dsh-app://app/api/vision-bench/dispatch', {
+    new Request('dsh-app://app/api/corn-bench/dispatch', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ endpoint: 'state', payload: {} }),
@@ -335,12 +335,12 @@ async function probeRealVisionFetch(host: DesktopHostProcess): Promise<Record<st
 
   const ac = new AbortController()
   const pending = host.fetch(
-    new Request('dsh-app://app/api/vision-bench/dispatch', {
+    new Request('dsh-app://app/api/corn-bench/dispatch', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         endpoint: 'debug/events/wait',
-        payload: { cwd: '/tmp/vision-desktop-b2', sessionId: 'desktop-b2-fetch', cursor: 0, timeoutMs: 20000 },
+        payload: { cwd: '/tmp/corn-desktop-b2', sessionId: 'desktop-b2-fetch', cursor: 0, timeoutMs: 20000 },
       }),
       signal: ac.signal,
     }),
@@ -371,7 +371,7 @@ async function probeRealVisionFetch(host: DesktopHostProcess): Promise<Record<st
     }
   }
 
-  // Real Vision wait soft-resolves on abort (unit test contract) or rejects via pipe.
+  // Real Corn wait soft-resolves on abort (unit test contract) or rejects via pipe.
   const cancelFast = Number(cancel.ms) < 2000
   const cancelOk =
     cancelFast &&
@@ -379,7 +379,7 @@ async function probeRealVisionFetch(host: DesktopHostProcess): Promise<Record<st
       (cancel.outcome === 'resolved' && Number(cancel.status) === 200 && cancel.aborted === true))
 
   return {
-    claim: 'desktop-vision-fetch',
+    claim: 'desktop-corn-fetch',
     stateOk,
     stateStatus: stateHit.status,
     stateBody,
@@ -391,11 +391,11 @@ async function probeRealVisionFetch(host: DesktopHostProcess): Promise<Record<st
 
 async function main(): Promise<void> {
   const pkg = readJson(join(benchRoot, 'package.json')) as { name: string; version: string }
-  const home = mkdtempSync(join(tmpdir(), 'dsh-vision-desktop-b2-'))
+  const home = mkdtempSync(join(tmpdir(), 'dsh-corn-desktop-b2-'))
   const profile = join(home, 'profiles', 'desktop')
   const localDir = join(profile, '.dsh-local-plugins')
   const tarballName = `${pkg.name}-${pkg.version}.tgz`
-  const visionGit = gitDescribe(benchRoot)
+  const cornGit = gitDescribe(benchRoot)
   const desktopGit = gitDescribe(harnessRoot)
   const release = {
     schemaVersion: 1 as const,
@@ -416,7 +416,7 @@ async function main(): Promise<void> {
 
   createPluginProfile(profile)
   mkdirSync(localDir, { recursive: true })
-  writeVisionB2Preset(home)
+  writeCornB2Preset(home)
 
   const pack = spawnSync('npm', ['pack', '--pack-destination', localDir], {
     cwd: benchRoot,
@@ -484,7 +484,7 @@ async function main(): Promise<void> {
     throw new Error('Desktop B2 refuses source link: install; expected real packed package')
   }
 
-  writeAgentProbe(join(profile, 'node_modules', '@dsh-vision', 'probe-b2-agent'))
+  writeAgentProbe(join(profile, 'node_modules', '@dsh-corn', 'probe-b2-agent'))
   const afterProbe = readJson(join(profile, 'package.json')) as {
     dependencies: Record<string, string>
     dsh: { profile: { bundles: string[] } }
@@ -498,12 +498,12 @@ async function main(): Promise<void> {
   const host = new DesktopHostProcess(process.execPath, projectDir, profile, 19_241, {
     ...process.env,
     DSH_HOME: home,
-    VISION_BENCH_HOST_ORIGIN: '',
+    CORN_BENCH_HOST_ORIGIN: '',
     DSH_WEB_ORIGIN: '',
   })
 
   const log: Record<string, unknown> = {
-    event: 'vision.probe.desktop.b2',
+    event: 'corn.probe.desktop.b2',
     home,
     profile,
     package: `${pkg.name}@${pkg.version}`,
@@ -513,7 +513,7 @@ async function main(): Promise<void> {
     installedRoot,
     sourceRoot: benchRoot,
     dshVersion: release.version,
-    visionGit,
+    cornGit,
     desktopGit,
     presetId: PRESET_ID,
   }
@@ -523,7 +523,7 @@ async function main(): Promise<void> {
     log.ready = ready
 
     const hit = await host.fetch(
-      new Request('dsh-app://app/api/vision-b2-identity', {
+      new Request('dsh-app://app/api/corn-b2-identity', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: '{}',
@@ -546,25 +546,25 @@ async function main(): Promise<void> {
       body.agentApplyRan === true &&
       body.presetMount === 'agentPresets.mount' &&
       body.presetId === PRESET_ID &&
-      body.agentFiber === 'dsh-vision-bench-tools' &&
+      body.agentFiber === 'dsh-corn-bench-tools' &&
       body.claim === 'runtime-identity-lab' &&
-      toolsStart.event === 'vision.tools.start' &&
+      toolsStart.event === 'corn.tools.start' &&
       toolsStart.hasHandle === true &&
-      registered.includes('vision_bench') &&
+      registered.includes('corn_bench') &&
       identity.samePid === true &&
       identity.sameModuleInstance === true &&
       identity.hasHandle === true &&
       identity.dispatchPath === 'in-process-handle' &&
-      identity.via === 'agentPresets.mount→tools.execute(vision_bench,system.ping)' &&
+      identity.via === 'agentPresets.mount→tools.execute(corn_bench,system.ping)' &&
       body.usedWebPortGuess === false &&
       body.dispatchPath === 'in-process-handle'
 
-    const visionFetch = await probeRealVisionFetch(host)
-    log.visionFetch = visionFetch
+    const cornFetch = await probeRealCornFetch(host)
+    log.cornFetch = cornFetch
 
     const child = childProcessNegative(installedRoot)
     log.child = child
-    log.ok = pass && child.pass === true && visionFetch.ok === true
+    log.ok = pass && child.pass === true && cornFetch.ok === true
     log.claim = 'runtime-identity-lab'
     log.installPolicy = {
       serialportAllowBuildsPatched: true,
@@ -578,7 +578,7 @@ async function main(): Promise<void> {
         `Desktop B2 failed: ${JSON.stringify({
           pass,
           childPass: child.pass,
-          visionFetchOk: visionFetch.ok,
+          cornFetchOk: cornFetch.ok,
           body,
         })}`,
       )
@@ -586,12 +586,12 @@ async function main(): Promise<void> {
 
     writeEvidence({
       schemaVersion: 2,
-      event: 'vision.probe.desktop.b2.evidence',
+      event: 'corn.probe.desktop.b2.evidence',
       ok: true,
       claim: 'runtime-identity-lab',
       at: new Date().toISOString(),
-      gitCommit: visionGit.commit,
-      visionDirty: visionGit.dirty,
+      gitCommit: cornGit.commit,
+      cornDirty: cornGit.dirty,
       desktopGitCommit: desktopGit.commit,
       desktopDirty: desktopGit.dirty,
       package: `${pkg.name}@${pkg.version}`,
@@ -616,11 +616,11 @@ async function main(): Promise<void> {
         presetId: identity.presetId,
       },
       childPass: child.pass === true,
-      visionFetch: {
-        ok: visionFetch.ok === true,
-        stateOk: visionFetch.stateOk === true,
-        cancelOk: visionFetch.cancelOk === true,
-        claim: 'desktop-vision-fetch',
+      cornFetch: {
+        ok: cornFetch.ok === true,
+        stateOk: cornFetch.stateOk === true,
+        cancelOk: cornFetch.cancelOk === true,
+        claim: 'desktop-corn-fetch',
       },
       installPolicy: log.installPolicy,
     })

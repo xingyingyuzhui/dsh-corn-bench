@@ -19,14 +19,14 @@ test('preset backup and write-failure recovery', async (t) => {
   const dir = await createTempDir(t, 'dvb-bak-')
   await writeFile(join(dir, 'agent.cordis.yml'), personaComposition(LEGACY_PERSONA_A))
   await writeFile(join(dir, 'preset.yml'), 'name: old\n')
-  await writeFile(join(dir, '.dsh-vision-bench'), JSON.stringify({ owner: 'dsh-vision-bench' }))
+  await writeFile(join(dir, '.dsh-corn-bench'), JSON.stringify({ owner: 'dsh-corn-bench' }))
   const out = ensurePresetOverlay(dir)
   assert.ok(out.backupDir)
   trackBackup(t, out)
   assert.ok((await readdir(out.backupDir)).includes('agent.cordis.yml'))
   assert.ok((await readdir(out.backupDir)).includes('preset.yml'))
-  assert.ok((await readdir(out.backupDir)).includes('.dsh-vision-bench'))
-  assert.equal((await readFile(join(dir, 'agent.cordis.yml'), 'utf8')).match(/vision-bench-tools/g).length, 1)
+  assert.ok((await readdir(out.backupDir)).includes('.dsh-corn-bench'))
+  assert.equal((await readFile(join(dir, 'agent.cordis.yml'), 'utf8')).match(/corn-bench-tools/g).length, 1)
   const opreset = await readFile(join(dir, 'preset.yml'), 'utf8')
   await writeFile(join(dir, 'agent.cordis.yml'), personaComposition(LEGACY_PERSONA_B))
   const orig = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
@@ -53,7 +53,7 @@ test('preset backup and write-failure recovery', async (t) => {
 test('preset backup failure aborts before any write', async (t) => {
   const dir = await createTempDir(t, 'dvb-bakfail-')
   const legacy =
-    'You are a Vision 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程以 vision_bench 工具为准。'
+    'You are a Corn 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程以 corn_bench 工具为准。'
   const before = personaComposition(legacy)
   await writeFile(join(dir, 'agent.cordis.yml'), before)
   await writeFile(join(dir, 'preset.yml'), 'name: old\n')
@@ -75,7 +75,7 @@ test('preset backup failure aborts before any write', async (t) => {
 test('preset write-failure rollback deletes newly-created marker copy', async (t) => {
   const dir = await createTempDir(t, 'dvb-marker-')
   const legacy =
-    'You are a Vision 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程以 vision_bench 工具为准。'
+    'You are a Corn 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程以 corn_bench 工具为准。'
   await writeFile(join(dir, 'agent.cordis.yml'), personaComposition(legacy))
   await writeFile(join(dir, 'preset.yml'), 'name: old\n')
   const out = await withFsPatched(
@@ -89,7 +89,7 @@ test('preset write-failure rollback deletes newly-created marker copy', async (t
   )
   assert.equal(out.ok, false)
   assert.equal(out.errorCode, 'PRESET_WRITE_FAILED')
-  assert.equal(existsSync(join(dir, '.dsh-vision-bench')), false)
+  assert.equal(existsSync(join(dir, '.dsh-corn-bench')), false)
   trackBackup(t, out)
 })
 
@@ -110,7 +110,7 @@ test('composition write failure restores every file and leaves no temp files', a
   assert.equal(out.errorCode, PRESET_WRITE_FAILED)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(await readFile(join(dir, 'preset.yml'), 'utf8'), beforePreset)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), beforeMarker)
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), beforeMarker)
   assert.deepEqual(await leftoverTemps(dir), [])
   trackBackup(t, out)
 })
@@ -131,7 +131,7 @@ test('preset.yml write failure restores every file and leaves no temp files', as
   assert.equal(out.errorCode, PRESET_WRITE_FAILED)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(await readFile(join(dir, 'preset.yml'), 'utf8'), beforePreset)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), beforeMarker)
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), beforeMarker)
   assert.deepEqual(await leftoverTemps(dir), [])
   trackBackup(t, out)
 })
@@ -144,8 +144,8 @@ test('marker write failure rolls back all files and never writes the marker dire
     {
       writeFileSync(origWrite, p, ...r) {
         const s = String(p)
-        if (s.includes(dir) && /\.dsh-vision-bench$/.test(s)) directMarkerWrites++
-        if (s.includes(dir) && /\.dsh-vision-bench\.tmp/.test(s)) throw new Error('marker-write-fail')
+        if (s.includes(dir) && /\.dsh-corn-bench$/.test(s)) directMarkerWrites++
+        if (s.includes(dir) && /\.dsh-corn-bench\.tmp/.test(s)) throw new Error('marker-write-fail')
         return origWrite(p, ...r)
       },
     },
@@ -156,7 +156,7 @@ test('marker write failure rolls back all files and never writes the marker dire
   assert.equal(directMarkerWrites, 0)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(await readFile(join(dir, 'preset.yml'), 'utf8'), beforePreset)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), beforeMarker)
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), beforeMarker)
   assert.deepEqual(await leftoverTemps(dir), [])
   trackBackup(t, out)
 })
@@ -177,7 +177,7 @@ test('rename failure cleans its temp file and restores all files', async (t) => 
   assert.equal(out.errorCode, PRESET_WRITE_FAILED)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(await readFile(join(dir, 'preset.yml'), 'utf8'), beforePreset)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), beforeMarker)
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), beforeMarker)
   assert.deepEqual(await leftoverTemps(dir), [])
   trackBackup(t, out)
 })
@@ -188,11 +188,11 @@ test('rollback copy failure surfaces PRESET_RESTORE_FAILED', async (t) => {
   const out = await withFsPatched(
     {
       writeFileSync(origWrite, p, ...r) {
-        if (String(p).includes(dir) && /\.dsh-vision-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
+        if (String(p).includes(dir) && /\.dsh-corn-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
         return origWrite(p, ...r)
       },
       copyFileSync(origCopy, s, d) {
-        if (String(s).includes('.vision-bench.backup.') && String(d).includes(dir))
+        if (String(s).includes('.corn-bench.backup.') && String(d).includes(dir))
           throw new Error('restore-copy-fail')
         return origCopy(s, d)
       },
@@ -213,7 +213,7 @@ test('rollback deletes newly-created preset.yml and marker after a later write f
   const out = await withFsPatched(
     {
       writeFileSync(origWrite, p, ...r) {
-        if (String(p).includes(dir) && /\.dsh-vision-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
+        if (String(p).includes(dir) && /\.dsh-corn-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
         return origWrite(p, ...r)
       },
     },
@@ -223,7 +223,7 @@ test('rollback deletes newly-created preset.yml and marker after a later write f
   assert.equal(out.errorCode, PRESET_WRITE_FAILED)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(existsSync(join(dir, 'preset.yml')), false)
-  assert.equal(existsSync(join(dir, '.dsh-vision-bench')), false)
+  assert.equal(existsSync(join(dir, '.dsh-corn-bench')), false)
   assert.deepEqual(await leftoverTemps(dir), [])
   trackBackup(t, out)
 })
@@ -235,7 +235,7 @@ test('user-modified persona is never lost (needsReview keeps it; rollback restor
   const failed = await withFsPatched(
     {
       writeFileSync(origWrite, p, ...r) {
-        if (String(p).includes(dir) && /\.dsh-vision-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
+        if (String(p).includes(dir) && /\.dsh-corn-bench\.tmp/.test(String(p))) throw new Error('marker-write-fail')
         return origWrite(p, ...r)
       },
     },
@@ -245,13 +245,13 @@ test('user-modified persona is never lost (needsReview keeps it; rollback restor
   assert.equal(failed.errorCode, PRESET_WRITE_FAILED)
   assert.equal(await readFile(join(dir, 'agent.cordis.yml'), 'utf8'), before)
   assert.equal(await readFile(join(dir, 'preset.yml'), 'utf8'), beforePreset)
-  assert.equal(await readFile(join(dir, '.dsh-vision-bench'), 'utf8'), beforeMarker)
+  assert.equal(await readFile(join(dir, '.dsh-corn-bench'), 'utf8'), beforeMarker)
   const ok = ensurePresetOverlay(dir)
   assert.equal(ok.ok, false)
   assert.equal(ok.needsReview, true)
   assert.equal(ok.personaNeedsReview, true)
   const after = await readFile(join(dir, 'agent.cordis.yml'), 'utf8')
-  assert.ok(after.includes('vision-bench-tools'))
+  assert.ok(after.includes('corn-bench-tools'))
   const yaml = await import('yaml')
   const doc = yaml.parseDocument(after)
   let personaPrefix = null

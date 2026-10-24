@@ -6,40 +6,40 @@ import { createDebugSessionRegistry } from '../../src/application/debug/debug-se
 import { collectVisibleEvidenceRefs } from '../../src/application/modbus/evidence-scope.mjs'
 import { requestFocus } from '../../src/application/modbus/focus-service.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
-import { createVisionRpcRouter } from '../../src/interfaces/rpc/vision-rpc-router.mjs'
-import { sessionWorkspaceView } from '../../src/interfaces/rpc/vision-rpc-workspace.mjs'
+import { createCornRpcRouter } from '../../src/interfaces/rpc/corn-rpc-router.mjs'
+import { sessionWorkspaceView } from '../../src/interfaces/rpc/corn-rpc-workspace.mjs'
 import { postEvidence } from '../../src/ui/common/agent-reference.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import { A, B, diskBytes, idsOf, point, twoSessionBench } from './evidence-scope-fixtures.mjs'
 
 test('evidence, status and alarm only expose the caller session references', async (t) => {
   const { home, cwd } = await twoSessionBench(t)
   const before = diskBytes(home, cwd)
-  const a = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: A })
+  const a = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: A })
   assert.equal(a.ok, true, a.error)
   assert.deepEqual(idsOf(a.evidence), ['build:a-build', 'log:a-event', 'point:pa'])
-  const b = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'user', sessionId: B })
+  const b = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'user', sessionId: B })
   assert.deepEqual(idsOf(b.evidence), ['build:b-build', 'log:b-event', 'point:pb'])
 
-  const status = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
+  const status = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
   assert.deepEqual(idsOf(status.evidence), idsOf(a.evidence))
-  const alarm = await runVisionBench(home, { action: 'alarm', connectionId: 'c-a' }, cwd, { source: 'user', sessionId: A })
+  const alarm = await runCornBench(home, { action: 'alarm', connectionId: 'c-a' }, cwd, { source: 'user', sessionId: A })
   assert.equal(alarm.ok, true, alarm.error)
   assert.deepEqual(idsOf(alarm.evidence), idsOf(a.evidence))
   assert.deepEqual(diskBytes(home, cwd), before)
 
-  const anon = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: '' })
+  const anon = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: '' })
   assert.equal(anon.ok, false)
   assert.equal(anon.errorCode, 'SESSION_REQUIRED')
 })
 
 test('evidence rejects top-level kind/id and non-array evidence', async (t) => {
   const { home, cwd } = await twoSessionBench(t)
-  const topKind = await runVisionBench(home, { action: 'evidence', kind: 'log', id: 'a-event' }, cwd, { source: 'agent', sessionId: A })
+  const topKind = await runCornBench(home, { action: 'evidence', kind: 'log', id: 'a-event' }, cwd, { source: 'agent', sessionId: A })
   assert.equal(topKind.errorCode, 'INVALID_FIELD')
   assert.match(topKind.hint, /timeline\.list/)
-  const obj = await runVisionBench(home, { action: 'evidence', evidence: { kind: 'point', id: 'pa' } }, cwd, { source: 'agent', sessionId: A })
+  const obj = await runCornBench(home, { action: 'evidence', evidence: { kind: 'point', id: 'pa' } }, cwd, { source: 'agent', sessionId: A })
   assert.equal(obj.errorCode, 'INVALID_FIELD')
 })
 
@@ -55,7 +55,7 @@ test('legacy workspace evidence listing does not persist a claim', async (t) => 
     },
   })
   const before = diskBytes(home, cwd)
-  const listed = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: A })
+  const listed = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'agent', sessionId: A })
   assert.equal(listed.ok, true, listed.error)
   assert.deepEqual(idsOf(listed.evidence), ['point:p1'])
   assert.deepEqual(diskBytes(home, cwd), before)
@@ -125,7 +125,7 @@ test('a focus owned by B blocks A appends and A focus requests', async (t) => {
   assert.equal(append.errorCode, 'SESSION_MISMATCH')
   const focusA = await requestFocus(home, cwd, { target: { connectionId: 'c-a', deviceId: 'd-a', pointId: 'pa' } }, { source: 'user', sessionId: A })
   assert.equal(focusA.errorCode, 'SESSION_MISMATCH')
-  const viaAgent = await runVisionBench(home, { action: 'focus', connectionId: 'c-a', pointId: 'pa' }, cwd, { source: 'agent', sessionId: A })
+  const viaAgent = await runCornBench(home, { action: 'focus', connectionId: 'c-a', pointId: 'pa' }, cwd, { source: 'agent', sessionId: A })
   assert.equal(viaAgent.errorCode, 'SESSION_MISMATCH')
   assert.deepEqual(diskBytes(home, cwd), before)
 })
@@ -172,10 +172,10 @@ test('stored focus evidence is filtered per caller at Host status and RPC view',
     },
   })
   const before = diskBytes(home, cwd)
-  const status = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
+  const status = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
   assert.deepEqual(status.focus.evidence.map((/** @type {any} */ r) => r.id), ['a-event'])
   assert.equal(status.focus.evidenceHiddenCount, 3)
-  const statusB = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: B })
+  const statusB = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: B })
   assert.equal(statusB.focus.request, null)
   assert.deepEqual(statusB.focus.evidence, [])
 
@@ -192,9 +192,9 @@ test('stored focus evidence is filtered per caller at Host status and RPC view',
 
 test('UI postEvidence → RPC → store carries the page session and is authorized', async (t) => {
   const { home, cwd } = await twoSessionBench(t)
-  const router = createVisionRpcRouter({ getHome: () => home })
+  const router = createCornRpcRouter({ getHome: () => home })
   const post = (/** @type {string} */ url, /** @type {any} */ body) =>
-    router.dispatch(url.replace('/dsh-vision-bench/', ''), body)
+    router.dispatch(url.replace('/dsh-corn-bench/', ''), body)
   const noSid = await postEvidence(post, cwd, { kind: 'log', id: 'a-event' }, () => {})
   assert.equal(noSid.errorCode, 'SESSION_REQUIRED')
   const foreign = await postEvidence(post, cwd, { kind: 'log', id: 'b-event' }, () => {}, { sessionId: A })

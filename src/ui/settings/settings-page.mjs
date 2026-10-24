@@ -90,7 +90,7 @@ export function createSettingsPage(React, t, post, options = {}) {
     }
 
     React.useEffect(() => {
-      post('/dsh-vision-bench/state', cwd ? { cwd, sessionId } : {})
+      post('/dsh-corn-bench/state', cwd ? { cwd, sessionId } : {})
         .then(applySnap)
         .catch((err) => {
           setMessage({ kind: 'err', text: String((err && err.message) || t('loadFail')) })
@@ -104,7 +104,7 @@ export function createSettingsPage(React, t, post, options = {}) {
     function save() {
       setBusy(true)
       setMessage(null)
-      post('/dsh-vision-bench/bindings', { bindings, share })
+      post('/dsh-corn-bench/bindings', { bindings, share })
         .then((data) => {
           applySnap(data)
           setMessage({ kind: data.ok ? 'ok' : 'err', text: data.ok ? t('saved') : data.error || t('fail') })
@@ -118,7 +118,7 @@ export function createSettingsPage(React, t, post, options = {}) {
     function runCheck() {
       setChecking(true)
       setChecks(null)
-      post('/dsh-vision-bench/selfcheck', {}, 60000)
+      post('/dsh-corn-bench/selfcheck', {}, 60000)
         .then((data) => {
           if (data && Array.isArray(data.checks)) setChecks(data)
           else setMessage({ kind: 'err', text: (data && data.error) || t('fail') })
@@ -139,7 +139,7 @@ export function createSettingsPage(React, t, post, options = {}) {
       setShareBusy(true)
       setMessage(null)
       // Share only: unsaved path edits must neither ride along nor block the toggle.
-      post('/dsh-vision-bench/bindings', {
+      post('/dsh-corn-bench/bindings', {
         share: next,
         cwd: cwd || undefined,
         sessionId: sessionId || undefined,
@@ -149,7 +149,7 @@ export function createSettingsPage(React, t, post, options = {}) {
             if (data.globalShare) setShare(normalizeShareState(data.globalShare))
             else setShare(next)
             setMessage({ kind: 'ok', text: t('shareSaved') })
-            return post('/dsh-vision-bench/state', cwd ? { cwd, sessionId } : {}).then((snap) =>
+            return post('/dsh-corn-bench/state', cwd ? { cwd, sessionId } : {}).then((snap) =>
               applySnap(snap, { keepBindings: true }),
             )
           }
@@ -165,7 +165,7 @@ export function createSettingsPage(React, t, post, options = {}) {
       if (!on && !confirmAgentApprovalOff(t)) return
       setPolicyBusy(true)
       setMessage(null)
-      post('/dsh-vision-bench/bindings', { agentPolicy: { agentWriteApproval: on } })
+      post('/dsh-corn-bench/bindings', { agentPolicy: { agentWriteApproval: on } })
         .then((data) => {
           if (data && data.ok) {
             setAgentWriteApproval(!data.agentPolicy || data.agentPolicy.agentWriteApproval !== false)

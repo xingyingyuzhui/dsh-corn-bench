@@ -3,38 +3,38 @@ import test from 'node:test'
 import { HOST_UNAVAILABLE } from '../../src/application/commands/command-contract.mjs'
 import {
   describeHostBridge,
-  dispatchVisionCommand,
-  getVisionHostEpoch,
+  dispatchCornCommand,
+  getCornHostEpoch,
   hostOriginOf,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 
 test('hostOriginOf never guesses 127.0.0.1:3080', () => {
-  const prevVision = process.env.VISION_BENCH_HOST_ORIGIN
+  const prevCorn = process.env.CORN_BENCH_HOST_ORIGIN
   const prevWeb = process.env.DSH_WEB_ORIGIN
-  delete process.env.VISION_BENCH_HOST_ORIGIN
+  delete process.env.CORN_BENCH_HOST_ORIGIN
   delete process.env.DSH_WEB_ORIGIN
   try {
     assert.equal(hostOriginOf(), '')
     assert.doesNotMatch(hostOriginOf(), /3080/)
   } finally {
-    if (prevVision == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prevVision
+    if (prevCorn == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prevCorn
     if (prevWeb == null) delete process.env.DSH_WEB_ORIGIN
     else process.env.DSH_WEB_ORIGIN = prevWeb
   }
 })
 
 test('dispatch without Host handle does not run local executeHostCommand', async () => {
-  unregisterVisionHost()
-  const prevVision = process.env.VISION_BENCH_HOST_ORIGIN
+  unregisterCornHost()
+  const prevCorn = process.env.CORN_BENCH_HOST_ORIGIN
   const prevWeb = process.env.DSH_WEB_ORIGIN
-  delete process.env.VISION_BENCH_HOST_ORIGIN
+  delete process.env.CORN_BENCH_HOST_ORIGIN
   delete process.env.DSH_WEB_ORIGIN
   try {
-    const ran = await dispatchVisionCommand({
+    const ran = await dispatchCornCommand({
       action: 'status',
       cwd: '/tmp/proj',
       source: 'agent',
@@ -44,21 +44,21 @@ test('dispatch without Host handle does not run local executeHostCommand', async
     assert.equal(ran.errorCode, HOST_UNAVAILABLE)
     assert.equal(describeHostBridge().transport, 'unavailable')
   } finally {
-    if (prevVision == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prevVision
+    if (prevCorn == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prevCorn
     if (prevWeb == null) delete process.env.DSH_WEB_ORIGIN
     else process.env.DSH_WEB_ORIGIN = prevWeb
   }
 })
 
 test('requireHost without origin returns HOST_UNAVAILABLE (no localhost guess)', async () => {
-  unregisterVisionHost()
-  const prevVision = process.env.VISION_BENCH_HOST_ORIGIN
+  unregisterCornHost()
+  const prevCorn = process.env.CORN_BENCH_HOST_ORIGIN
   const prevWeb = process.env.DSH_WEB_ORIGIN
-  delete process.env.VISION_BENCH_HOST_ORIGIN
+  delete process.env.CORN_BENCH_HOST_ORIGIN
   delete process.env.DSH_WEB_ORIGIN
   try {
-    const tool = visionBenchTool('/tmp')
+    const tool = cornBenchTool('/tmp')
     const ran = await tool.execute(
       { action: 'status' },
       { agent: { session: { header: { cwd: '/tmp/proj', id: 's1' } } } },
@@ -66,33 +66,33 @@ test('requireHost without origin returns HOST_UNAVAILABLE (no localhost guess)',
     assert.equal(ran.ok, false)
     assert.equal(ran.errorCode, HOST_UNAVAILABLE)
   } finally {
-    if (prevVision == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prevVision
+    if (prevCorn == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prevCorn
     if (prevWeb == null) delete process.env.DSH_WEB_ORIGIN
     else process.env.DSH_WEB_ORIGIN = prevWeb
   }
 })
 
-test('registerVisionHost epoch invalidates stale disposer', async () => {
-  unregisterVisionHost()
-  const stopA = registerVisionHost({
+test('registerCornHost epoch invalidates stale disposer', async () => {
+  unregisterCornHost()
+  const stopA = registerCornHost({
     dispatch() {
       return { ok: true, via: 'a' }
     },
   })
-  const epochA = getVisionHostEpoch()
+  const epochA = getCornHostEpoch()
   assert.ok(epochA)
-  const stopB = registerVisionHost({
+  const stopB = registerCornHost({
     dispatch() {
       return { ok: true, via: 'b' }
     },
   })
-  const epochB = getVisionHostEpoch()
+  const epochB = getCornHostEpoch()
   assert.notEqual(epochA, epochB)
   stopA()
-  assert.equal(getVisionHostEpoch(), epochB, 'stale disposer must not clear newer registration')
-  const ran = await dispatchVisionCommand({ action: 'status', source: 'agent', requireHost: true })
+  assert.equal(getCornHostEpoch(), epochB, 'stale disposer must not clear newer registration')
+  const ran = await dispatchCornCommand({ action: 'status', source: 'agent', requireHost: true })
   assert.equal(ran.via, 'b')
   stopB()
-  assert.equal(getVisionHostEpoch(), null)
+  assert.equal(getCornHostEpoch(), null)
 })

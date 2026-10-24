@@ -4,7 +4,7 @@ import test from 'node:test'
 import { appendEvidence, loadWorkspace } from '../../bench-store.mjs'
 import { projectAgentResult } from '../../src/application/commands/agent-result-projection.mjs'
 import { requestFocus } from '../../src/application/modbus/focus-service.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { A, B, rawDiskBytes, twoSessionBench } from './evidence-scope-fixtures.mjs'
 
 const target = { connectionId: 'c-a', deviceId: 'd-a', pointId: 'pa' }
@@ -53,7 +53,7 @@ test('focus evidence must be an array of at most 20 rows, all validated', async 
 
 test('Agent focus errors keep commandId and errorCode through the projection', async (t) => {
   const { home, cwd } = await twoSessionBench(t)
-  const host = await runVisionBench(
+  const host = await runCornBench(
     home,
     { action: 'focus', ...target, evidence: Array.from({ length: 21 }, () => logA) },
     cwd,

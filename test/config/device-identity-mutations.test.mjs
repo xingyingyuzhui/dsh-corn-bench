@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { device, hrPoint, rtuSim } from '../hmi/multi-conn-fixtures.mjs'
@@ -37,7 +37,7 @@ test('device.create with existing id is CONFLICT; version and devices unchanged'
   assert.equal(after.modbus.devices.filter((d) => d.id === 'd1').length, 1)
 })
 
-test('runVisionBench config device.create duplicate preserves conflicts', async (t) => {
+test('runCornBench config device.create duplicate preserves conflicts', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-mut-cmd-' })
   const { home, cwd } = bench
   saveWorkspace(home, cwd, {
@@ -50,7 +50,7 @@ test('runVisionBench config device.create duplicate preserves conflicts', async 
     },
   })
   const before = loadWorkspace(home, cwd)
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     {
       action: 'config',
@@ -243,7 +243,7 @@ test('R2-5 共享层冲突经 config handler 与 Agent projection 后层信息�
   const { home, cwd } = bench
   saveWorkspace(home, cwd, layeredFixture({ enabled: true, connections: true, points: false, visualization: false }))
   const ver = loadWorkspace(home, cwd).modbus.configVersion
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     {
       action: 'config',

@@ -1,7 +1,7 @@
 import { ATTR } from './base.mjs'
 
 /**
- * Vision design tokens on the plugin root.
+ * Corn design tokens on the plugin root.
  * Host `--dsw-alias-*` wins when present; fallbacks keep standalone / test renders usable.
  * Domain chart / pill / graph colors stay in feature stylesheets.
  */

@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { TREND_KEEP, readTrendSeries, sampleTrendValues } from '../../bench-trend-store.mjs'
 
 const baseModbus = {
@@ -63,7 +63,7 @@ async function setup() {
 
 test('未开启监视的点位不产生任何历史样本', async () => {
   const { home, cwd } = await setup()
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, count: 1 },
     cwd,
@@ -77,7 +77,7 @@ test('未开启监视的点位不产生任何历史样本', async () => {
 
 test('开启监视的点位在读取提交后产生样本（页面不开也采样）', async () => {
   const { home, cwd } = await setup()
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 1, count: 1 },
     cwd,
@@ -94,7 +94,7 @@ test('开启监视的点位在读取提交后产生样本（页面不开也采�
 
 test('写后回读同样产生曲线样本', async () => {
   const { home, cwd } = await setup()
-  await runVisionBench(
+  await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 1, values: [7] },
     cwd,
@@ -150,13 +150,13 @@ test('ring 保留最近 600 个样本', async () => {
 
 test('Agent trend 动作返回真实样本（非时间范围句柄）', async () => {
   const { home, cwd } = await setup()
-  await runVisionBench(
+  await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 1, count: 1 },
     cwd,
     { source: 'agent', sessionId: 's1' },
   )
-  const res = await runVisionBench(home, { action: 'trend', connectionId: 'c1', pointIds: ['p2'] }, cwd, {
+  const res = await runCornBench(home, { action: 'trend', connectionId: 'c1', pointIds: ['p2'] }, cwd, {
     source: 'agent',
     sessionId: 's1',
   })
@@ -171,13 +171,13 @@ test('Agent trend 动作返回真实样本（非时间范围句柄）', async ()
 
 test('trendKey 只返回指定点，并使用会话点表元数据', async () => {
   const { home, cwd } = await setup()
-  await runVisionBench(
+  await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, count: 3 },
     cwd,
     { source: 'agent', sessionId: 's1' },
   )
-  const res = await runVisionBench(
+  const res = await runCornBench(
     home,
     { action: 'trend', trendKey: 'c1:d1:p2' },
     cwd,
@@ -262,7 +262,7 @@ test('readTrendSeries limit is samples per series; trend(limit=5) ≤5', async (
     assert.ok(s.samples.length <= 5)
     assert.equal(s.samples.length, 5)
   }
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     { action: 'trend', connectionId: 'c1', pointIds: ['p2'], limit: 5, start: 0, end: Date.now() + 1 },
     cwd,

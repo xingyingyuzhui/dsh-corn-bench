@@ -16,7 +16,7 @@ Today, connections / devices / points / visualization are keyed only by workspac
 | # | Decision | Choice |
 |---|----------|--------|
 | 1 | Share semantics when enabled | **Live shared editing** — shared slices are one workspace-public config; all Sessions on that cwd see and edit the same shared slice |
-| 2 | Toggle placement | **设置 → Vision** |
+| 2 | Toggle placement | **设置 → Corn** |
 | 3 | Toggle shape | **Master “共享到工作区”** + checkboxes: **连接/设备**, **点位**, **可视化** (each optional) |
 | 4 | Defaults | Master **off**; all checkboxes **off** → everything Session-private |
 | 5 | Turning share off | **Confirm dialog**, then **revoke**: other Sessions lose those shared slices; data returns to the Session that owned / last held the private view (see revoke rules below) |
@@ -25,7 +25,7 @@ Today, connections / devices / points / visualization are keyed only by workspac
 
 ## User-visible behavior
 
-### Settings → Vision
+### Settings → Corn
 
 - Section title roughly: 「工作区共享」 / “Workspace sharing”.
 - Master switch: 共享到工作区.
@@ -72,7 +72,7 @@ Today, connections / devices / points / visualization are keyed only by workspac
 5. Visualization follows the same private/share/revoke rules when its checkbox is used.
 6. Legacy workspace: first Session keeps old config privately; second Session does not inherit it.
 7. Agent write with sessionId lands in that Session’s private layer only.
-8. Settings toggles live under 设置 → Vision; defaults all off.
+8. Settings toggles live under 设置 → Corn; defaults all off.
 
 ## Non-goals (this iteration)
 

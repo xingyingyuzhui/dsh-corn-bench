@@ -11,7 +11,7 @@ import {
   setDeclarationState,
   userPresetDir,
 } from '../../src/infrastructure/harness/preset-declaration.mjs'
-import { inspectPresetHealth, seedVisionBenchPreset } from '../../src/infrastructure/harness/preset.mjs'
+import { inspectPresetHealth, seedCornBenchPreset } from '../../src/infrastructure/harness/preset.mjs'
 
 beforeEach(() => resetDeclarationState())
 
@@ -21,7 +21,7 @@ test('declarative health reports the registration, not a directory', async () =>
     phase: 'registered',
     via: 'agentPresets.register',
     at: '2026-09-23T08:00:00.000Z',
-    backupDir: '/home/.agent-presets/.vision-bench.backup.2026-09-23',
+    backupDir: '/home/.agent-presets/.corn-bench.backup.2026-09-23',
     migrationWarning: '',
   })
   const health = await inspectPresetHealth('/unused/home')
@@ -30,7 +30,7 @@ test('declarative health reports the registration, not a directory', async () =>
   assert.equal(health.generation, '2026-09-23T08:00:00.000Z')
   assert.equal(health.appliesOnNewSession, true)
   assert.match(String(health.nextStep), /新建 Session/)
-  assert.match(String(health.backupDir), /vision-bench\.backup/)
+  assert.match(String(health.backupDir), /corn-bench\.backup/)
 })
 
 test('declarative health surfaces roster and registration failures with rebuild help', async () => {
@@ -101,8 +101,8 @@ async function homeWithLegacyPreset() {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), '- id: persona\n  name: persona\n')
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
-    JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 3, basePresetId: 'standard', pluginRowId: 'vision-bench-tools' }),
+    join(dir, '.dsh-corn-bench'),
+    JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 3, basePresetId: 'standard', pluginRowId: 'corn-bench-tools' }),
   )
   return home
 }
@@ -120,7 +120,7 @@ test('seed routes declarative registries to registration and hands back the disp
       return [{ id: PRESET_ID }]
     },
   }
-  const out = await seedVisionBenchPreset(registry, home, { duplicateRetries: 0 })
+  const out = await seedCornBenchPreset(registry, home, { duplicateRetries: 0 })
   assert.equal(out.ok, true, out.error)
   assert.equal(out.via, 'agentPresets.register')
   assert.equal(typeof out.dispose, 'function')
@@ -144,7 +144,7 @@ test('seed keeps writing the legacy directory on a legacy registry', async () =>
       throw Object.assign(new Error('already exists'), { code: 'agent-preset/invalid' })
     },
   }
-  const out = await seedVisionBenchPreset(registry, home, { standardDir })
+  const out = await seedCornBenchPreset(registry, home, { standardDir })
   assert.equal(out.ok, true, out.error)
   assert.equal(copied, 1)
   const entries = await readdir(userPresetDir(home))

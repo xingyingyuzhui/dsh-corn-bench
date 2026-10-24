@@ -1,5 +1,6 @@
-import { createVisionFetchPost } from '../../infrastructure/host/vision-rpc-client.mjs'
+import { createCornFetchPost } from '../../infrastructure/host/corn-rpc-client.mjs'
 import { subscribeFocus } from '../common/focus-store.mjs'
+import { migrateLegacyStorage } from '../common/legacy-storage.mjs'
 import { getActiveScope } from '../common/session-scope.mjs'
 import { createHmiView } from '../hmi/hmi-page.mjs'
 import { COPY, NS } from '../i18n/copy.mjs'
@@ -7,17 +8,19 @@ import { interpolate, tWith } from '../i18n/translate.mjs'
 import { createSettingsPage } from '../settings/settings-page.mjs'
 import { registerSettings } from '../settings/register-settings.mjs'
 import { ATTR, CSS } from '../styles/index.mjs'
-import { wrapVisionPage } from '../workspace/vision-page-boundary.mjs'
-import { MONITOR_SECTIONS, VIEW_HMI, VIEW_MONITOR } from '../workspace/vision-route.mjs'
-import { requestOpenView, requestOpenViewFromScope, routeAgentFocus } from '../workspace/vision-view-request.mjs'
+import { wrapCornPage } from '../workspace/corn-page-boundary.mjs'
+import { MONITOR_SECTIONS, VIEW_HMI, VIEW_MONITOR } from '../workspace/corn-route.mjs'
+import { requestOpenView, requestOpenViewFromScope, routeAgentFocus } from '../workspace/corn-view-request.mjs'
 import { createDebugWorkspace } from '../workspace/debug-workspace.mjs'
 import { createMonitorWorkspace } from '../workspace/monitor-workspace.mjs'
 import { registerView } from './register-view.mjs'
 
 export function apply(ctx) {
   if (!ctx.connection) {
-    throw new Error('dsh-vision-bench: Client requires ctx.connection')
+    throw new Error('dsh-corn-bench: Client requires ctx.connection')
   }
+
+  if (typeof window !== 'undefined') migrateLegacyStorage(window.localStorage)
 
   const React = require('react')
   const slots = ctx.slots
@@ -37,7 +40,7 @@ export function apply(ctx) {
   let localeDispose = function () {}
   if (ctx.locale) {
     if (typeof ctx.locale.register !== 'function') {
-      throw new Error('dsh-vision-bench: injected locale is missing register()')
+      throw new Error('dsh-corn-bench: injected locale is missing register()')
     }
     localeDispose = ctx.locale.register(NS, COPY) || function () {}
   }
@@ -49,7 +52,7 @@ export function apply(ctx) {
     ctx.locale && typeof ctx.locale.subscribe === 'function' ? (fn) => ctx.locale.subscribe(fn) : null
 
   // Stage 1: shared Connection Fetch (Web + Desktop). Relative /api path; no localhost.
-  const post = createVisionFetchPost()
+  const post = createCornFetchPost()
 
   function openHmi(target) {
     requestOpenViewFromScope(VIEW_HMI, { section: '', target: target || {}, source: 'manual' })
@@ -64,9 +67,9 @@ export function apply(ctx) {
 
   const localeHooks = { localeSubscribe }
   const SettingsPage = createSettingsPage(React, t, post, { getScope: getActiveScope })
-  const DebugWorkspace = wrapVisionPage(React, createDebugWorkspace(React, t, post, localeHooks), 'debug', t)
-  const HmiView = wrapVisionPage(React, createHmiView(React, t, post), 'hmi', t)
-  const MonitorWorkspace = wrapVisionPage(
+  const DebugWorkspace = wrapCornPage(React, createDebugWorkspace(React, t, post, localeHooks), 'debug', t)
+  const HmiView = wrapCornPage(React, createHmiView(React, t, post), 'hmi', t)
+  const MonitorWorkspace = wrapCornPage(
     React,
     createMonitorWorkspace(React, t, post, { openHmi, openFrames, ...localeHooks }),
     'monitor',

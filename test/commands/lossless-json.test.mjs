@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import { envelope } from '../../src/application/commands/command-contract.mjs'
 import {
   compactAgentResult,
@@ -13,14 +13,14 @@ import {
   losslessCommandResult,
   toLosslessJson,
 } from '../../src/application/commands/lossless-json.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
 import {
-  dispatchVisionCommand,
-  pingVisionHost,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher, handleCommand } from '../../src/interfaces/http/vision-command-routes.mjs'
+  dispatchCornCommand,
+  pingCornHost,
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher, handleCommand } from '../../src/interfaces/http/corn-command-routes.mjs'
 
 function assertLossless(value, label = 'value') {
   assert.equal(isLosslessJsonValue(value), true, `${label} must be lossless JSON`)
@@ -93,7 +93,7 @@ test('circular structures fail closed as HOST_INVALID_RESPONSE', () => {
 test('envelope of a successful ping has no undefined own properties', () => {
   const ran = envelope(
     { commandId: 'cmd1', action: 'system.ping', cwd: '', sessionId: '', source: 'system', payload: {} },
-    { ok: true, action: 'system.ping', data: { service: 'dsh-vision-bench', pid: 1 } },
+    { ok: true, action: 'system.ping', data: { service: 'dsh-corn-bench', pid: 1 } },
   )
   assertLossless(ran)
   assert.equal(ran.ok, true)
@@ -103,7 +103,7 @@ test('envelope of a successful ping has no undefined own properties', () => {
   assert.equal('workspace' in ran, false)
 })
 
-test('in-process executeVisionCommand system.ping/status/ls are lossless JSON', async () => {
+test('in-process executeCornCommand system.ping/status/ls are lossless JSON', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-json-'))
   const cwd = join(home, 'board')
   mkdirSync(cwd, { recursive: true })
@@ -118,13 +118,13 @@ test('in-process executeVisionCommand system.ping/status/ls are lossless JSON', 
     },
   })
   try {
-    const ping = await executeVisionCommand({ home, cwd, action: 'system.ping', source: 'system' })
+    const ping = await executeCornCommand({ home, cwd, action: 'system.ping', source: 'system' })
     assert.equal(ping.ok, true)
     assertLossless(ping, 'system.ping')
-    const status = await executeVisionCommand({ home, cwd, action: 'status', source: 'agent', sessionId: 's1' })
+    const status = await executeCornCommand({ home, cwd, action: 'status', source: 'agent', sessionId: 's1' })
     assert.equal(status.ok, true)
     assertLossless(status, 'status')
-    const ls = await executeVisionCommand({ home, cwd, action: 'ls', source: 'agent', sessionId: 's1' })
+    const ls = await executeCornCommand({ home, cwd, action: 'ls', source: 'agent', sessionId: 's1' })
     assert.equal(ls.ok, true)
     assertLossless(ls, 'ls')
   } finally {
@@ -133,9 +133,9 @@ test('in-process executeVisionCommand system.ping/status/ls are lossless JSON', 
 })
 
 test('in-process Agent tool execute sanitizes dirty host results', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   const when = new Date('2026-01-02T00:00:00.000Z')
-  const stop = registerVisionHost({
+  const stop = registerCornHost({
     dispatch() {
       return {
         ok: true,
@@ -145,12 +145,12 @@ test('in-process Agent tool execute sanitizes dirty host results', async () => {
         workspace: { a: undefined, n: Number.NaN, when },
         nested: { list: [1, undefined, 2] },
         signal: new AbortController().signal,
-        data: { service: 'dsh-vision-bench', pid: 1 },
+        data: { service: 'dsh-corn-bench', pid: 1 },
       }
     },
   })
   try {
-    const tool = visionBenchTool('/tmp')
+    const tool = cornBenchTool('/tmp')
     const ran = await tool.execute(
       { action: 'system.ping' },
       { agent: { session: { header: { cwd: '/tmp/proj', id: 's1' } } } },
@@ -164,17 +164,17 @@ test('in-process Agent tool execute sanitizes dirty host results', async () => {
     assert.deepEqual(ran.nested.list, [1, null, 2])
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   }
 })
 
 test('in-process Agent tool execute rejects circular host results', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   const cycle = { ok: true, action: 'status' }
   cycle.self = cycle
-  const stop = registerVisionHost({ dispatch: () => cycle })
+  const stop = registerCornHost({ dispatch: () => cycle })
   try {
-    const tool = visionBenchTool('/tmp')
+    const tool = cornBenchTool('/tmp')
     const ran = await tool.execute(
       { action: 'status' },
       { agent: { session: { header: { cwd: '/tmp/proj', id: 's1' } } } },
@@ -184,7 +184,7 @@ test('in-process Agent tool execute rejects circular host results', async () => 
     assert.equal(ran.errorCode, 'HOST_INVALID_RESPONSE')
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   }
 })
 
@@ -200,17 +200,17 @@ test('Agent tool with real in-process dispatcher matches HTTP lossless ping', as
       points: [],
     },
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   try {
-    const tool = visionBenchTool(home)
+    const tool = cornBenchTool(home)
     const agentPing = await tool.execute(
       { action: 'system.ping' },
       { agent: { session: { header: { cwd, id: 's1' } } } },
     )
     assert.equal(agentPing.ok, true, agentPing.error)
     assertLossless(agentPing, 'agent in-process ping')
-    assert.equal(agentPing.data.service, 'dsh-vision-bench')
+    assert.equal(agentPing.data.service, 'dsh-corn-bench')
     assert.equal(typeof agentPing.data.pid, 'number')
 
     const httpPing = await handleCommand(home, { method: 'POST', headers: {} }, async () => ({
@@ -229,7 +229,7 @@ test('Agent tool with real in-process dispatcher matches HTTP lossless ping', as
     assertLossless(status, 'agent in-process status')
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
     await rm(home, { recursive: true, force: true })
   }
 })
@@ -246,10 +246,10 @@ test('Agent points add batch is one version bump and omits workspace dump', asyn
       points: [],
     },
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   try {
-    const tool = visionBenchTool(home)
+    const tool = cornBenchTool(home)
     const before = await tool.execute({ action: 'status' }, { agent: { session: { header: { cwd, id: 's1' } } } })
     const cv = before.modbus.configVersion
     const ran = await tool.execute(
@@ -278,17 +278,17 @@ test('Agent points add batch is one version bump and omits workspace dump', asyn
     assert.equal(listed.points.length, 2)
   } finally {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
     await rm(home, { recursive: true, force: true })
   }
 })
 
-test('dispatchVisionCommand HTTP error objects are lossless JSON', async () => {
-  unregisterVisionHost()
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
+test('dispatchCornCommand HTTP error objects are lossless JSON', async () => {
+  unregisterCornHost()
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
   try {
-    const ran = await dispatchVisionCommand({
+    const ran = await dispatchCornCommand({
       requireHost: true,
       commandId: 'c-down',
       action: 'status',
@@ -299,24 +299,24 @@ test('dispatchVisionCommand HTTP error objects are lossless JSON', async () => {
     assertLossless(ran, 'HOST_UNAVAILABLE')
     assert.equal(ran.errorCode, 'HOST_UNAVAILABLE')
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
   }
 })
 
-test('pingVisionHost failure omits undefined optional fields', async () => {
-  unregisterVisionHost()
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
+test('pingCornHost failure omits undefined optional fields', async () => {
+  unregisterCornHost()
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
   try {
-    const ping = await pingVisionHost({ timeoutMs: 200 })
+    const ping = await pingCornHost({ timeoutMs: 200 })
     assert.equal(ping.ok, false)
-    assertLossless(ping, 'pingVisionHost down')
+    assertLossless(ping, 'pingCornHost down')
     assert.equal(ping.errorCode, 'HOST_UNAVAILABLE')
     assert.equal('httpStatus' in ping, false)
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
-    unregisterVisionHost()
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
+    unregisterCornHost()
   }
 })

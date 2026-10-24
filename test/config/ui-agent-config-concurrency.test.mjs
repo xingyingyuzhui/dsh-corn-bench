@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
 import { createHmiCommandClient } from '../../src/ui/hmi/hmi-command-client.mjs'
 
@@ -31,12 +31,12 @@ test('stale UI config command cannot erase a point added by Agent', async () => 
   seed(home, cwd)
   const staleVersion = loadWorkspace(home, cwd).modbus.configVersion
   const post = async (path, body) => {
-    assert.equal(path, '/dsh-vision-bench/command')
-    return executeVisionCommand({ ...body, home })
+    assert.equal(path, '/dsh-corn-bench/command')
+    return executeCornCommand({ ...body, home })
   }
   const ui = createHmiCommandClient(post, cwd, 'session-1')
   try {
-    const agent = await executeVisionCommand({
+    const agent = await executeCornCommand({
       home,
       cwd,
       sessionId: 'session-1',

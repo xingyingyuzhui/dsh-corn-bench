@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { modbusPoll } from '../bench-modbus.mjs'
 import { loadWorkspace, saveWorkspace } from '../bench-store.mjs'
-import { runVisionBench } from './helpers/run-vision-bench.mjs'
+import { runCornBench } from './helpers/run-corn-bench.mjs'
 
 test('Task10: 一次读取同步进入 点表值/监视/曲线/告警（单一实时值来源）', async () => {
   const home = await mkdtemp(join(tmpdir(), 'uc-'))
@@ -46,7 +46,7 @@ test('Task10: 一次读取同步进入 点表值/监视/曲线/告警（单一�
       pollPlan: { auto: true, connections: {} },
     },
   })
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0 },
     cwd,
@@ -56,7 +56,7 @@ test('Task10: 一次读取同步进入 点表值/监视/曲线/告警（单一�
   const ws = loadWorkspace(home, cwd).modbus
   const rec = (ws.values || []).find((v) => v.key === 'p1' || v.pointId === 'p1')
   assert.ok(rec && rec.value != null, 'point table current value updated: ' + JSON.stringify(rec && rec.value))
-  const list = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, { source: 'agent', sessionId: 's1' })
+  const list = await runCornBench(home, { action: 'points', op: 'list' }, cwd, { source: 'agent', sessionId: 's1' })
   const prow = ((list && list.points) || []).find((p) => p.id === 'p1')
   assert.ok(prow && prow.value != null, 'agent points view carries the shared current value')
   const wsAfter = loadWorkspace(home, cwd).modbus
@@ -67,7 +67,7 @@ test('Task10: 一次读取同步进入 点表值/监视/曲线/告警（单一�
     Object.keys(alarm).length > 0,
     'over-limit value triggered alarm from shared flow: ' + JSON.stringify(alarm),
   )
-  await runVisionBench(
+  await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [70] },
     cwd,

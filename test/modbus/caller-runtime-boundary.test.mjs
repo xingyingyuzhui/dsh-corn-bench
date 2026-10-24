@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { sessionWorkspaceView } from '../../src/interfaces/rpc/vision-rpc-workspace.mjs'
+import { sessionWorkspaceView } from '../../src/interfaces/rpc/corn-rpc-workspace.mjs'
 import { flatWorkspace, liveValue, stampWorkspace, vpoint } from '../verify/verify-fixtures.mjs'
 import { createBench, connection } from '../helpers/workspace-factory.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 
 test('caller RPC snapshot must hide another sessions runtime values', () => {
   const ws = stampWorkspace({
@@ -51,7 +51,7 @@ test('points get cannot present a previous address stamped value as current avai
     }),
   )
   const before = loadWorkspace(b.home, b.cwd)
-  const update = await runVisionBench(
+  const update = await runCornBench(
     b.home,
     {
       action: 'points',
@@ -65,7 +65,7 @@ test('points get cannot present a previous address stamped value as current avai
   assert.equal(update.ok, true, update.error)
   const after = loadWorkspace(b.home, b.cwd)
   assert.notEqual(after.modbus.sampleGenerations.p1, before.modbus.sampleGenerations.p1)
-  const query = await runVisionBench(b.home, { action: 'points', op: 'get', ids: ['p1'] }, b.cwd, {
+  const query = await runCornBench(b.home, { action: 'points', op: 'get', ids: ['p1'] }, b.cwd, {
     source: 'agent',
     sessionId: 'a',
   })
@@ -83,12 +83,12 @@ test('name-only changes keep a sample, geometry changes hide it, and a fresh cap
     }),
   )
   const query = (op = 'get') =>
-    runVisionBench(b.home, { action: 'points', op, ...(op === 'get' ? { ids: ['p1'] } : {}) }, b.cwd, {
+    runCornBench(b.home, { action: 'points', op, ...(op === 'get' ? { ids: ['p1'] } : {}) }, b.cwd, {
       source: 'agent',
       sessionId: 'a',
     })
   const update = (patch) =>
-    runVisionBench(
+    runCornBench(
       b.home,
       {
         action: 'points',

@@ -21,7 +21,7 @@ test('internal runtime uses createVisualizationPage (not createTrendPage)', asyn
   assert.match(monitor, /createVisualizationPage/)
   assert.doesNotMatch(runtime, /createTrendPage/)
   assert.doesNotMatch(runtime, /betterSidebar/)
-  assert.match(runtime, /vision-bench-monitor|VIEW_MONITOR|createMonitorWorkspace/)
+  assert.match(runtime, /corn-bench-monitor|VIEW_MONITOR|createMonitorWorkspace/)
 })
 
 test('dependency-cruiser reports zero circular dependencies for UI graph', async () => {

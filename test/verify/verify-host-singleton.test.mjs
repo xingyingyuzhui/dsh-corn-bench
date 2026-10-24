@@ -5,7 +5,7 @@ import { createVerifyCommandService } from '../../src/application/verify/verify-
 import { createRouter } from '../helpers/rpc-factory.mjs'
 import { alarmPoint, flatWorkspace } from './verify-fixtures.mjs'
 
-test('host singleton: agent vision_debug verify and browser RPC share the same verifyCommandService instance', async () => {
+test('host singleton: agent corn_debug verify and browser RPC share the same verifyCommandService instance', async () => {
   const mockWorkspace = flatWorkspace({ points: [alarmPoint('p1', { name: 'Pressure' })], alarmState: {} })
   const verifyCommandService = createVerifyCommandService({
     workspaceLoader: () => mockWorkspace,
@@ -33,7 +33,7 @@ test('host singleton: agent vision_debug verify and browser RPC share the same v
   const runId = agentRes.verifyResult.verificationRunId
   assert.ok(runId)
 
-  // 2. Browser queries status via VisionRpcRouter using the SAME verifyCommandService
+  // 2. Browser queries status via CornRpcRouter using the SAME verifyCommandService
   const router = createRouter('/test/home', { verifyCommandService })
 
   const statusRes = /** @type {any} */ (

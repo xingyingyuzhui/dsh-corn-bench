@@ -8,9 +8,9 @@ import {
   setActiveScope,
   useSessionCwd,
 } from '../../src/ui/common/session-scope.mjs'
-import { clearNavStore, getNav } from '../../src/ui/workspace/vision-navigation-store.mjs'
-import { viewIdForPage, wrapVisionPage } from '../../src/ui/workspace/vision-page-boundary.mjs'
-import { VIEW_MONITOR } from '../../src/ui/workspace/vision-route.mjs'
+import { clearNavStore, getNav } from '../../src/ui/workspace/corn-navigation-store.mjs'
+import { viewIdForPage, wrapCornPage } from '../../src/ui/workspace/corn-page-boundary.mjs'
+import { VIEW_MONITOR } from '../../src/ui/workspace/corn-route.mjs'
 import { alpha3PageProps, alpha3Workspace } from '../fixtures/harness-alpha3-props.mjs'
 
 test('sessionCwd prefers useWorkspaces over deprecated scope.cwd', async () => {
@@ -38,11 +38,11 @@ test('pageSessionId reads props.sessionId then scope.sessionId', async () => {
 })
 
 test('active scope token guards clear and keeps sessionId/viewId', async () => {
-  const t1 = setActiveScope('', { sessionId: 's1', cwd: '/ws/one', viewId: 'vision-bench-hmi' })
+  const t1 = setActiveScope('', { sessionId: 's1', cwd: '/ws/one', viewId: 'corn-bench-hmi' })
   assert.equal(getActiveScope().cwd, '/ws/one')
   assert.equal(getActiveScope().sessionId, 's1')
-  assert.equal(getActiveScope().viewId, 'vision-bench-hmi')
-  const t2 = setActiveScope('', { sessionId: 's2', cwd: '/ws/two', viewId: 'vision-bench-monitor' })
+  assert.equal(getActiveScope().viewId, 'corn-bench-hmi')
+  const t2 = setActiveScope('', { sessionId: 's2', cwd: '/ws/two', viewId: 'corn-bench-monitor' })
   assert.notEqual(t1, t2)
   assert.equal(clearActiveScope(t1), '/ws/two', 'stale token must not wipe newer scope')
   assert.equal(getActiveScope().cwd, '/ws/two')
@@ -53,7 +53,7 @@ test('active scope token guards clear and keeps sessionId/viewId', async () => {
   assert.equal(getActiveScope().viewId, '')
 })
 
-test('wrapVisionPage writes real sessionId and viewId into the active scope', () => {
+test('wrapCornPage writes real sessionId and viewId into the active scope', () => {
   clearNavStore()
   const React = {
     createElement: (type, props, ...children) => ({ type, props, children }),
@@ -64,7 +64,7 @@ test('wrapVisionPage writes real sessionId and viewId into the active scope', ()
   const Page = function Inner(props) {
     return props
   }
-  const Wrapped = wrapVisionPage(React, Page, 'monitor')
+  const Wrapped = wrapCornPage(React, Page, 'monitor')
   Wrapped({ ...alpha3PageProps({ sessionId: 'sA', path: '/ws' }), scope: { cwd: '/ws' } })
   const active = getActiveScope()
   assert.equal(active.sessionId, 'sA')
@@ -77,7 +77,7 @@ test('wrapVisionPage writes real sessionId and viewId into the active scope', ()
   clearActiveScope(active.token)
 })
 
-test('wrapVisionPage waits when the session has no workspace', () => {
+test('wrapCornPage waits when the session has no workspace', () => {
   const React = {
     createElement: (type, props, ...children) => ({ type, props, children }),
     useRef: (init) => ({ current: init }),
@@ -91,7 +91,7 @@ test('wrapVisionPage waits when the session has no workspace', () => {
     workspaceWaiting: 'Waiting for workspace',
     workspaceWaitingHint: 'This session is not in a workspace yet. State loads after it joins one.',
   }
-  const Wrapped = wrapVisionPage(React, Page, 'hmi', (key) => copy[key] || key)
+  const Wrapped = wrapCornPage(React, Page, 'hmi', (key) => copy[key] || key)
   const tree = Wrapped(
     alpha3PageProps({
       sessionId: 's-empty',

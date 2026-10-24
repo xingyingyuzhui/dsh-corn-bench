@@ -2,7 +2,7 @@
 
 日期：2026-10-08。实施基线：`54581d0`，版本 0.29.28。
 
-依据：[019 落地复审](../reviews/2026-10-08-019-followup-review.md)、[019 计划](2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md)、[第九轮 Harness 反馈](/Users/qin/DSH/vision-plugin-round9-verification.md)、[五条独立红测](/tmp/vision-review019-extra.test.mjs)。原始审查与反馈保留不改。本文件裁定本轮实施语义；编写计划时未改业务代码、提交、推送或安装。
+依据：[019 落地复审](../reviews/2026-10-08-019-followup-review.md)、[019 计划](2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md)、[第九轮 Harness 反馈](/Users/qin/DSH/corn-plugin-round9-verification.md)、[五条独立红测](/tmp/corn-review019-extra.test.mjs)。原始审查与反馈保留不改。本文件裁定本轮实施语义；编写计划时未改业务代码、提交、推送或安装。
 
 ## 1. 十五项裁定
 
@@ -210,7 +210,7 @@ load layered → 校验当前目标/身份 → 核对 sampleIdentity
 门禁后以隔离 sim 工作区进行 Web/Desktop lab 真实工具调用：
 
 - ping 核 gitSha/buildId；不能仅比较 version 字符串。
-- 真实 Agent fiber 的 vision_debug verify：冻结窗口不可验证、采样推进的完整窗口、非法 baseline、两会话隔离；vision_bench 的 status/trend 非法字段与合法查询。
+- 真实 Agent fiber 的 corn_debug verify：冻结窗口不可验证、采样推进的完整窗口、非法 baseline、两会话隔离；corn_bench 的 status/trend 非法字段与合法查询。
 - Desktop 完整退出再重启以换构建；若安装器提示 Harness 正在运行，停止并记录，不强杀。identity 探针失败则 Desktop-dependent 步骤未验证，不用 Web 端口绕过。
 - 仅本地 tgz/lab，不推送、不发布；产品 registry name@version 安装与物理硬件另行授权验收。
 

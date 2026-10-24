@@ -3,7 +3,7 @@ import test from 'node:test'
 import { TYPOGRAPHY_CSS } from '../../src/ui/styles/typography.mjs'
 import { CSS } from '../../src/ui/styles/index.mjs'
 
-test('typography declares semantic Vision tokens mapped to host aliases', () => {
+test('typography declares semantic Corn tokens mapped to host aliases', () => {
   const root = TYPOGRAPHY_CSS[0]
   for (const name of [
     '--dvb-color-danger',
@@ -22,7 +22,7 @@ test('typography declares semantic Vision tokens mapped to host aliases', () => 
   assert.ok(root.includes('--dsw-alias-brand-primary'))
 })
 
-test('bundled CSS consumes Vision tokens for dialog and select chrome', () => {
+test('bundled CSS consumes Corn tokens for dialog and select chrome', () => {
   assert.ok(CSS.includes('var(--dvb-z-modal'))
   assert.ok(CSS.includes('var(--dvb-radius-dialog'))
   assert.ok(CSS.includes('var(--dvb-z-select'))

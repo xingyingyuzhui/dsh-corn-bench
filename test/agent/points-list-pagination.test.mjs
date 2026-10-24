@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace, loadWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import { comparePointRows, pagePointsList } from '../../src/application/modbus/points-list-page.mjs'
 
@@ -90,7 +90,7 @@ test('Agent points list pages with summary view; claim untouched', async (t) => 
     },
   })
   const before = loadWorkspace(home, cwd).modbus.privateClaimSessionId
-  const page1 = await runVisionBench(
+  const page1 = await runCornBench(
     home,
     { action: 'points', op: 'list', view: 'summary', limit: 20 },
     cwd,
@@ -105,7 +105,7 @@ test('Agent points list pages with summary view; claim untouched', async (t) => 
   assert.equal('raw' in page1.points[0], false)
   assert.ok(page1.nextCursor)
 
-  const page2 = await runVisionBench(
+  const page2 = await runCornBench(
     home,
     { action: 'points', op: 'list', view: 'summary', limit: 20, cursor: page1.nextCursor },
     cwd,
@@ -113,7 +113,7 @@ test('Agent points list pages with summary view; claim untouched', async (t) => 
   )
   assert.equal(page2.ok, true, page2.error)
   assert.equal(page2.returned, 20)
-  const page3 = await runVisionBench(
+  const page3 = await runCornBench(
     home,
     { action: 'points', op: 'list', view: 'summary', limit: 20, cursor: page2.nextCursor },
     cwd,
