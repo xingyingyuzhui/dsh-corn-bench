@@ -38,9 +38,10 @@ const currentAgents = () => {
  */
 export function formatVisionNotice(summary, detail = '') {
   const head = String(summary || '').trim()
-  const body = /^(?:\[Vision|Vision)/.test(head)
+  // Summaries from before the Corn rename still start with Vision.
+  const body = /^\[?(?:Corn|Vision)/.test(head)
     ? head
-    : `[Vision 已生效] ${head}。这是配置结果通知，不是新的操作请求，不要再执行一遍。`
+    : `[Corn 已生效] ${head}。这是配置结果通知，不是新的操作请求，不要再执行一遍。`
   const extra = String(detail || '').trim()
   return extra ? `${body}\n${extra}` : body
 }
@@ -55,7 +56,7 @@ export function sanitizeNoticeSummary(summary) {
     .replace(/\s+/g, ' ')
     .trim()
   if (s.length > SUMMARY_MAX) s = `${s.slice(0, SUMMARY_MAX - 1)}…`
-  return s || 'Vision notice'
+  return s || 'Corn notice'
 }
 
 /**
@@ -143,7 +144,7 @@ export const maybeNotifyResult = (home, cwd, label, ran) => {
   const fromAgent = ran.source === 'agent'
   if (!failed && !fromAgent) return
   const state = ran.ok === true ? '完成' : ran.cancelled ? '已取消' : '失败'
-  const summary = 'Vision' + label + state + '：' + String(ran.summary || '').slice(0, 120)
+  const summary = 'Corn' + label + state + '：' + String(ran.summary || '').slice(0, 120)
   void notifyBenchEvent(home, cwd, summary, '', {
     sessionId: ran.sessionId || '',
   }).catch(() => {

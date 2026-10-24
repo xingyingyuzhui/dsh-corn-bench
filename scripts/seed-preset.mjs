@@ -5,7 +5,7 @@ import { defaultDshHome } from '../src/infrastructure/store/dsh-home.mjs'
 
 const track = detectPresetTrack()
 if (track === 'declarative') {
-  console.log('[dsh-vision-bench] DSH 0.1.7+ 由 Host 声明注册 Vision模式，无需 seed')
+  console.log('[dsh-vision-bench] DSH 0.1.7+ 由 Host 声明注册 Corn模式，无需 seed')
   process.exit(0)
 }
 if (track === 'unknown') {
@@ -18,8 +18,8 @@ if (track === 'unknown') {
 const home = defaultDshHome()
 const out = await seedVisionBenchPreset(null, home)
 if (!out || out.ok === false) {
-  console.error('[dsh-vision-bench] Vision预设未更新:', (out && out.error) || 'overlay failed')
+  console.error('[dsh-vision-bench] Corn预设未更新:', (out && out.error) || 'overlay failed')
   if (out && out.rebuildHelp) console.error(out.rebuildHelp)
   process.exit(1)
 }
-console.log('[dsh-vision-bench] Vision预设', out.unchanged ? '已是最新' : '已写入', out.dir || '')
+console.log('[dsh-vision-bench] Corn预设', out.unchanged ? '已是最新' : '已写入', out.dir || '')

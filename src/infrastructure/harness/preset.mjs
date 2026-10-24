@@ -106,7 +106,7 @@ export const PRESET_METADATA = [
 ].join('\n')
 
 export const REBUILD_INSTRUCTIONS =
-  '安全重建：备份 $DSH_HOME/.agent-presets/vision-bench 到带时间戳目录(.vision-bench.backup.<ISO>含 agent.cordis.yml/preset.yml/.dsh-vision-bench)，删除旧目录后 agentPresets.copy("standard","vision-bench","Vision模式")并重启'
+  '安全重建：备份 $DSH_HOME/.agent-presets/vision-bench 到带时间戳目录(.vision-bench.backup.<ISO>含 agent.cordis.yml/preset.yml/.dsh-vision-bench)，删除旧目录后 agentPresets.copy("standard","vision-bench","Corn模式")并重启'
 
 /**
  * @param {string} dir
@@ -134,7 +134,7 @@ function snapshotDriftWarning(state, installed) {
   if (state.snapshotDrift) return state.snapshotDrift
   const used = state.snapshot || STANDARD_PRESET_SNAPSHOT_CONTRACT
   if (!installed || installed === used) return ''
-  return `Vision模式 按 DSH ${used} 的 standard 预设生成，已安装 DSH ${installed}；工具集可能不同，请升级插件`
+  return `Corn模式 按 DSH ${used} 的 standard 预设生成，已安装 DSH ${installed}；工具集可能不同，请升级插件`
 }
 
 /**
@@ -178,8 +178,8 @@ function declarativePresetHealth(state) {
     ok: false,
     error:
       state.phase === 'pending'
-        ? 'Vision预设声明注册中（等待 agentPresets 服务）'
-        : state.error || 'Vision预设声明未生效',
+        ? 'Corn预设声明注册中（等待 agentPresets 服务）'
+        : state.error || 'Corn预设声明未生效',
     nextStep: REBUILD_INSTRUCTIONS_DECLARATIVE,
     unchanged: false,
   }
@@ -231,9 +231,9 @@ export async function inspectPresetHealth(home, options = {}) {
       parseError = thrownMessage(error)
     }
   } else if (!seed.error) {
-    parseError = 'Vision预设尚未安装'
+    parseError = 'Corn预设尚未安装'
   }
-  const error = seed.ok === false ? seed.error || 'Vision预设未更新' : parseError || ownership.error || ''
+  const error = seed.ok === false ? seed.error || 'Corn预设未更新' : parseError || ownership.error || ''
   if (error) return fail(error)
   return {
     ok: true,
@@ -292,7 +292,7 @@ async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) 
       ok: activation.ok,
       via: activation.via,
       dir,
-      error: activation.ok ? '' : activation.error || 'Vision预设声明未生效',
+      error: activation.ok ? '' : activation.error || 'Corn预设声明未生效',
       migrated: activation.migration.migrated === true,
       backupDir: activation.migration.backupDir || '',
       dispose: activation.dispose,
@@ -311,7 +311,7 @@ async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) 
   const hasComposition = _existsSync(composition)
   const hasMarker = _existsSync(marker)
   if (hasComposition && !hasMarker) {
-    return finish({ ok: false, error: 'Vision预设 id 已被其他预设占用', dir, rebuildHelp: REBUILD_INSTRUCTIONS })
+    return finish({ ok: false, error: 'Corn预设 id 已被其他预设占用', dir, rebuildHelp: REBUILD_INSTRUCTIONS })
   }
   if (hasComposition && hasMarker) {
     const ownership = checkOwnership(dir)
@@ -324,7 +324,7 @@ async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) 
     if (!copied.ok) {
       return finish({
         ok: false,
-        error: copied.error || '未能创建Vision预设（需要可从 standard 复制）',
+        error: copied.error || '未能创建Corn预设（需要可从 standard 复制）',
         rebuildHelp: REBUILD_INSTRUCTIONS,
       })
     }
@@ -332,7 +332,7 @@ async function _seedVisionBenchPresetInternal(agentPresets, home, dir, options) 
   if (!_existsSync(composition)) {
     return finish({
       ok: false,
-      error: '未能创建Vision预设（需要可从 standard 复制）',
+      error: '未能创建Corn预设（需要可从 standard 复制）',
       rebuildHelp: REBUILD_INSTRUCTIONS,
     })
   }

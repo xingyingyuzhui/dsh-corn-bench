@@ -30,7 +30,7 @@ function makePackage(files, sources = {}) {
   writeFileSync(join(dir, 'tools.js'), '// tools\n')
   writeFileSync(join(dir, 'client.js'), '// Do not edit by hand\n__ModuleLoader__\n"v1.0.0"\n')
   writeFileSync(join(dir, 'README.md'), '# fixture\n')
-  writeFileSync(join(dir, 'LICENSE'), 'MIT\n')
+  writeFileSync(join(dir, 'LICENSE.md'), 'PolyForm Noncommercial 1.0.0\n')
   for (const [rel, body] of Object.entries(sources)) {
     const full = join(dir, rel)
     mkdirSync(dirname(full), { recursive: true })

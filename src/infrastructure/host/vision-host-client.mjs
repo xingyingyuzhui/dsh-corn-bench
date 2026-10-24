@@ -194,7 +194,7 @@ async function tryHostHttp(cmd) {
     return {
       ok: false,
       errorCode: aborted ? HOST_TIMEOUT : HOST_UNAVAILABLE,
-      error: aborted ? 'Host 命令超时' : 'Vision Host 不可用',
+      error: aborted ? 'Host 命令超时' : 'Corn Host 不可用',
       origin,
       commandId: cmd.commandId,
       detail: safeError(error),
@@ -256,7 +256,7 @@ export async function dispatchHostCommand(cmd) {
       {
         ok: false,
         errorCode: HOST_UNAVAILABLE,
-        error: 'Vision Host 不可用',
+        error: 'Corn Host 不可用',
         commandId: input.commandId,
         action: input.action,
         origin: hostOriginOf() || undefined,

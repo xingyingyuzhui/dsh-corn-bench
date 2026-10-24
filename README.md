@@ -1,4 +1,10 @@
-# dsh-vision-bench · Vision 模式
+<img src="assets/corn-icon.png" width="96" alt="Corn" align="right">
+
+# Corn · dsh-vision-bench
+
+作者：[xingyingyuzhui](https://github.com/xingyingyuzhui) · 仓库：<https://github.com/xingyingyuzhui/dsh-vision-bench> · 授权：[PolyForm Noncommercial 1.0.0](LICENSE.md)（非商业授权）
+
+Corn 是这个插件的对外品牌（原名 Vision）。界面、设置分区和 Agent 预设都显示为 **Corn** / **Corn模式**；包名 `dsh-vision-bench`、预设 id `vision-bench`、工具名 `vision_bench`、路由 `/api/vision-bench/dispatch` 和数据目录 `$DSH_HOME/vision-bench/` 保持不变，已装用户原地升级，绑定、点表和会话都不受影响。
 
 版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
 
@@ -7,7 +13,7 @@
 | 面 | 现在能做什么 |
 |---|---|
 | **Web** | 完整工作台。Host 走 Connection Fetch；有 `webServer` 时额外挂旧 RPC 与 Agent HTTP 桥。 |
-| **Desktop** | 同一套 UI / Agent / TCP / 仿真，无 Vision 监听端口。实验室用本地 tarball 安装。 |
+| **Desktop** | 同一套 UI / Agent / TCP / 仿真，无 Corn 监听端口。实验室用本地 tarball 安装。 |
 | **尚未宣称** | 官方 Desktop 产品安装（npm `name@version` 尚未发布）；官方 Desktop 完整 Modbus RTU（`serialport` 不在 Desktop `allowBuilds`）；Windows + STM32 / Keil 真机。 |
 
 验收矩阵：[`docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md`](docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md)。
@@ -29,7 +35,7 @@ npm pack
 dsh plugin --profile web add ./dsh-vision-bench-*.tgz
 ```
 
-装完重启 `dsh web`。打开 **调试** / **上位机** / **监控**，或 **设置 → Vision**。新会话选 **Vision模式**。
+装完重启 `dsh web`。打开 **调试** / **上位机** / **监控**，或 **设置 → Corn**。新会话选 **Corn模式**。
 
 ### Desktop
 
@@ -55,7 +61,7 @@ node scripts/probes/install-desktop-local.mjs
 dsh plugin --profile web remove dsh-vision-bench
 ```
 
-Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/vision-bench/bindings.json`。用户预设 **Vision模式** 不会随卸载删除。
+Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/vision-bench/bindings.json`。用户预设 **Corn模式** 不会随卸载删除。
 
 ## 三个工作区
 
@@ -65,15 +71,15 @@ Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/vision-bench
 - **上位机**：连接 / 设备 / 点位。RTU 扫描本机 COM；真实读写走内置 Node Modbus（仿真不启动 Worker）。
 - **监控**：可视化、告警、串口报文、操作记录。点表值 / 可视化 / 告警 / 报文共享同一实时来源。
 
-设置页 **Vision**：绑定 Keil UV4（纯 Node，不需要 Python）、OpenOCD（外部兼容绑定）、Modbus/串口运行时。一键 **运行自检**。
+设置页 **Corn**：绑定 Keil UV4（纯 Node，不需要 Python）、OpenOCD（外部兼容绑定）、Modbus/串口运行时。一键 **运行自检**。
 
 连接状态只看真实链路：未连接 / 连接中 / 已连接 / 断开中 / 连接异常。只使用绑定路径，不在磁盘上搜索。
 
-## Vision模式
+## Corn模式
 
-宿主 `dsh-vision-bench` 顶层只注入 `connection`，UI 发 `POST /api/vision-bench/dispatch`。旧 `/vision-bench` RPC 与 Agent HTTP 命令桥仅在有 `webServer` 时挂载。Agent 工具是另一条 loader：`dsh-vision-bench/agent`（`export name` 为 `dsh-vision-bench-tools`），由 **Vision模式** 预设插入，不和宿主同名。
+宿主 `dsh-vision-bench` 顶层只注入 `connection`，UI 发 `POST /api/vision-bench/dispatch`。旧 `/vision-bench` RPC 与 Agent HTTP 命令桥仅在有 `webServer` 时挂载。Agent 工具是另一条 loader：`dsh-vision-bench/agent`（`export name` 为 `dsh-vision-bench-tools`），由 **Corn模式** 预设插入，不和宿主同名。
 
-DSH `0.1.5-rc.1`–`0.1.6` 的 Vision模式是目录式预设：首次安装或升级后执行 `node scripts/seed-preset.mjs`（或设置页重建），写入 `$DSH_HOME/.agent-presets/vision-bench/`。DSH `0.1.7+` 由 Host 自动声明注册，无需 seed。**新建 Session 后生效**。
+DSH `0.1.5-rc.1`–`0.1.6` 的 Corn模式是目录式预设：首次安装或升级后执行 `node scripts/seed-preset.mjs`（或设置页重建），写入 `$DSH_HOME/.agent-presets/vision-bench/`。DSH `0.1.7+` 由 Host 自动声明注册，无需 seed。**新建 Session 后生效**。
 
 `vision_bench` 只出现在这个预设里。Agent 需要时自己调用，不把现场状态塞进每一轮系统提示。
 
@@ -103,7 +109,7 @@ DSH `0.1.5-rc.1`–`0.1.6` 的 Vision模式是目录式预设：首次安装或�
 
 **写入边界。** Host 是工作区唯一写者。配置走 `mutateConfig`（成功才递增 `configVersion`）；实时值/趋势/告警/报文走同一把 `runExclusive` 队列上的 `mutateRuntime`。Agent 改配置无需确认卡；真实线圈/寄存器写入、烧录、复位仍需界面批准。Agent 与 Host 分进程时走 HTTP 命令桥；`system.ping` 无副作用。失败返回 `HOST_UNAVAILABLE` / `HOST_TIMEOUT` / `HOST_UNAUTHORIZED` / `HOST_FORBIDDEN` / `HOST_INVALID_RESPONSE`，不静默降级。缺 Host 句柄时不猜 `127.0.0.1:3080`。
 
-**会话。** Vision 自动服务当前 Session。后台 Session 的操作只记录，不抢焦点。Agent 定位目标时短时高亮，右下角提示「Agent 已定位到 …」。
+**会话。** Corn 自动服务当前 Session。后台 Session 的操作只记录，不抢焦点。Agent 定位目标时短时高亮，右下角提示「Agent 已定位到 …」。
 
 **运行调试（实验性能力已落地，真机暂缓）。** `DebugRuntime` 是唯一状态权威。GDB/MI + OpenOCD；`TargetLease` 互斥；启动必须带不可变 `ResolvedDebugLaunchSpec` 和 `approvalRequestId`。Keil UVSOCK 仿真器有 fake server 测试，Windows µVision 真机未做。ProgramModel 用 Lezer C/C++ AST（`confidence: 'ast'`），启发式分析器降级为 `heuristic`。`vision_debug` 的 `verify` 做场景化断言（表达式、遥测、无告警、`stable-for-duration`）。
 
@@ -124,6 +130,14 @@ npm run build
 
 `npm test` 含 `build:check`。不要手改生成的 `client.js`。`dsh plugin add` 装到运行时后只有生产依赖，不要在那个安装目录跑测试。
 
-## License
+## 授权
 
-MIT
+本项目以 **PolyForm Noncommercial License 1.0.0** 开源，全文见 [`LICENSE.md`](LICENSE.md)。
+
+- 可以：个人学习、研究、测试、自用，以及非营利组织、教育和公共研究机构使用；可以修改和分发，但必须附上 `LICENSE.md`（含开头的 `Required Notice` 署名行）。
+- 不可以：任何商业用途（包括把它或修改版用于销售、收费服务、商业产品或公司内部的营利业务）。商业授权请联系作者 [xingyingyuzhui](https://github.com/xingyingyuzhui)。
+- 注意：非商业授权不属于 OSI 定义的“开源许可证”，这里的“开源”指源码公开、可在非商业条件下使用。
+- 0.30.2 及更早的版本按当时附带的 MIT 授权发布，已取得的副本仍适用 MIT；本授权从下一个版本起生效。
+- 打包进 `client.js` 的第三方依赖（CodeMirror、ECharts、TanStack、uPlot、gridstack、modbus-serial、serialport 等）仍按各自的 MIT / ISC / Apache-2.0 / BSD 授权，与本项目的非商业授权不冲突。
+
+Copyright 2026 xingyingyuzhui. Corn 名称与图标归作者所有。

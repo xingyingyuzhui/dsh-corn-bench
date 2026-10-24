@@ -80,7 +80,7 @@ export const openocdDownload = async (home, cwd, body, opts) => {
   // bound path here: the probe reports an unusable executable with a precise
   // error, and pre-checking would reject valid-but-not-yet-installed paths.
   if (!bindings.openocd) {
-    return { ok: false, errorCode: FLASH_ERROR_CODES.OPENOCD_NOT_FOUND, error: '请先在设置 → Vision 绑定 OpenOCD' }
+    return { ok: false, errorCode: FLASH_ERROR_CODES.OPENOCD_NOT_FOUND, error: '请先在设置 → Corn 绑定 OpenOCD' }
   }
 
   if (body && body.confirm === true) {

@@ -66,18 +66,18 @@ test('ensurePresetOverlay appends the agent-plane row and persona', async (t) =>
   assert.equal(personaText, undefined)
   // Vision guidance is now via host prompt section, not hard-coded persona
   assert.equal(text.includes('Vision 台架'), false)
-  // ownership file should be JSON with Vision模式 metadata
+  // ownership file should be JSON with Corn模式 metadata
   const presetText = await readFile(join(dir, 'preset.yml'), 'utf8')
-  assert.match(presetText, /^name: Vision模式$/m)
+  assert.match(presetText, /^name: Corn模式$/m)
   const marker = await readFile(join(dir, '.dsh-vision-bench'), 'utf8')
   const ownership = JSON.parse(marker)
   assert.equal(ownership.owner, 'dsh-vision-bench')
   assert.equal(ownership.presetSchemaVersion, 3)
   assert.equal(ownership.pluginRowId, 'vision-bench-tools')
-  assert.match(presetText, /Vision 调试与上位机接口/)
+  assert.match(presetText, /Corn 调试与上位机接口/)
   assert.equal(presetText.includes('Vision 台架接口'), false)
 })
-test('overlay keeps Cordis !!js tags, never evals them, and migrates to Vision模式', async (t) => {
+test('overlay keeps Cordis !!js tags, never evals them, and migrates to Corn模式', async (t) => {
   const dir = await createTempDir(t, 'dvb-js-tag-')
   const jsLine = "disabled: !!js process.platform === 'win32'"
   await writeFile(
@@ -110,7 +110,7 @@ test('overlay keeps Cordis !!js tags, never evals them, and migrates to Vision�
   assert.equal(parsed.errors.length, 0)
   assert.equal(parsed.warnings.length, 0)
   const presetText = await readFile(join(dir, 'preset.yml'), 'utf8')
-  assert.match(presetText, /^name: Vision模式$/m)
+  assert.match(presetText, /^name: Corn模式$/m)
   assert.equal(after.includes('Vision 台架'), false)
   assert.equal(_internal.CORDIS_JS_TAG.tag, 'tag:yaml.org,2002:js')
 })

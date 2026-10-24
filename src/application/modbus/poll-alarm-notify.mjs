@@ -278,7 +278,7 @@ export async function emitCommittedAlarmTransitions(home, cwd, alarms, opts = {}
           })
           const limit = item.kind === 'max' ? item.point.alarmMax : item.point.alarmMin
           const head = `${pointLabel(item.point)}=${decodeValue(item.point, item.raw ?? item.alarm?.value)}${item.kind === 'max' ? `>${limit}` : `<${limit}`}`
-          const summary = `Vision 告警：${head}`
+          const summary = `Corn 告警：${head}`
           const notifyOpts = { sessionId: recipient.sessionId }
           const delivered = await deliverNotify(home, cwd, summary, detail, notifyOpts)
           // Dispose while awaiting: do not mark ledger or create a new retry.

@@ -2,6 +2,7 @@ import { renderToggleSwitch } from '../components/toggle-switch.mjs'
 import { renderSaveButton } from '../components/save-cancel-buttons.mjs'
 import { getPreserveNavPreference, setPreserveNavPreference } from './navigation-preference.mjs'
 import { ioStatusInfo, pluginVersionLabel, statusKind } from './tool-status.mjs'
+import { renderBrandCredit } from './brand-credit.mjs'
 
 const FIELDS = [
   { key: 'uv4', label: 'uv4', ph: 'uv4Ph' },
@@ -195,6 +196,7 @@ export function createSettingsPage(React, t, post, options = {}) {
     return el(
       'div',
       { className: 'dvb-page' },
+      renderBrandCredit(el, t),
       settingRow(
         el(
           React.Fragment,

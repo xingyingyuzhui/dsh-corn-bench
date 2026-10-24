@@ -30,7 +30,7 @@ function stubRegistry(options = {}) {
       }
     },
     async list() {
-      return options.rows ?? [{ id: PRESET_ID, name: 'Vision模式' }]
+      return options.rows ?? [{ id: PRESET_ID, name: 'Corn模式' }]
     },
   }
 }
@@ -40,7 +40,7 @@ async function homeWithLegacyPreset(markerText) {
   const dir = userPresetDir(home)
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), '- id: persona\n  name: persona\n')
-  await writeFile(join(dir, 'preset.yml'), 'name: Vision模式\n')
+  await writeFile(join(dir, 'preset.yml'), 'name: Corn模式\n')
   if (markerText !== undefined) await writeFile(join(dir, '.dsh-vision-bench'), markerText)
   return home
 }

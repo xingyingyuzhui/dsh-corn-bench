@@ -15,7 +15,7 @@ import { runUv4Build } from '../../infrastructure/keil/uv4-build-runner.mjs'
  * @returns {string | null}
  */
 const needUv4 = (bindings) => {
-  if (!bindings.uv4) return '请先在设置 → Vision 绑定 Keil UV4'
+  if (!bindings.uv4) return '请先在设置 → Corn 绑定 Keil UV4'
   return null
 }
 

@@ -344,6 +344,12 @@ export const BASE_CSS = [
   'body[' +
     ATTR +
     '] .dvb-tag{font-size:var(--dvb-font-size-xs,11px);line-height:18px;padding:0 6px;border-radius:3px;opacity:.8}',
+  'body[' +
+    ATTR +
+    '] .dvb-brand-credit{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px;font-size:var(--dvb-font-size-sm,12px);opacity:.85}',
+  'body[' + ATTR + '] .dvb-brand-icon{width:20px;height:20px;border-radius:5px;flex:none}',
+  'body[' + ATTR + '] .dvb-brand-name{font-weight:600}',
+  'body[' + ATTR + '] .dvb-brand-link{color:inherit;text-decoration:underline}',
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="err"]{color:var(--dsw-alias-label-danger,#c62828)}',
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="warn"]{color:var(--dsw-alias-label-warning,#b45309)}',
   'body[' + ATTR + '] .dvb-badge.dvb-status[data-kind="live"]{color:var(--dsw-alias-label-success,#2e7d32)}',

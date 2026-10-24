@@ -144,7 +144,7 @@ test('notifyBenchEvent only delivers to the bound live agent', async () => {
     assert.equal(message.source.kind, 'dsh-vision-bench')
     assert.equal(message.source.form, 'notice')
     assert.match(message.content[0].text, /台架写点失败/)
-    assert.match(message.content[0].text, /\[Vision 已生效\]/)
+    assert.match(message.content[0].text, /\[Corn 已生效\]/)
     assert.match(message.content[0].text, /不是新的操作请求/)
     setAgentsRegistry(null)
     const none = await notifyBenchEvent(home, cwd, 'x')
@@ -205,11 +205,12 @@ test('openTask accepts reserved types into the shared journal', async () => {
 
 test('config notices are labeled as completed results, not new commands', () => {
   const text = formatVisionNotice('添加点位 abc')
-  assert.match(text, /\[Vision 已生效\]/)
+  assert.match(text, /\[Corn 已生效\]/)
   assert.match(text, /不是新的操作请求/)
   assert.match(text, /添加点位 abc/)
   const already = formatVisionNotice('Vision写点完成：ok')
   assert.equal(already.startsWith('Vision写点完成'), true)
+  assert.equal(formatVisionNotice('Corn写点完成：ok'), 'Corn写点完成：ok')
 })
 
 test('notice builder emits producer-owned (session format v4) notices with unique ids', () => {

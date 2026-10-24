@@ -6,7 +6,7 @@ import { enforceBudget, pickSafetyFields } from './agent-result-project-status-r
 const ALARM_PAGE_DEFAULT = 40
 
 const RESULT_TOO_LARGE_HINT =
-  '单条记录超过 Agent 输出上限，当前查询无法完整返回；请到 Vision UI 查看/导出该记录'
+  '单条记录超过 Agent 输出上限，当前查询无法完整返回；请到 Corn UI 查看/导出该记录'
 
 /**
  * Keep an identifier inside the error body. Extreme ids become a short fingerprint.

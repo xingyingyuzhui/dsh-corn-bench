@@ -45,7 +45,7 @@ test('host apply optionally injects webServer and the preset registry', async ()
   }
   apply(ctx)
   apply(ctx)
-  // 两个可选注入都必须按序发生：webServer（Web 兼容）+ agentPresets（Vision模式声明）。
+  // 两个可选注入都必须按序发生：webServer（Web 兼容）+ agentPresets（Corn模式声明）。
   assert.deepEqual(injected, [['webServer'], ['agentPresets'], ['webServer'], ['agentPresets']])
   assert.equal(toolRegs, 0)
   await stop()

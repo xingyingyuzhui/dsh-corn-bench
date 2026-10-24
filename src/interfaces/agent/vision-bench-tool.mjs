@@ -63,7 +63,7 @@ export function visionBenchTool(home) {
   return {
     name: 'vision_bench',
     description:
-      'Vision 调试与上位机快速接口。查询或操作当前会话工作区的调试/上位机现场。' +
+      'Corn 调试与上位机快速接口。查询或操作当前会话工作区的调试/上位机现场。' +
       'status：已选工程、Target 与多连接摘要（不含历史帧/全量值）。顶层 kind/id 不适用于 status（INVALID_FIELD）。status.log 隐藏无会话归属的短日志，logHiddenCount 不是可读取条数也不是未读计数；会话事件用 timeline.list，status 不提供全量任务时间线。' +
       'ls/select/build/map：工程与编译；' +
       'read/write：读点与受控写点（必须带 connectionId+deviceId；Agent 写点需界面批准）；' +

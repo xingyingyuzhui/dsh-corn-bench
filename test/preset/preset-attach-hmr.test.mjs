@@ -54,7 +54,7 @@ async function homeWithLegacyPreset() {
   const dir = userPresetDir(home)
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), '- id: persona\n  name: persona\n')
-  await writeFile(join(dir, 'preset.yml'), 'name: Vision模式\n')
+  await writeFile(join(dir, 'preset.yml'), 'name: Corn模式\n')
   await writeFile(join(dir, '.dsh-vision-bench'), OWNED_MARKER)
   return home
 }
@@ -98,7 +98,7 @@ function mountingRegistry() {
       }
     },
     async list() {
-      return [...ids].map((id) => ({ id, name: 'Vision模式' }))
+      return [...ids].map((id) => ({ id, name: 'Corn模式' }))
     },
   }
 }
@@ -188,7 +188,7 @@ test('a stale fiber write does not replace the active declaration', async () => 
         return async () => {}
       },
       async list() {
-        return [{ id: PRESET_ID, name: 'Vision模式' }]
+        return [{ id: PRESET_ID, name: 'Corn模式' }]
       },
     }
     await activateVisionPresetDeclaration(registry, home, { epoch: 1, duplicateRetries: 0 })
@@ -210,7 +210,7 @@ test('an external declaration does not migrate the legacy directory', async () =
         throw new Error('Duplicate agent preset: vision-bench')
       },
       async list() {
-        return [{ id: PRESET_ID, name: 'Vision模式' }]
+        return [{ id: PRESET_ID, name: 'Corn模式' }]
       },
     }
     const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })

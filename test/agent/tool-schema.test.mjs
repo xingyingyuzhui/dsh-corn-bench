@@ -63,12 +63,12 @@ test('agent loader uses a distinct name and injects tools plus systemPrompt', as
   assert.match(src, /bench-guidance\.mjs/)
   assert.match(src, /dsh-home\.mjs/)
 })
-test('new Vision copy does not show 台架; legacy personas still contain 台架 for migration', () => {
-  assert.match(PRESET_METADATA, /^name: Vision模式$/m)
-  assert.match(PRESET_METADATA, /Vision 调试与上位机接口/)
+test('new Corn copy does not show 台架; legacy personas still contain 台架 for migration', () => {
+  assert.match(PRESET_METADATA, /^name: Corn模式$/m)
+  assert.match(PRESET_METADATA, /Corn 调试与上位机接口/)
   assert.equal(PRESET_METADATA.includes('Vision 台架'), false)
   const tool = visionBenchTool('/tmp')
-  assert.match(tool.description, /Vision 调试与上位机快速接口/)
+  assert.match(tool.description, /Corn 调试与上位机快速接口/)
   assert.match(tool.description, /所有配置修改必须携带最近一次 status\/list\/get 返回的 configVersion/)
   assert.equal(tool.description.includes('Vision 台架'), false)
   assert.equal(LEGACY_PERSONA_A.includes('Vision 台架'), true)

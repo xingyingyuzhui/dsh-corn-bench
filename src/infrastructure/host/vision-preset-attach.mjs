@@ -60,7 +60,7 @@ async function recheckExternalDeclaration(isDisposed, epoch, registry, getHome) 
       logPresetLifecycle('vision.preset.declaration-recheck', { ok: true, via: again.via })
       return
     }
-    const error = errorText(again.error || roster.error || 'Vision预设声明复核后仍未注册')
+    const error = errorText(again.error || roster.error || 'Corn预设声明复核后仍未注册')
     setDeclarationState({ mode: 'declarative', phase: 'failed', via: again.via, error }, epoch)
     logPresetLifecycle('vision.preset.declaration-recheck', { ok: false, error })
   } catch (error) {
