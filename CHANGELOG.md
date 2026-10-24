@@ -1,4 +1,9 @@
-## Unreleased
+## 0.31.0
+
+需要 DSH 0.2.1-rc.2 或 0.2.1-rc.3。**破坏性改名**：DSH 会把它当作新插件，需卸载旧插件后重新安装。
+
+- 修正 DSH 0.2.1-rc.3 上的误报：设置页原本会提示「Corn模式 按 DSH 0.2.1-rc.2 的 standard 预设生成，已安装 DSH 0.2.1-rc.3；工具集可能不同，请升级插件」。在 0.2.x 上，注册时已经拿当前 DSH 的 standard 预设逐行比对过；比对确实执行且没有差异时，不再退回到版本号比较。rc.2 → rc.3 的预设注册表、UI 插槽、connection、tools、persona 包内容完全相同。
+- README 支持范围更新到 `0.2.1-rc.3`，并说明新版的「更多」菜单。
 
 - 品牌改为 **Corn**，技术名称一并改名：包名 `dsh-corn-bench`、GitHub 仓库 `xingyingyuzhui/dsh-corn-bench`、预设 id `corn-bench`（「Corn模式」）、工具 `corn_bench` / `corn_debug`、Agent loader `dsh-corn-bench-tools`、Fetch 路由 `/api/corn-bench/dispatch`、数据目录 `$DSH_HOME/corn-bench/`、环境变量 `CORN_BENCH_*`，源码文件和函数名同步改名。
 - 升级迁移：Host 和 Agent 首次启动时把旧数据目录整体改名为 `$DSH_HOME/corn-bench/`（已存在则不动）；界面首次加载时把旧 localStorage 偏好（导航、上次打开的页面）迁到 `dsh-corn-bench:` 前缀。旧名只保留在 `src/shared/legacy-names.mjs`。DSH 会把它当作新插件：需要卸载旧插件后重新安装，新建 Session 选 Corn模式。

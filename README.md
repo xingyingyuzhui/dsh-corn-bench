@@ -8,7 +8,7 @@
 
 从 0.30.2 及更早版本升级：先卸载旧插件，再装 `dsh-corn-bench`。首次启动会把旧数据目录整体搬到 `$DSH_HOME/corn-bench/`（绑定、工作区、点表、日志、Agent 权限都在里面）；界面的导航偏好也会自动迁移。已有 `corn-bench/` 时不覆盖。旧预设不会被自动删除，新建 Session 时选 **Corn模式**。
 
-版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
+版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.3`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。0.2.1-rc.3 只改了界面菜单、草稿和模型列表适配，已核对插件接口与 standard 预设没有变化。
 
 会话区里的调试 / 上位机 / 监控工作台。跟 Claw 无关。同一份现场状态同时给界面和当前 Session 的 Agent 用。
 
@@ -20,7 +20,7 @@
 
 验收矩阵：[`docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md`](docs/ACCEPTANCE_NATIVE_WEB_DESKTOP.md)。
 
-完整变更见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
+完整变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 安装
 
@@ -41,7 +41,7 @@ dsh plugin --profile web add ./dsh-corn-bench-*.tgz
 
 ### Desktop
 
-官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装 —— 把下面 `${version}` 换成 [Releases](https://github.com/xingyingyuzhui/dsh-corn-bench/releases) 里最新标签的版本号：
+官方产品安装用打包应用里的 **应用 → 桌面插件…**。（DSH 0.2.1-rc.3 起，左侧栏、会话视图和右侧栏也多了「更多」菜单，可以在那里浏览插件。）它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装 —— 把下面 `${version}` 换成 [Releases](https://github.com/xingyingyuzhui/dsh-corn-bench/releases) 里最新标签的版本号：
 
 ```
 github:xingyingyuzhui/dsh-corn-bench#v${version}
@@ -143,7 +143,7 @@ npm run build
 - 可以：个人学习、研究、测试、自用，以及非营利组织、教育和公共研究机构使用；可以修改和分发，但必须附上 `LICENSE.md`（含开头的 `Required Notice` 署名行）。
 - 不可以：任何商业用途（包括把它或修改版用于销售、收费服务、商业产品或公司内部的营利业务）。商业授权请联系作者 [xingyingyuzhui](https://github.com/xingyingyuzhui)。
 - 注意：非商业授权不属于 OSI 定义的“开源许可证”，这里的“开源”指源码公开、可在非商业条件下使用。
-- 0.30.2 及更早的版本按当时附带的 MIT 授权发布，已取得的副本仍适用 MIT；本授权从下一个版本起生效。
+- 0.30.2 及更早的版本按当时附带的 MIT 授权发布，已取得的副本仍适用 MIT；本授权从 0.31.0 起生效。
 - 打包进 `client.js` 的第三方依赖（CodeMirror、ECharts、TanStack、uPlot、gridstack、modbus-serial、serialport 等）仍按各自的 MIT / ISC / Apache-2.0 / BSD 授权，与本项目的非商业授权不冲突。
 
 Copyright 2026 xingyingyuzhui. Corn 名称与图标归作者所有。

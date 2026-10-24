@@ -68,6 +68,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
  * @property {string} backupDir
  * @property {string} [snapshot] DSH release whose standard rows were restated
  * @property {string} [snapshotDrift] live standard differs from those rows
+ * @property {boolean} [snapshotChecked] the live standard was actually compared
  */
 
 /** @returns {DeclarationState} */
@@ -82,6 +83,7 @@ function idleDeclarationState() {
     backupDir: '',
     snapshot: '',
     snapshotDrift: '',
+    snapshotChecked: false,
   }
 }
 
@@ -341,6 +343,7 @@ export async function activateCornPresetDeclaration(agentPresets, home, options 
     backupDir: migration.backupDir || '',
     snapshot: registration.snapshot || '',
     snapshotDrift: describeStandardDrift(drift),
+    snapshotChecked: drift.checked === true,
   }, epoch)
   return {
     ok: roster.ok,

@@ -87,6 +87,30 @@ test('declarative health warns when the standard snapshot differs from the insta
   }
 })
 
+test('a newer DSH whose live standard still matches gets no upgrade warning', async () => {
+  setDeclarationState({
+    mode: 'declarative',
+    phase: 'registered',
+    via: 'agentPresets.register',
+    at: '2026-10-24T08:00:00.000Z',
+    migrationWarning: '',
+    snapshot: STANDARD_PRESET_SNAPSHOT_CONTRACT,
+    snapshotDrift: '',
+    snapshotChecked: true,
+  })
+  const root = await mkdtemp(join(tmpdir(), 'dvb-dsh-ver-'))
+  const pkgDir = join(root, 'node_modules', '@deepseek-ai', 'dsh')
+  await mkdir(pkgDir, { recursive: true })
+  await writeFile(join(pkgDir, 'package.json'), JSON.stringify({ name: '@deepseek-ai/dsh', version: '0.2.1-rc.3' }))
+  try {
+    const health = await inspectPresetHealth('/unused/home', { dshPaths: [root] })
+    assert.equal(health.ok, true)
+    assert.equal(health.warning || '', '')
+  } finally {
+    await rm(root, { recursive: true, force: true })
+  }
+})
+
 test('legacy mode keeps the directory health contract', async () => {
   setDeclarationState({ mode: 'legacy' })
   const home = await mkdtemp(join(tmpdir(), 'dvb-health-'))
