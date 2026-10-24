@@ -132,6 +132,10 @@ npm run build
 
 `npm test` 含 `build:check`。不要手改生成的 `client.js`。`dsh plugin add` 装到运行时后只有生产依赖，不要在那个安装目录跑测试。
 
+## 归档
+
+原合集仓库已并入本仓库：现行工程计划在 [`docs/plans/suite/`](docs/plans/suite/)，历史计划与合集变更记录在 [`docs/archive/suite/`](docs/archive/suite/)。已移除的旧 harness 插件（0.2.1，仅适用 DSH ≤ 0.1.6）源码快照和原合集的完整 git 历史保存在 Release [`archive/legacy-2026-10`](https://github.com/xingyingyuzhui/dsh-corn-bench/releases/tag/archive/legacy-2026-10)。
+
 ## 授权
 
 本项目以 **PolyForm Noncommercial License 1.0.0** 开源，全文见 [`LICENSE.md`](LICENSE.md)。
