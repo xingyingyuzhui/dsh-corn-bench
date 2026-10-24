@@ -132,6 +132,9 @@ export const ensurePresetOverlay = (dir, options = {}) =>
  */
 function snapshotDriftWarning(state, installed) {
   if (state.snapshotDrift) return state.snapshotDrift
+  // A live comparison that found no drift is authoritative: a newer DSH whose
+  // standard rows still match must not be told to upgrade the plugin.
+  if (state.snapshotChecked) return ''
   const used = state.snapshot || STANDARD_PRESET_SNAPSHOT_CONTRACT
   if (!installed || installed === used) return ''
   return `Corn模式 按 DSH ${used} 的 standard 预设生成，已安装 DSH ${installed}；工具集可能不同，请升级插件`
