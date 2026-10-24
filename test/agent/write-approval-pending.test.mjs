@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { listPendingWrites } from '../../bench-actions.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { projectAgentResult } from '../../src/application/commands/agent-result-projection.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
 import { createBench, pointSeries } from '../helpers/workspace-factory.mjs'
@@ -16,7 +16,7 @@ test('agent write pending approval does not expose the endpoint fingerprint', as
       points: pointSeries('保持', 4),
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', function: 3, address: 1, values: [9] },
     cwd,

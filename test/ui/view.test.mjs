@@ -27,7 +27,7 @@ test('formatResult keeps compile errors, phase and log path', async () => {
     details: {
       phase: 'compile',
       errors: ['main.c(12): error: #20: identifier "foo" is undefined'],
-      log_file: '/tmp/vision-bench/logs/t1.log',
+      log_file: '/tmp/corn-bench/logs/t1.log',
     },
   })
   assert.match(text, /编译失败/)
@@ -38,7 +38,7 @@ test('formatResult keeps compile errors, phase and log path', async () => {
 })
 
 test('debug flash uses OpenOCD probe and server requestId, not a local whitelist', () => {
-  assert.match(src, /\/dsh-vision-bench\/openocd\/probe/)
+  assert.match(src, /\/dsh-corn-bench\/openocd\/probe/)
   assert.match(src, /requestId: req.requestId/)
   assert.match(src, /approved: true/)
   assert.match(src, /status: 'checking'/)
@@ -69,7 +69,7 @@ test('debug run keeps structured ok:false instead of turning it into null', asyn
   assert.match(src, /if \(data && data\.ok === false\) setError/)
   assert.match(src, /return data/)
   assert.doesNotMatch(src, /if \(data && data\.ok === false\) throw/)
-  const rpcClient = readFileSync(join(root, 'src/infrastructure/host/vision-rpc-client.mjs'), 'utf8')
+  const rpcClient = readFileSync(join(root, 'src/infrastructure/host/corn-rpc-client.mjs'), 'utf8')
   // Transport layer only: outer result.ok !== true throws. Business ok:false resolves.
   assert.match(rpcClient, /ok !== true/)
   assert.match(rpcClient, /unwrapRpcResult/)

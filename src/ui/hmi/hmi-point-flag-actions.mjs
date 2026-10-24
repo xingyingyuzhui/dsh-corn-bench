@@ -162,7 +162,7 @@ export function createHmiPointFlagActions(ctx, core) {
     }
 
     const sendFlagPatch = (expectedConfigVersion) =>
-      post('/dsh-vision-bench/points/flags', { ...body, expectedConfigVersion })
+      post('/dsh-corn-bench/points/flags', { ...body, expectedConfigVersion })
 
     return sendFlagPatch(packNow.configVersion || 1)
       .then((data) => {

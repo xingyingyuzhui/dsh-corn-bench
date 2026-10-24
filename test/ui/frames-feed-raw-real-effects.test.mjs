@@ -27,18 +27,18 @@ test('raw feed identity stays on the selected connection; COM4 does not mix in',
     }
     const openCalls = []
     const post = async (path, body) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({
           frames: holder.frames,
           connections: [RTU_C1, RTU_C2],
           serialSources: [SOURCE_C1, SOURCE_C2],
         })
       }
-      if (path === '/dsh-vision-bench/serial/open') {
+      if (path === '/dsh-corn-bench/serial/open') {
         openCalls.push(body)
         return { ok: false }
       }
-      if (path === '/dsh-vision-bench/serial/feed') {
+      if (path === '/dsh-corn-bench/serial/feed') {
         const cid = body && body.connectionId
         const lines =
           cid === 'c2'
@@ -111,14 +111,14 @@ test('raw all-ports feed pages by lastId, never by wall-clock lastAt', async () 
     const feedBodies = []
     const now = Date.now()
     const post = async (path, body) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({
           frames: {},
           connections: [RTU_C1, RTU_C2],
           serialSources: [SOURCE_C1, SOURCE_C2],
         })
       }
-      if (path === '/dsh-vision-bench/serial/feed') {
+      if (path === '/dsh-corn-bench/serial/feed') {
         feedBodies.push({ ...(body || {}) })
         const since = Number(body && body.since) || 0
         const all = [

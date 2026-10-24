@@ -39,7 +39,7 @@ export const PRESET_BACKUP_FAILED = 'PRESET_BACKUP_FAILED'
 export const PRESET_WRITE_FAILED = 'PRESET_WRITE_FAILED'
 export const PRESET_RESTORE_FAILED = 'PRESET_RESTORE_FAILED'
 
-export const MARKER = '.dsh-vision-bench'
+export const MARKER = '.dsh-corn-bench'
 export const AFFECTED_FILES = ['agent.cordis.yml', 'preset.yml', MARKER]
 
 /**

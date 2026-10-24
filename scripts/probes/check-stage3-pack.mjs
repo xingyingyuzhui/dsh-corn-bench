@@ -35,7 +35,7 @@ const nativeGate = nativeDeps.map((name) => ({
 }))
 
 const report = {
-  event: 'vision.stage3.pack',
+  event: 'corn.stage3.pack',
   package: `${pkg.name}@${pkg.version}`,
   packCheck: 'ok',
   filesCount: Array.isArray(pkg.files) ? pkg.files.length : 0,

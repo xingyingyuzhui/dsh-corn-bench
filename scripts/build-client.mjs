@@ -150,13 +150,13 @@ function wrapModuleLoader(vendorJs, vendorCss, clientJs) {
   return (
     BANNER +
     `window.__ModuleLoader__.load({
-  id: 'dsh-vision-bench',
+  id: 'dsh-corn-bench',
   factory(require) {
     ${vendorJs}
     var DvbVendorCss = ${JSON.stringify('\n' + vendorCss.trim())};
     ${clientJs}
     return {
-      name: 'dsh-vision-bench',
+      name: 'dsh-corn-bench',
       inject: ['slots', 'locale', 'connection'],
       apply: DvbClient.apply,
     }

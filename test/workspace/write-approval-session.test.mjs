@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { listPendingWrites, peekPendingWrite, resolvePendingWrite, takePendingWrite } from '../../bench-actions.mjs'
 import { journalView, loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { saveSessionModbusPatch } from '../../src/application/modbus/workspace-session-view.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
 import { createRouter } from '../helpers/rpc-factory.mjs'
@@ -52,7 +52,7 @@ async function setupBoard(t, prefix) {
 }
 
 async function raisePendingWrite(home, cwd, sessionId, address, value) {
-  const ran = await runVisionBench(home, { action: 'write', function: 3, address, values: [value] }, cwd, {
+  const ran = await runCornBench(home, { action: 'write', function: 3, address, values: [value] }, cwd, {
     source: 'agent',
     sessionId,
   })
@@ -230,7 +230,7 @@ test('endpoint drift check still runs for the owning session', async (t) => {
   const d1 = { id: 'd1', connectionId: 'c1', name: 'D1', unitId: 1 }
   const p1 = { id: 'p1', connectionId: 'c1', deviceId: 'd1', area: 'holdingRegister', function: 3, address: 0 }
   saveWorkspace(home, cwd, { modbus: { version: 3, connections: [c1], devices: [d1], points: [p1] } })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [5] },
     cwd,

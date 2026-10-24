@@ -68,7 +68,7 @@ function busPull(e) {
   const seq = ++e.seq
   const payload = { cwd: e.cwd }
   if (e.sessionId) payload.sessionId = e.sessionId
-  post('/dsh-vision-bench/state', payload)
+  post('/dsh-corn-bench/state', payload)
     .then((data) => {
       // unsubscribed (map entry gone) or a newer request superseded this one
       if (!STATE_BUSES.has(e.key) || seq !== e.seq) return

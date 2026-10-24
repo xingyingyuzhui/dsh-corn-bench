@@ -6,23 +6,23 @@ import {
   HOST_INVALID_RESPONSE,
 } from '../../src/application/commands/command-contract.mjs'
 import { createCommandIdempotencyCache } from '../../src/application/commands/command-idempotency-cache.mjs'
-import { visionBenchTool } from '../../src/interfaces/agent/vision-bench-tool.mjs'
+import { cornBenchTool } from '../../src/interfaces/agent/corn-bench-tool.mjs'
 import {
-  dispatchVisionCommand,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
+  dispatchCornCommand,
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
 
 /**
  * @param {any} t
  * @param {any} handle
  */
 function withHost(t, handle) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(handle)
+  unregisterCornHost()
+  const stop = registerCornHost(handle)
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
 }
 
@@ -52,7 +52,7 @@ test('in-process sync throw → HOST_DISPATCH_FAILED with commandId; tool path t
       throw new Error('boom secret /Users/qin/secret.key')
     },
   })
-  const direct = await dispatchVisionCommand({
+  const direct = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-throw-1',
     cwd: '/tmp',
@@ -68,7 +68,7 @@ test('in-process sync throw → HOST_DISPATCH_FAILED with commandId; tool path t
   assertNoLeak(direct)
   assert.equal(calls, 1)
 
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const viaTool = await tool.execute(
     { action: 'status', commandId: 'cmd-throw-2' },
     { agent: agentOf('/tmp') },
@@ -86,7 +86,7 @@ test('in-process async reject → HOST_DISPATCH_FAILED', async (t) => {
       throw new Error('reject-me')
     },
   })
-  const ran = await dispatchVisionCommand({
+  const ran = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-reject-1',
     cwd: '/tmp',
@@ -112,7 +112,7 @@ test('null/undefined/string/array/circular → HOST_INVALID_RESPONSE keeps id', 
         return /** @type {any} */ (c.raw)
       },
     })
-    const ran = await dispatchVisionCommand({
+    const ran = await dispatchCornCommand({
       action: 'status',
       commandId: `cmd-bad-${c.label}`,
       cwd: '/tmp',
@@ -131,7 +131,7 @@ test('null/undefined/string/array/circular → HOST_INVALID_RESPONSE keeps id', 
       return circular
     },
   })
-  const circ = await dispatchVisionCommand({
+  const circ = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-circular',
     cwd: '/tmp',
@@ -149,7 +149,7 @@ test('missing commandId filled; mismatched commandId rejected', async (t) => {
       return { ok: true, action: 'status', configVersion: 1 }
     },
   })
-  const filled = await dispatchVisionCommand({
+  const filled = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-fill-1',
     cwd: '/tmp',
@@ -164,7 +164,7 @@ test('missing commandId filled; mismatched commandId rejected', async (t) => {
       return { ok: true, action: 'status', commandId: 'other-id', configVersion: 1 }
     },
   })
-  const mismatch = await dispatchVisionCommand({
+  const mismatch = await dispatchCornCommand({
     action: 'status',
     commandId: 'cmd-mismatch-1',
     cwd: '/tmp',
@@ -192,7 +192,7 @@ test('CONFIG_DRIFT refresh and CONFLICT conflicts survive finishHostResult', asy
       }
     },
   })
-  const drift = await dispatchVisionCommand({
+  const drift = await dispatchCornCommand({
     action: 'points',
     commandId: 'cmd-drift',
     cwd: '/tmp',
@@ -215,7 +215,7 @@ test('CONFIG_DRIFT refresh and CONFLICT conflicts survive finishHostResult', asy
       }
     },
   })
-  const conflict = await dispatchVisionCommand({
+  const conflict = await dispatchCornCommand({
     action: 'config',
     commandId: 'cmd-conflict',
     cwd: '/tmp',

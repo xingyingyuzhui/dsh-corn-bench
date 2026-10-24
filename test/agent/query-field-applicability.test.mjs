@@ -2,11 +2,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
 import { validateAgentToolArgs } from '../../src/interfaces/agent/agent-tool-preflight.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 /**
@@ -16,13 +16,13 @@ import { connection, createBench } from '../helpers/workspace-factory.mjs'
  * @param {string} sessionId
  */
 function agentExec(t, home, cwd, sessionId) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   return (/** @type {any} */ args) =>
     tool.execute(args, { agent: { session: { header: { cwd, id: sessionId } } } })
 }
@@ -103,7 +103,7 @@ test('points list rejects kind and id before reading; get/focus/frames keep lega
   assert.equal(frames.ok, false)
   assert.notEqual(frames.details?.field, 'id', 'frames id is a legal frameId alias, not UNSUPPORTED_FIELD')
 
-  const host = await executeVisionCommand({
+  const host = await executeCornCommand({
     home,
     cwd,
     sessionId: 'session-a',
@@ -193,7 +193,7 @@ test('status and trend reject kind/id on Host and preflight with commandId', asy
     assert.equal(toolId.errorCode, preflightId.errorCode)
     assert.equal(toolId.details.reason, preflightId.details.reason)
 
-    const hostKind = await executeVisionCommand({
+    const hostKind = await executeCornCommand({
       home,
       cwd,
       sessionId: 'session-a',
@@ -206,7 +206,7 @@ test('status and trend reject kind/id on Host and preflight with commandId', asy
     assert.equal(hostKind.errorCode, preflightKind.errorCode)
     assert.equal(hostKind.details.reason, preflightKind.details.reason)
 
-    const hostId = await executeVisionCommand({
+    const hostId = await executeCornCommand({
       home,
       cwd,
       sessionId: 'session-a',
@@ -224,7 +224,7 @@ test('status and trend reject kind/id on Host and preflight with commandId', asy
   assert.equal(statusOk.ok, true, statusOk.error)
   assert.ok(statusOk.commandId)
 
-  const uiStatusKind = await executeVisionCommand({
+  const uiStatusKind = await executeCornCommand({
     home,
     cwd,
     sessionId: 'session-a',
@@ -280,7 +280,7 @@ test('trend keeps legal filters; id is not a trendKey alias', async (t) => {
   assertFieldReject(idAsKey, 'id')
   assert.ok(idAsKey.commandId)
 
-  const hostTrend = await executeVisionCommand({
+  const hostTrend = await executeCornCommand({
     home,
     cwd,
     sessionId: 'session-a',

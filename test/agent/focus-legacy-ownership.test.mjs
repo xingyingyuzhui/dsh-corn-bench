@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { appendEvidence, loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { requestFocus } from '../../src/application/modbus/focus-service.mjs'
-import { createVisionRpcRouter } from '../../src/interfaces/rpc/vision-rpc-router.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { createCornRpcRouter } from '../../src/interfaces/rpc/corn-rpc-router.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import { A, B, point, rawDiskBytes, twoSessionBench } from './evidence-scope-fixtures.mjs'
 
@@ -29,9 +29,9 @@ function assertEmptyFocus(focus) {
 
 test('ownerless legacy focus is hidden from every session at Host and RPC outputs', async (t) => {
   const { home, cwd } = await twoSessionBench(t, { focus: legacyFocus })
-  const router = createVisionRpcRouter({ getHome: () => home })
+  const router = createCornRpcRouter({ getHome: () => home })
   for (const sid of [A, B]) {
-    const status = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: sid })
+    const status = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: sid })
     assertEmptyFocus(status.focus)
     const got = /** @type {any} */ (await router.dispatch('workspace/get', { cwd, sessionId: sid }))
     assertEmptyFocus(got.workspace.focus)
@@ -109,10 +109,10 @@ test('unpartitioned single session: sid view hides legacy focus, anonymous view 
       evidence: [{ kind: 'log', id: 'legacy-event' }],
     },
   })
-  const withSid = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
+  const withSid = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: A })
   assert.equal(withSid.focus.request, null)
   assert.deepEqual(withSid.focus.evidence, [])
-  const anon = await runVisionBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: '' })
+  const anon = await runCornBench(home, { action: 'status' }, cwd, { source: 'user', sessionId: '' })
   assert.equal(anon.focus.request?.pointId, 'p1')
   assert.deepEqual(anon.focus.evidence.map((/** @type {any} */ r) => r.id), ['legacy-event'])
 

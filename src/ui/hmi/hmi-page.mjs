@@ -1,5 +1,5 @@
 import { buildInputBridge, readInputDraft } from '../common/agent-reference.mjs'
-import { formatErrorMessage, runningOf, statusBar, visionCollabBar } from '../common/ui-format.mjs'
+import { formatErrorMessage, runningOf, statusBar, cornCollabBar } from '../common/ui-format.mjs'
 import { pageSessionId, useSessionCwd } from '../common/session-scope.mjs'
 import { getCustomSelect } from '../components/custom-select.mjs'
 import { createModalDialog } from '../components/modal-dialog.mjs'
@@ -413,7 +413,7 @@ export function createHmiView(React, t, post) {
       deviceCardsPanel,
       pendingPanel,
       statusBar,
-      visionCollabBar,
+      cornCollabBar,
     }
     if (hmiTab === 'all') return renderConnectionOverview(el, t, pageCtx)
     return renderConnectionWorkspace(el, t, pageCtx)

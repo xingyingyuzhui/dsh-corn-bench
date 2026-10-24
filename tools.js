@@ -1,43 +1,45 @@
-import { VISION_GUIDANCE } from './bench-guidance.mjs'
-import { visionBenchTool } from './bench-tool.mjs'
+import { CORN_GUIDANCE } from './bench-guidance.mjs'
+import { cornBenchTool } from './bench-tool.mjs'
 import { defaultDshHome } from './src/infrastructure/store/dsh-home.mjs'
+import { migrateLegacyDataDir } from './src/infrastructure/store/legacy-data-dir.mjs'
 import {
-  getVisionHost,
-  VISION_HOST_CLIENT_INSTANCE_ID,
-} from './src/infrastructure/host/vision-host-client.mjs'
-import { visionDebugTool } from './src/interfaces/agent/vision-debug-tool.mjs'
+  getCornHost,
+  CORN_HOST_CLIENT_INSTANCE_ID,
+} from './src/infrastructure/host/corn-host-client.mjs'
+import { cornDebugTool } from './src/interfaces/agent/corn-debug-tool.mjs'
 
 /** Agent-plane loader. Dirty key must not equal the host plugin name. */
-export const name = 'dsh-vision-bench-tools'
+export const name = 'dsh-corn-bench-tools'
 export const inject = ['tools', 'systemPrompt']
 
 export function apply(ctx) {
   const home = defaultDshHome()
+  migrateLegacyDataDir(home)
   if (!ctx?.tools || typeof ctx.tools.register !== 'function') {
-    throw new Error('dsh-vision-bench-tools: Agent requires ctx.tools.register')
+    throw new Error('dsh-corn-bench-tools: Agent requires ctx.tools.register')
   }
   if (!ctx.systemPrompt || typeof ctx.systemPrompt.section !== 'function') {
-    throw new Error('dsh-vision-bench-tools: Agent requires ctx.systemPrompt.section')
+    throw new Error('dsh-corn-bench-tools: Agent requires ctx.systemPrompt.section')
   }
   console.info(
     JSON.stringify({
-      event: 'vision.tools.start',
+      event: 'corn.tools.start',
       fiber: name,
       pid: process.pid,
-      hasHandle: Boolean(getVisionHost()),
-      clientInstanceId: VISION_HOST_CLIENT_INSTANCE_ID,
+      hasHandle: Boolean(getCornHost()),
+      clientInstanceId: CORN_HOST_CLIENT_INSTANCE_ID,
       at: Date.now(),
     }),
   )
-  ctx.effect(() => ctx.tools.register(visionBenchTool(home)), 'vision-bench.tools.vision_bench')
-  ctx.effect(() => ctx.tools.register(visionDebugTool(home)), 'vision-bench.tools.vision_debug')
+  ctx.effect(() => ctx.tools.register(cornBenchTool(home)), 'corn-bench.tools.corn_bench')
+  ctx.effect(() => ctx.tools.register(cornDebugTool(home)), 'corn-bench.tools.corn_debug')
   ctx.effect(
     () =>
       ctx.systemPrompt.section({
-        name: 'vision-bench:guidance',
+        name: 'corn-bench:guidance',
         order: 20,
-        text: () => VISION_GUIDANCE,
+        text: () => CORN_GUIDANCE,
       }),
-    'vision-bench.guidance',
+    'corn-bench.guidance',
   )
 }

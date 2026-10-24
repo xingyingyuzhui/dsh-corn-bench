@@ -16,31 +16,31 @@ function baseEvidence(over = {}) {
     claim: 'runtime-identity-lab',
     at: '2026-09-19T00:00:00.000Z',
     gitCommit: 'aaa',
-    visionDirty: false,
+    cornDirty: false,
     desktopGitCommit: 'bbb',
     desktopDirty: false,
-    package: 'dsh-vision-bench@0.29.0',
+    package: 'dsh-corn-bench@0.29.0',
     packageFingerprint: 'fp',
     probeScriptSha256: 'probe',
     dshVersion: '0.1.6-alpha.1',
     hostProtocolVersion: 3,
     presetMount: 'agentPresets.mount',
-    presetId: 'vision-b2',
-    toolsStartEvent: 'vision.tools.start',
+    presetId: 'corn-b2',
+    toolsStartEvent: 'corn.tools.start',
     agentApplyRan: true,
     childPass: true,
-    registeredToolNames: ['vision_bench'],
+    registeredToolNames: ['corn_bench'],
     identity: {
       samePid: true,
       sameModuleInstance: true,
       hasHandle: true,
       dispatchPath: 'in-process-handle',
-      via: 'agentPresets.mount→tools.execute(vision_bench,system.ping)',
-      presetId: 'vision-b2',
+      via: 'agentPresets.mount→tools.execute(corn_bench,system.ping)',
+      presetId: 'corn-b2',
     },
-    visionFetch: { ok: true, stateOk: true, cancelOk: true },
+    cornFetch: { ok: true, stateOk: true, cancelOk: true },
     tarballSha256: 'x'.repeat(64),
-    tarballArtifact: 'artifacts/dsh-vision-bench-0.29.0.tgz',
+    tarballArtifact: 'artifacts/dsh-corn-bench-0.29.0.tgz',
     ...over,
   }
 }
@@ -52,7 +52,7 @@ function ctx(over = {}) {
   const probeHash = createHash('sha256').update(readFileSync(probe)).digest('hex')
   const artifactDir = join(dir, 'artifacts')
   mkdirSync(artifactDir, { recursive: true })
-  const artifact = join(artifactDir, 'dsh-vision-bench-0.29.0.tgz')
+  const artifact = join(artifactDir, 'dsh-corn-bench-0.29.0.tgz')
   writeFileSync(artifact, 'tarball-bytes')
   const tarballHash = createHash('sha256').update('tarball-bytes').digest('hex')
   return {
@@ -63,11 +63,11 @@ function ctx(over = {}) {
     tarballHash,
     base: {
       kind: /** @type {'b2'} */ ('b2'),
-      visionCommit: 'aaa',
+      cornCommit: 'aaa',
       desktopCommit: 'bbb',
-      visionDirtyNow: false,
+      cornDirtyNow: false,
       desktopDirtyNow: false,
-      packageName: 'dsh-vision-bench',
+      packageName: 'dsh-corn-bench',
       packageVersion: '0.29.0',
       packageFingerprint: 'fp',
       dshVersion: '0.1.6-alpha.1',
@@ -130,14 +130,14 @@ test('stage5 evidence: missing tarball artifact fails', () => {
 })
 
 test('stage5 evidence: allowDirty strips dirty reasons for labOk', () => {
-  const { base, probeHash, tarballHash } = ctx({ allowDirty: true, visionDirtyNow: true })
+  const { base, probeHash, tarballHash } = ctx({ allowDirty: true, cornDirtyNow: true })
   const result = validateStage5Evidence(
     baseEvidence({
       probeScriptSha256: probeHash,
       tarballSha256: tarballHash,
-      visionDirty: true,
+      cornDirty: true,
     }),
-    { ...base, allowDirty: true, visionDirtyNow: true },
+    { ...base, allowDirty: true, cornDirtyNow: true },
   )
   assert.equal(result.ok, true)
   assert.equal(result.treesClean, false)
@@ -154,5 +154,5 @@ test('stage5 evidence: happy path pass + treesClean', () => {
 })
 
 test('b2TarballArtifactRel is stable', () => {
-  assert.equal(b2TarballArtifactRel('dsh-vision-bench', '0.29.0'), join('artifacts', 'dsh-vision-bench-0.29.0.tgz'))
+  assert.equal(b2TarballArtifactRel('dsh-corn-bench', '0.29.0'), join('artifacts', 'dsh-corn-bench-0.29.0.tgz'))
 })

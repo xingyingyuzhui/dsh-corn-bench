@@ -76,7 +76,7 @@ test('A1: 事件写入 NDJSON 日志', () => {
   try {
     const ok = appendDebugEvent(home, 'ds_j', { type: 'debug.session.ready', payload: {}, debugSessionId: 'ds_j' })
     assert.equal(ok, true)
-    const file = join(home, 'vision-bench', 'debug-journal', 'ds_j.ndjson')
+    const file = join(home, 'corn-bench', 'debug-journal', 'ds_j.ndjson')
     assert.ok(existsSync(file))
     const line = JSON.parse(readFileSync(file, 'utf8').trim())
     assert.equal(line.type, 'debug.session.ready')
@@ -100,7 +100,7 @@ test('A1: withDebugEventPersistence 透传完整读取接口', () => {
     wrapped.push({ debugSessionId: 'ds_p', type: 'debug.session.starting', payload: {} })
     const since = wrapped.getEventsSince(0)
     assert.equal(since.events.length, 1)
-    assert.ok(existsSync(join(home, 'vision-bench', 'debug-journal', 'ds_p.ndjson')))
+    assert.ok(existsSync(join(home, 'corn-bench', 'debug-journal', 'ds_p.ndjson')))
   } finally {
     rmSync(home, { recursive: true, force: true })
   }

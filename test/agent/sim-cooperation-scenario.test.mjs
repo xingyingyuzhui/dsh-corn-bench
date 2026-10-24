@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import {
   createConfigMutationService,
   mutateConfig,
@@ -62,10 +62,10 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
     },
   })
 
-  const status0 = await runVisionBench(home, { action: 'status' }, cwd, origin)
+  const status0 = await runCornBench(home, { action: 'status' }, cwd, origin)
   assert.equal(status0.ok, true, status0.error)
   assert.equal(status0.modbus.points.length, 0)
-  const listed0 = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
+  const listed0 = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
   assert.equal(listed0.ok, true)
   assert.deepEqual(listed0.points, [])
   // Private session: status counts and points list must agree
@@ -77,7 +77,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   const baselineLog = (status0.log || []).length
 
   // 3-point batch add (alarmEnabled:false by default for non-alarm tests)
-  const add = await runVisionBench(
+  const add = await runCornBench(
     home,
     {
       action: 'points',
@@ -98,12 +98,12 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(add.changedPointIds.length, 3)
   assert.equal(add.nextConfigVersion, baselineCv + 1)
 
-  const afterAdd = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
+  const afterAdd = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
   assert.equal(afterAdd.points.length, 3)
   const ids = afterAdd.points.map((/** @type {any} */ p) => p.id)
   const staticAfterAdd = staticPointSnapshot(afterAdd.points)
 
-  const statusAfterAdd = await runVisionBench(home, { action: 'status' }, cwd, origin)
+  const statusAfterAdd = await runCornBench(home, { action: 'status' }, cwd, origin)
   assert.equal(statusAfterAdd.modbus.points.length, 3)
   assert.deepEqual(
     new Set(statusAfterAdd.modbus.points.map((/** @type {any} */ p) => p.id)),
@@ -111,7 +111,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   )
 
   // Scratch read FC03@900 count=2 + single-point read
-  const scratch = await runVisionBench(
+  const scratch = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 900, count: 2 },
     cwd,
@@ -129,7 +129,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(scratchProj.connectionId, 'c1')
   assert.equal('framesByConnection' in scratchProj, false)
 
-  const single = await runVisionBench(
+  const single = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', pointId: ids[0] },
     cwd,
@@ -144,7 +144,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.ok((singleProj.framesLog || []).length < 500)
 
   // Update one point
-  const upd = await runVisionBench(
+  const upd = await runCornBench(
     home,
     {
       action: 'points',
@@ -160,7 +160,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(upd.ok, true, upd.error)
 
   // Component layout add
-  const vizAdd = await runVisionBench(
+  const vizAdd = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -177,10 +177,10 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
     origin,
   )
   assert.equal(vizAdd.ok, true, vizAdd.error)
-  const vizList = await runVisionBench(home, { action: 'visualization', op: 'list' }, cwd, origin)
+  const vizList = await runCornBench(home, { action: 'visualization', op: 'list' }, cwd, origin)
   assert.equal(vizList.components.length, 1)
   const vizId = vizList.components[0].id
-  const layout = await runVisionBench(
+  const layout = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -195,7 +195,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(layout.ok, true, layout.error)
 
   // Intentional CONFIG_DRIFT → must refresh via list, not reuse actualVersion as credential
-  const stale = await runVisionBench(
+  const stale = await runCornBench(
     home,
     {
       action: 'points',
@@ -212,14 +212,14 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(stale.errorCode, 'CONFIG_DRIFT')
   assert.deepEqual(stale.refresh, { action: 'points', op: 'list' })
 
-  const reread = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
+  const reread = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
   assert.equal(reread.ok, true)
   const freshCv = reread.configVersion
   assert.notEqual(freshCv, baselineCv)
   assert.equal(reread.points.length, 3)
 
   // Alarm watch subscribe → stop (isolated; no current active fault notify required here)
-  const watchOn = await runVisionBench(
+  const watchOn = await runCornBench(
     home,
     { action: 'alarm', connectionId: 'c1', watch: true, pointId: ids[0] },
     cwd,
@@ -229,7 +229,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(watchOn.subscription?.sessionId, sessionId)
   assert.ok(watchOn.subscription?.expiresAt > watchOn.subscription?.createdAt)
 
-  const watchOff = await runVisionBench(
+  const watchOff = await runCornBench(
     home,
     { action: 'alarm', connectionId: 'c1', watch: false },
     cwd,
@@ -239,7 +239,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   assert.equal(watchOff.subscription?.cleared, true)
 
   // Delete the three test points + visualization
-  const removed = await runVisionBench(
+  const removed = await runCornBench(
     home,
     {
       action: 'points',
@@ -253,7 +253,7 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
     origin,
   )
   assert.equal(removed.ok, true, removed.error)
-  const vizRm = await runVisionBench(
+  const vizRm = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -266,9 +266,9 @@ test('sim cooperation scenario: private topology → batch CRUD → drift refres
   )
   assert.equal(vizRm.ok, true, vizRm.error)
 
-  const finalStatus = await runVisionBench(home, { action: 'status' }, cwd, origin)
-  const finalList = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
-  const finalViz = await runVisionBench(home, { action: 'visualization', op: 'list' }, cwd, origin)
+  const finalStatus = await runCornBench(home, { action: 'status' }, cwd, origin)
+  const finalList = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
+  const finalViz = await runCornBench(home, { action: 'visualization', op: 'list' }, cwd, origin)
 
   // Static topology restored (empty points/components); version/history grew
   assert.deepEqual(staticPointSnapshot(finalList.points), [])

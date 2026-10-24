@@ -62,7 +62,7 @@ export function useDebugWorkspaceState(React, post, cwd, sessionId, opts) {
 
   function resolveManual(id, done) {
     if (!cwd) return
-    post('/dsh-vision-bench/manual/resolve', { cwd, id, done }, 15000)
+    post('/dsh-corn-bench/manual/resolve', { cwd, id, done }, 15000)
       .then(() => {
         setWorkspace((prev) => ({
           ...prev,
@@ -70,7 +70,7 @@ export function useDebugWorkspaceState(React, post, cwd, sessionId, opts) {
             item.id === id ? { ...item, status: done ? 'done' : 'rejected' } : item,
           ),
         }))
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => {
         if (data?.workspace) {
@@ -96,7 +96,7 @@ export function useDebugWorkspaceState(React, post, cwd, sessionId, opts) {
   function persist(next) {
     if (!cwd) return Promise.resolve()
     const keil = next?.keil || workspace.keil
-    return post('/dsh-vision-bench/workspace', {
+    return post('/dsh-corn-bench/workspace', {
       cwd,
       keil: { project: keil.project || '', target: keil.target || '', artifact: keil.artifact || 'hex' },
     }).then((data) => {

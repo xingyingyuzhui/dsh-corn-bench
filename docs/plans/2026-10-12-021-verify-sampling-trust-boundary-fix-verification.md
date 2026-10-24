@@ -28,7 +28,7 @@
 本地包版本 `0.29.29`，`buildId` `518e7019b38e7c496515cc67149778a18135136372c6a87874b9c13177d07c74`，`gitSha` `0c54ad2`。
 
 - Web：`dsh plugin --profile web add` 本地 tarball 后，profile 里的 `package.json` 和 `build-info.json` 已是 0.29.29。pnpm 以 `ERR_PNPM_IGNORED_BUILDS` 退出，因为 `@serialport/bindings-cpp` 的安装脚本被忽略。当时没有正在运行的 `dsh web`，所以没有重启，也没有做两会话 snapshot 或仿真校验。
-- Desktop：DeepSeek Harness 没有在运行。`scripts/probes/install-desktop-local.mjs` 成功，事件 `vision.desktop.local-install`。profile 里的版本和 `buildId` 与 Web 相同。没有重新打开应用，也没有做同一组界面 smoke。
+- Desktop：DeepSeek Harness 没有在运行。`scripts/probes/install-desktop-local.mjs` 成功，事件 `corn.desktop.local-install`。profile 里的版本和 `buildId` 与 Web 相同。没有重新打开应用，也没有做同一组界面 smoke。
 
 这只说明两个 profile 装上了本轮包。不能写成原生双端验收通过。
 

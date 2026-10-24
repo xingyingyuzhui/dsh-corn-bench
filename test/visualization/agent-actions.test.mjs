@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import { sessionPack } from '../helpers/preset-fixtures.mjs'
 
@@ -29,7 +29,7 @@ test('P4/0.22.0: visualization action list/get + add applies component immediate
       alarmState: {},
     },
   })
-  let res = await runVisionBench(home, { action: 'visualization', op: 'list' }, cwd, {
+  let res = await runCornBench(home, { action: 'visualization', op: 'list' }, cwd, {
     source: 'agent',
     sessionId: 's1',
   })
@@ -37,7 +37,7 @@ test('P4/0.22.0: visualization action list/get + add applies component immediate
   assert.ok(Array.isArray(res.components) && res.components.length === 0)
 
   const cvBefore = loadWorkspace(home, cwd).modbus.configVersion
-  res = await runVisionBench(
+  res = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -55,7 +55,7 @@ test('P4/0.22.0: visualization action list/get + add applies component immediate
   assert.ok(pack.configVersion > cvBefore, '组件修改递增 configVersion')
 
   // get → 组件 + 关联点位当前值
-  res = await runVisionBench(
+  res = await runCornBench(
     home,
     { action: 'visualization', op: 'get', visualizationId: pack.visualization.components[0].id },
     cwd,
@@ -65,7 +65,7 @@ test('P4/0.22.0: visualization action list/get + add applies component immediate
   assert.equal(res.component.pointIds[0], 'p1')
   assert.equal(res.values[0].value, 23.5)
 
-  res = await runVisionBench(
+  res = await runCornBench(
     home,
     { action: 'visualization', op: 'proposeRemove', visualizationId: pack.visualization.components[0].id },
     cwd,
@@ -98,7 +98,7 @@ test('P4/0.20.0: 非监视点位不可入库（proposeAdd 被校验拒绝）', a
       alarmState: {},
     },
   })
-  const res = await runVisionBench(
+  const res = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -150,7 +150,7 @@ test('Task4/0.22.0: visualization update 保留 ID/order/settings；ID 冲突拒
     },
   })
   const cv0 = loadWorkspace(home, cwd).modbus.configVersion
-  let res = await runVisionBench(
+  let res = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -172,7 +172,7 @@ test('Task4/0.22.0: visualization update 保留 ID/order/settings；ID 冲突拒
   assert.equal(c.order, 3, 'order 保留')
   assert.deepEqual(c.settings, { windowMs: 120000, confirmWrite: true }, 'settings 保留')
   assert.ok(pack.configVersion > cv0, 'configVersion 增加')
-  res = await runVisionBench(
+  res = await runCornBench(
     home,
     {
       action: 'visualization',

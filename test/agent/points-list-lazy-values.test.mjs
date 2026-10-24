@@ -7,7 +7,7 @@ import {
   resetPointQuerySelectCount,
 } from '../../src/application/modbus/point-query-value.mjs'
 import { comparePointRows } from '../../src/application/modbus/points-list-page.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 test('Agent points list resolves runtime values only for the selected page', async (t) => {
@@ -49,7 +49,7 @@ test('Agent points list resolves runtime values only for the selected page', asy
   let cursor = ''
   for (const limit of [3, 20, 50]) {
     resetPointQuerySelectCount()
-    const page = await runVisionBench(
+    const page = await runCornBench(
       home,
       { action: 'points', op: 'list', limit, ...(cursor && limit === 3 ? { cursor } : {}) },
       cwd,
@@ -70,7 +70,7 @@ test('Agent points list resolves runtime values only for the selected page', asy
   cursor = ''
   const all = []
   for (let guard = 0; guard < 80; guard += 1) {
-    const page = await runVisionBench(
+    const page = await runCornBench(
       home,
       { action: 'points', op: 'list', limit: 3, ...(cursor ? { cursor } : {}) },
       cwd,
@@ -84,7 +84,7 @@ test('Agent points list resolves runtime values only for the selected page', asy
   assert.deepEqual(all, expected)
 
   resetPointQuerySelectCount()
-  const ui = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, {
+  const ui = await runCornBench(home, { action: 'points', op: 'list' }, cwd, {
     source: 'user',
     sessionId: 'session-a',
   })

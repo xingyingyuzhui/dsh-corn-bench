@@ -1,6 +1,6 @@
 // @ts-check
 /**
- * Settings → Vision "Agent point writes require approval" policy, and the
+ * Settings → Corn "Agent point writes require approval" policy, and the
  * Agent command bridge's source binding that the approval gate depends on.
  */
 import assert from 'node:assert/strict'
@@ -15,8 +15,8 @@ import {
   saveAgentPolicy,
 } from '../../src/infrastructure/store/agent-policy-store.mjs'
 import { loadBindings, saveBindings, storeDir } from '../../src/infrastructure/store/bindings-store.mjs'
-import { handleCommand } from '../../src/interfaces/http/vision-command-routes.mjs'
-import { handleSettingsEndpoint } from '../../src/interfaces/rpc/vision-rpc-settings.mjs'
+import { handleCommand } from '../../src/interfaces/http/corn-command-routes.mjs'
+import { handleSettingsEndpoint } from '../../src/interfaces/rpc/corn-rpc-settings.mjs'
 import { createBench, pointSeries } from '../helpers/workspace-factory.mjs'
 
 /** @param {import('node:test').TestContext} t */

@@ -58,9 +58,9 @@ function requireFields(data, keys, reasons) {
  * @param {Record<string, unknown>} data
  * @param {{
  *   kind: 'b2' | 'carrier',
- *   visionCommit: string,
+ *   cornCommit: string,
  *   desktopCommit: string,
- *   visionDirtyNow: boolean,
+ *   cornDirtyNow: boolean,
  *   desktopDirtyNow: boolean,
  *   packageName: string,
  *   packageVersion: string,
@@ -87,7 +87,7 @@ export function validateStage5Evidence(data, ctx) {
       'claim',
       'at',
       'gitCommit',
-      'visionDirty',
+      'cornDirty',
       'desktopGitCommit',
       'desktopDirty',
       'package',
@@ -99,8 +99,8 @@ export function validateStage5Evidence(data, ctx) {
     reasons,
   )
 
-  if (nonEmptyString(data.gitCommit) && data.gitCommit !== ctx.visionCommit) {
-    reasons.push(`vision gitCommit mismatch (evidence=${data.gitCommit} current=${ctx.visionCommit || '∅'})`)
+  if (nonEmptyString(data.gitCommit) && data.gitCommit !== ctx.cornCommit) {
+    reasons.push(`corn gitCommit mismatch (evidence=${data.gitCommit} current=${ctx.cornCommit || '∅'})`)
   }
   if (nonEmptyString(data.desktopGitCommit) && data.desktopGitCommit !== ctx.desktopCommit) {
     reasons.push(
@@ -132,17 +132,17 @@ export function validateStage5Evidence(data, ctx) {
   }
 
   const treesClean =
-    ctx.visionDirtyNow === false &&
+    ctx.cornDirtyNow === false &&
     ctx.desktopDirtyNow === false &&
-    data.visionDirty === false &&
+    data.cornDirty === false &&
     data.desktopDirty === false
 
   if (!allowDirty) {
-    if (ctx.visionDirtyNow || data.visionDirty === true) {
-      reasons.push('vision working tree dirty (labOk may still pass with VISION_STAGE5_ALLOW_DIRTY=1)')
+    if (ctx.cornDirtyNow || data.cornDirty === true) {
+      reasons.push('corn working tree dirty (labOk may still pass with CORN_STAGE5_ALLOW_DIRTY=1)')
     }
     if (ctx.desktopDirtyNow || data.desktopDirty === true) {
-      reasons.push('desktop working tree dirty (labOk may still pass with VISION_STAGE5_ALLOW_DIRTY=1)')
+      reasons.push('desktop working tree dirty (labOk may still pass with CORN_STAGE5_ALLOW_DIRTY=1)')
     }
   }
 
@@ -157,7 +157,7 @@ export function validateStage5Evidence(data, ctx) {
         'childPass',
         'registeredToolNames',
         'identity',
-        'visionFetch',
+        'cornFetch',
         'tarballSha256',
         'tarballArtifact',
       ],
@@ -165,12 +165,12 @@ export function validateStage5Evidence(data, ctx) {
     )
     if (data.claim !== 'runtime-identity-lab') reasons.push('claim!=runtime-identity-lab')
     if (data.presetMount !== 'agentPresets.mount') reasons.push('presetMount!=agentPresets.mount')
-    if (data.presetId !== 'vision-b2') reasons.push('presetId!=vision-b2')
-    if (data.toolsStartEvent !== 'vision.tools.start') reasons.push('toolsStartEvent missing')
+    if (data.presetId !== 'corn-b2') reasons.push('presetId!=corn-b2')
+    if (data.toolsStartEvent !== 'corn.tools.start') reasons.push('toolsStartEvent missing')
     if (data.agentApplyRan !== true) reasons.push('agentApplyRan!==true')
     if (data.childPass !== true) reasons.push('childPass!==true')
     const tools = Array.isArray(data.registeredToolNames) ? data.registeredToolNames : []
-    if (!tools.includes('vision_bench')) reasons.push('vision_bench not registered')
+    if (!tools.includes('corn_bench')) reasons.push('corn_bench not registered')
     const id =
       data.identity && typeof data.identity === 'object'
         ? /** @type {Record<string, unknown>} */ (data.identity)
@@ -180,14 +180,14 @@ export function validateStage5Evidence(data, ctx) {
     if (id.hasHandle !== true) reasons.push('identity.hasHandle!==true')
     if (id.dispatchPath !== 'in-process-handle') reasons.push('identity.dispatchPath mismatch')
     if (!String(id.via || '').includes('agentPresets.mount')) reasons.push('identity.via missing mount')
-    if (id.presetId !== 'vision-b2') reasons.push('identity.presetId!=vision-b2')
+    if (id.presetId !== 'corn-b2') reasons.push('identity.presetId!=corn-b2')
 
     const vf =
-      data.visionFetch && typeof data.visionFetch === 'object'
-        ? /** @type {Record<string, unknown>} */ (data.visionFetch)
+      data.cornFetch && typeof data.cornFetch === 'object'
+        ? /** @type {Record<string, unknown>} */ (data.cornFetch)
         : {}
     if (vf.ok !== true || vf.stateOk !== true || vf.cancelOk !== true) {
-      reasons.push('visionFetch identity/cancel incomplete')
+      reasons.push('cornFetch identity/cancel incomplete')
     }
 
     const artifactPath = ctx.tarballArtifactPath || ''

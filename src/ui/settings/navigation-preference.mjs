@@ -1,4 +1,4 @@
-export const PRESERVE_NAV_STORAGE_KEY = 'dsh-vision-bench:preserve-nav:enabled'
+export const PRESERVE_NAV_STORAGE_KEY = 'dsh-corn-bench:preserve-nav:enabled'
 
 export function getPreserveNavPreference() {
   if (typeof window === 'undefined' || !window.localStorage) return false

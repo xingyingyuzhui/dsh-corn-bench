@@ -2,19 +2,19 @@
 
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { ACTIONS as BENCH_ACTIONS, visionBenchTool } from '../../bench-tool.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
+import { ACTIONS as BENCH_ACTIONS, cornBenchTool } from '../../bench-tool.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
 import {
   DEBUG_TOOL_ACTIONS,
   cwdOf,
   sessionIdOf,
-  visionDebugTool,
-} from '../../src/interfaces/agent/vision-debug-tool.mjs'
+  cornDebugTool,
+} from '../../src/interfaces/agent/corn-debug-tool.mjs'
 import { apply } from '../../tools.js'
 
-test('agent-tool: vision_debug schema matches specification', () => {
-  const tool = visionDebugTool('/tmp/dsh-home')
-  assert.equal(tool.name, 'vision_debug')
+test('agent-tool: corn_debug schema matches specification', () => {
+  const tool = cornDebugTool('/tmp/dsh-home')
+  assert.equal(tool.name, 'corn_debug')
   assert.ok(tool.description.includes('Firmware runtime debugging tool'))
 
   const actions = tool.parameters.properties.action.enum
@@ -61,9 +61,9 @@ test('agent-tool: vision_debug schema matches specification', () => {
   assert.equal(props.uvsock, undefined)
 })
 
-test('agent-tool: vision_bench and vision_debug are strictly isolated', () => {
-  const benchTool = visionBenchTool('/tmp/dsh-home')
-  const debugTool = visionDebugTool('/tmp/dsh-home')
+test('agent-tool: corn_bench and corn_debug are strictly isolated', () => {
+  const benchTool = cornBenchTool('/tmp/dsh-home')
+  const debugTool = cornDebugTool('/tmp/dsh-home')
 
   const benchActions = new Set(benchTool.parameters.properties.action.enum)
   const debugActions = new Set(debugTool.parameters.properties.action.enum)
@@ -132,7 +132,7 @@ test('agent-tool: host registers both tools when role is agent', async () => {
     systemPrompt: {
       section(opts) {
         guidanceRegistered = true
-        assert.equal(opts.name, 'vision-bench:guidance')
+        assert.equal(opts.name, 'corn-bench:guidance')
         return () => {}
       },
     },
@@ -146,7 +146,7 @@ test('agent-tool: host registers both tools when role is agent', async () => {
 
   assert.equal(registeredTools.length, 2)
   const toolNames = registeredTools.map((t) => t.name).sort()
-  assert.deepEqual(toolNames, ['vision_bench', 'vision_debug'])
+  assert.deepEqual(toolNames, ['corn_bench', 'corn_debug'])
   assert.equal(guidanceRegistered, true)
 
   for (const stop of mockCtx.effects) {
@@ -155,9 +155,9 @@ test('agent-tool: host registers both tools when role is agent', async () => {
   assert.equal(registeredTools.length, 0)
 })
 
-test('agent-tool: vision_debug execute dispatches namespaced command and handles cancellation', async () => {
+test('agent-tool: corn_debug execute dispatches namespaced command and handles cancellation', async () => {
   const dispatched = []
-  const unregister = registerVisionHost({
+  const unregister = registerCornHost({
     async dispatch(cmd) {
       dispatched.push(cmd)
       return { ok: true, action: cmd.action, commandId: cmd.commandId }
@@ -165,7 +165,7 @@ test('agent-tool: vision_debug execute dispatches namespaced command and handles
   })
 
   try {
-    const tool = visionDebugTool('/tmp/dsh-home')
+    const tool = cornDebugTool('/tmp/dsh-home')
 
     // 1. Normal execution
     const mockAgent = {

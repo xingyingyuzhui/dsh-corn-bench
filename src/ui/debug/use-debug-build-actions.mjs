@@ -61,7 +61,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
     }
     setBusy('picker')
     setError('')
-    post('/dsh-vision-bench/fs/list', { cwd, path: path || cwd })
+    post('/dsh-corn-bench/fs/list', { cwd, path: path || cwd })
       .then((data) => {
         setPicker(data)
       })
@@ -73,7 +73,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
 
   function loadTargets(project) {
     if (!project) return
-    run('targets', '/dsh-vision-bench/keil/targets', { project }).then((data) => {
+    run('targets', '/dsh-corn-bench/keil/targets', { project }).then((data) => {
       if (!data) return
       const list = data.result?.details?.targets || []
       setTargets(list)
@@ -112,7 +112,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
       .then(() =>
         run(
           'build',
-          '/dsh-vision-bench/keil/build',
+          '/dsh-corn-bench/keil/build',
           {
             project: workspace.keil.project,
             target: workspace.keil.target,
@@ -129,7 +129,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
         setBuildOut(formatResult(data.result))
         setCopied(false)
         if (data.ok === false && typeof openProject === 'function') openProject()
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => {
         if (!data) return
@@ -148,7 +148,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
     if (!lastResult || !cwd) return
     setLogView((prev) => ({ ...prev, open: true, busy: true, text: '' }))
     const logFile = (lastResult?.details && (lastResult.details.log_file || lastResult.details.logFile)) || ''
-    post('/dsh-vision-bench/keil/log', { cwd, logFile })
+    post('/dsh-corn-bench/keil/log', { cwd, logFile })
       .then((data) => {
         setLogView((prev) => ({
           ...prev,

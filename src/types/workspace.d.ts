@@ -1,4 +1,4 @@
-/** Core workspace config / runtime shapes for Vision Bench 0.21. */
+/** Core workspace config / runtime shapes for Corn Bench 0.21. */
 
 export type ConnectionEndpoint = {
   mode: 'rtu' | 'tcp' | string
@@ -161,4 +161,4 @@ export type WorkspaceRuntime = {
   manualRequests?: unknown[]
 }
 
-export type VisionWorkspace = WorkspaceConfig & WorkspaceRuntime
+export type CornWorkspace = WorkspaceConfig & WorkspaceRuntime

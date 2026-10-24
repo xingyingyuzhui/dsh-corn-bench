@@ -15,7 +15,7 @@ import { NEW_UI_LIBS, VENDOR_GZIP_LIMIT, reportClientVendors } from '../scripts/
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 const OK_SOURCE = `window.__ModuleLoader__.load({
-  id: 'dsh-vision-bench',
+  id: 'dsh-corn-bench',
   factory(require) {
     if (typeof require !== 'undefined') require("react")
     return { apply() {} }

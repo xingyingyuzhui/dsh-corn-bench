@@ -11,7 +11,7 @@ import { useFrameColWidths } from './use-frame-col-widths.mjs'
 import { useFramesPage } from './use-frames-page.mjs'
 
 // 串口报文侧栏：只订阅上位机已连接串口的协议/原始捕获，不打开 COM。
-export const FRAMES_TAB_ID = 'dsh-vision-bench:frames'
+export const FRAMES_TAB_ID = 'dsh-corn-bench:frames'
 
 const OVERS_CAN = 10
 

@@ -66,18 +66,18 @@ export function validateCompositionPersona(seq, schema = localPersonaConfigRepli
   return { ok: true }
 }
 
-const HOST_PLUGIN_NAME = 'dsh-vision-bench'
-const AGENT_PLUGIN_SPEC = 'dsh-vision-bench/agent'
+const HOST_PLUGIN_NAME = 'dsh-corn-bench'
+const AGENT_PLUGIN_SPEC = 'dsh-corn-bench/agent'
 
 /**
- * Structural contract for a managed Vision composition: official persona schema
+ * Structural contract for a managed Corn composition: official persona schema
  * plus the agent-plane tool row. Does not evaluate `!!js`.
  *
  * @param {{ items?: unknown[] } | null | undefined} seq
  * @param {(value: unknown) => unknown} [schema]
  * @returns {{ ok: true } | { ok: false, error: string }}
  */
-export function validateManagedVisionComposition(seq, schema = localPersonaConfigReplica) {
+export function validateManagedCornComposition(seq, schema = localPersonaConfigReplica) {
   const persona = validateCompositionPersona(seq, schema)
   if (!persona.ok) return persona
   const items = seq && Array.isArray(seq.items) ? seq.items : []
@@ -87,18 +87,18 @@ export function validateManagedVisionComposition(seq, schema = localPersonaConfi
     const id = yamlMapGet(item, 'id')
     const name = yamlMapGet(item, 'name')
     const isTool =
-      id === 'vision-bench-tools' || name === HOST_PLUGIN_NAME || name === AGENT_PLUGIN_SPEC
+      id === 'corn-bench-tools' || name === HOST_PLUGIN_NAME || name === AGENT_PLUGIN_SPEC
     if (!isTool) continue
     toolRows += 1
     if (name !== AGENT_PLUGIN_SPEC) {
       return {
         ok: false,
-        error: `vision-bench-tools 必须指向 ${AGENT_PLUGIN_SPEC}（row ${i + 1} 为 ${String(name || '')}）`,
+        error: `corn-bench-tools 必须指向 ${AGENT_PLUGIN_SPEC}（row ${i + 1} 为 ${String(name || '')}）`,
       }
     }
     const plain = yamlNodeToPlain(yamlMapGet(item, 'config'))
     if (plain.role != null) {
-      return { ok: false, error: `vision-bench-tools 不应再携带 config.role（row ${i + 1}）` }
+      return { ok: false, error: `corn-bench-tools 不应再携带 config.role（row ${i + 1}）` }
     }
   }
   if (toolRows === 0) {

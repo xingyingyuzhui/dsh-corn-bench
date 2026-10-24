@@ -4,7 +4,7 @@ import { createVerifyTelemetryAdapter } from '../../src/application/verify/verif
 import { createRouter } from '../helpers/rpc-factory.mjs'
 import { flatWorkspace, liveValue, stampWorkspace, vpoint } from './verify-fixtures.mjs'
 
-test('vision-rpc-router: dispatches verify/run, verify/status, and verify/cancel endpoints', async () => {
+test('corn-rpc-router: dispatches verify/run, verify/status, and verify/cancel endpoints', async () => {
   const adapter = createVerifyTelemetryAdapter({
     workspaceLoader: () =>
       stampWorkspace(flatWorkspace({ points: [vpoint('flow_rate')], values: [liveValue('flow_rate', 15.2)] }), {
@@ -51,9 +51,9 @@ test('vision-rpc-router: dispatches verify/run, verify/status, and verify/cancel
   assert.equal(statusRes.running, false)
   assert.equal(statusRes.result.status, 'pass')
 
-  // 3. Test backward compatibility alias `vision.verify.status`
+  // 3. Test backward compatibility alias `corn.verify.status`
   const compatStatusRes = /** @type {any} */ (
-    await router.dispatch('vision.verify.status', {
+    await router.dispatch('corn.verify.status', {
       cwd: '/test/cwd',
       sessionId: 'sess-verify-rpc',
       verificationRunId: runRes.verificationRunId,

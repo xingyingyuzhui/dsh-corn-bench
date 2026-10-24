@@ -22,7 +22,7 @@
 
 ### 2.1 会话启动与权限卡 (Start & Approval)
 
-1. **指令下发**: Agent 调用 vision_debug action: start，或前端调用 debug/command op: start。
+1. **指令下发**: Agent 调用 corn_debug action: start，或前端调用 debug/command op: start。
 2. **安全卡弹出**: Agent 请求必须拦截并返回 DEBUG_APPROVAL_REQUIRED，前端渲染审批卡，包含固件路径、SHA256、目标芯片和调试接口。
 3. **用户审批**: 用户在界面点击“批准”，带 approvalRequestId 执行启动。
 4. **进程生命周期**:

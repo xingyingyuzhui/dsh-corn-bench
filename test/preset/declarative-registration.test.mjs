@@ -5,10 +5,10 @@ import { join } from 'node:path'
 import test, { beforeEach } from 'node:test'
 import {
   PRESET_ID,
-  activateVisionPresetDeclaration,
+  activateCornPresetDeclaration,
   getDeclarationState,
   migrateLegacyPresetDir,
-  registerVisionPreset,
+  registerCornPreset,
   resetDeclarationState,
   userPresetDir,
 } from '../../src/infrastructure/harness/preset-declaration.mjs'
@@ -41,22 +41,22 @@ async function homeWithLegacyPreset(markerText) {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), '- id: persona\n  name: persona\n')
   await writeFile(join(dir, 'preset.yml'), 'name: Corn模式\n')
-  if (markerText !== undefined) await writeFile(join(dir, '.dsh-vision-bench'), markerText)
+  if (markerText !== undefined) await writeFile(join(dir, '.dsh-corn-bench'), markerText)
   return home
 }
 
 const OWNED_MARKER = JSON.stringify({
-  owner: 'dsh-vision-bench',
+  owner: 'dsh-corn-bench',
   presetSchemaVersion: 3,
   basePresetId: 'standard',
-  pluginRowId: 'vision-bench-tools',
+  pluginRowId: 'corn-bench-tools',
 })
 
 beforeEach(() => resetDeclarationState())
 
-test('registerVisionPreset registers the vision definition and returns its disposer', async () => {
+test('registerCornPreset registers the corn definition and returns its disposer', async () => {
   const registry = stubRegistry()
-  const result = await registerVisionPreset(registry, { platform: 'linux', duplicateRetries: 0 })
+  const result = await registerCornPreset(registry, { platform: 'linux', duplicateRetries: 0 })
   assert.equal(result.ok, true)
   assert.equal(result.via, 'agentPresets.register')
   assert.equal(typeof result.dispose, 'function')
@@ -65,31 +65,31 @@ test('registerVisionPreset registers the vision definition and returns its dispo
   assert.equal(registry.state.disposed, 1)
 })
 
-test('registerVisionPreset reports registration failures', async () => {
+test('registerCornPreset reports registration failures', async () => {
   const registry = stubRegistry({ failWith: new Error('registry exploded') })
-  const result = await registerVisionPreset(registry, { duplicateRetries: 0 })
+  const result = await registerCornPreset(registry, { duplicateRetries: 0 })
   assert.equal(result.ok, false)
   assert.match(String(result.error), /registry exploded/)
   assert.equal(result.dispose, null)
 })
 
-test('registerVisionPreset retries a taken id before giving up', async () => {
+test('registerCornPreset retries a taken id before giving up', async () => {
   const registry = stubRegistry({
-    failWith: new Error('Duplicate agent preset: vision-bench'),
+    failWith: new Error('Duplicate agent preset: corn-bench'),
     failCalls: (call) => call === 1,
   })
-  const result = await registerVisionPreset(registry, { retryDelayMs: 0 })
+  const result = await registerCornPreset(registry, { retryDelayMs: 0 })
   assert.equal(result.ok, true)
   assert.equal(result.via, 'agentPresets.register')
   assert.equal(registry.state.calls, 2)
 })
 
-test('registerVisionPreset defers to an external declaration owning the id', async () => {
+test('registerCornPreset defers to an external declaration owning the id', async () => {
   const registry = stubRegistry({
-    failWith: new Error('Duplicate agent preset: vision-bench'),
+    failWith: new Error('Duplicate agent preset: corn-bench'),
     failCalls: () => true,
   })
-  const result = await registerVisionPreset(registry, { duplicateRetries: 0 })
+  const result = await registerCornPreset(registry, { duplicateRetries: 0 })
   assert.equal(result.ok, true)
   assert.equal(result.via, 'external-declaration')
   assert.equal(result.delegated, true)
@@ -102,14 +102,14 @@ test('migrateLegacyPresetDir renames an owned directory into a backup', async ()
   assert.equal(out.ok, true, out.error)
   assert.equal(out.migrated, true)
   const entries = await readdir(join(home, '.agent-presets'))
-  assert.ok(entries.includes('.vision-bench.backup.' + String(out.backupDir).split('.vision-bench.backup.')[1]))
+  assert.ok(entries.includes('.corn-bench.backup.' + String(out.backupDir).split('.corn-bench.backup.')[1]))
   assert.ok(!entries.includes(PRESET_ID))
   const backed = await readFile(join(String(out.backupDir), 'agent.cordis.yml'), 'utf8')
   assert.match(backed, /persona/)
 })
 
 test('migrateLegacyPresetDir accepts the legacy plain-string marker', async () => {
-  const home = await homeWithLegacyPreset('dsh-vision-bench')
+  const home = await homeWithLegacyPreset('dsh-corn-bench')
   const out = migrateLegacyPresetDir(home)
   assert.equal(out.ok, true, out.error)
   assert.equal(out.migrated, true)
@@ -120,7 +120,7 @@ test('migrateLegacyPresetDir never touches a foreign or unmarked directory', asy
   const foreignOut = migrateLegacyPresetDir(foreign)
   assert.equal(foreignOut.ok, false)
   assert.match(String(foreignOut.error), /已被其他预设占用/)
-  assert.deepEqual(await readdir(userPresetDir(foreign)), ['.dsh-vision-bench', 'agent.cordis.yml', 'preset.yml'])
+  assert.deepEqual(await readdir(userPresetDir(foreign)), ['.dsh-corn-bench', 'agent.cordis.yml', 'preset.yml'])
 
   const unmarked = await homeWithLegacyPreset(undefined)
   const unmarkedOut = migrateLegacyPresetDir(unmarked)
@@ -136,10 +136,10 @@ test('migrateLegacyPresetDir is a no-op without a legacy directory', async () =>
   assert.equal(out.migrated, false)
 })
 
-test('activateVisionPresetDeclaration registers, verifies the roster and migrates', async () => {
+test('activateCornPresetDeclaration registers, verifies the roster and migrates', async () => {
   const home = await homeWithLegacyPreset(OWNED_MARKER)
   const registry = stubRegistry()
-  const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })
+  const activation = await activateCornPresetDeclaration(registry, home, { duplicateRetries: 0 })
   assert.equal(activation.ok, true, activation.error)
   assert.equal(activation.via, 'agentPresets.register')
   assert.equal(typeof activation.dispose, 'function')
@@ -155,31 +155,31 @@ test('activateVisionPresetDeclaration registers, verifies the roster and migrate
   )
 })
 
-test('activateVisionPresetDeclaration keeps the legacy directory when the roster row is broken', async () => {
+test('activateCornPresetDeclaration keeps the legacy directory when the roster row is broken', async () => {
   const home = await homeWithLegacyPreset(OWNED_MARKER)
   const registry = stubRegistry({ rows: [{ id: PRESET_ID, broken: 'row 3 names no plugin' }] })
-  const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })
+  const activation = await activateCornPresetDeclaration(registry, home, { duplicateRetries: 0 })
   assert.equal(activation.ok, false)
   assert.match(String(activation.error), /row 3 names no plugin/)
   assert.equal(activation.migration.migrated, false)
-  assert.deepEqual(await readdir(userPresetDir(home)), ['.dsh-vision-bench', 'agent.cordis.yml', 'preset.yml'])
+  assert.deepEqual(await readdir(userPresetDir(home)), ['.dsh-corn-bench', 'agent.cordis.yml', 'preset.yml'])
   assert.equal(getDeclarationState().phase, 'registered')
   assert.match(getDeclarationState().error, /row 3 names no plugin/)
 })
 
-test('activateVisionPresetDeclaration records registration failures', async () => {
+test('activateCornPresetDeclaration records registration failures', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-decl-'))
   const registry = stubRegistry({ failWith: new Error('registry exploded') })
-  const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })
+  const activation = await activateCornPresetDeclaration(registry, home, { duplicateRetries: 0 })
   assert.equal(activation.ok, false)
   assert.equal(getDeclarationState().phase, 'failed')
   assert.match(getDeclarationState().error, /registry exploded/)
 })
 
-test('activateVisionPresetDeclaration reports a missing roster row', async () => {
+test('activateCornPresetDeclaration reports a missing roster row', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-decl-'))
   const registry = stubRegistry({ rows: [{ id: 'standard' }] })
-  const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })
+  const activation = await activateCornPresetDeclaration(registry, home, { duplicateRetries: 0 })
   assert.equal(activation.ok, false)
-  assert.match(String(activation.error), /roster 缺少 vision-bench 声明/)
+  assert.match(String(activation.error), /roster 缺少 corn-bench 声明/)
 })

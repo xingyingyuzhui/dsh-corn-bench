@@ -9,7 +9,7 @@
  * `0.1.7-alpha.2` `packages/bundle/web-app/presets/standard.patch.yml`.
  *
  * DSH 0.1.7+ presets are self-contained declarations (`agentPresets.register`),
- * so the Vision模式 preset restates standard's complete child list and appends
+ * so the Corn模式 preset restates standard's complete child list and appends
  * its own agent tool row (see preset-declaration.mjs). Regenerate and verify:
  *
  *   node scripts/gen-standard-preset-snapshot.mjs --write   # refresh

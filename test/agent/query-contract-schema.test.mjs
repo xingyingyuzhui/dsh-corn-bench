@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 /**
@@ -15,19 +15,19 @@ import { connection, createBench } from '../helpers/workspace-factory.mjs'
  * @param {string} sessionId
  */
 function agentExec(t, home, cwd, sessionId) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   return (/** @type {any} */ args) =>
     tool.execute(args, { agent: { session: { header: { cwd, id: sessionId } } } })
 }
 
-test('vision_bench schema publishes cursor and view and rejects unknown fields', () => {
-  const tool = visionBenchTool('/tmp/unused')
+test('corn_bench schema publishes cursor and view and rejects unknown fields', () => {
+  const tool = cornBenchTool('/tmp/unused')
   const props = tool.parameters.properties
   assert.equal(tool.parameters.additionalProperties, false)
   assert.equal(props.cursor.type, 'string')
@@ -41,7 +41,7 @@ test('vision_bench schema publishes cursor and view and rejects unknown fields',
 
 test('Agent preflight and Host reject cursor/view outside their queries', async () => {
   const home = '/tmp/unused-query-fields'
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const exec = { agent: { session: { header: { cwd: '/tmp/proj', id: 's1' } } } }
   const frames = await tool.execute({ action: 'frames', connectionId: 'c1', cursor: 'abc' }, exec)
   assert.equal(frames.ok, false)
@@ -62,7 +62,7 @@ test('Agent preflight and Host reject cursor/view outside their queries', async 
   assert.equal(getView.details.field, 'view')
   assert.equal(getView.details.action, 'points')
 
-  const host = await executeVisionCommand({
+  const host = await executeCornCommand({
     home,
     cwd: '/tmp/proj',
     sessionId: 's1',

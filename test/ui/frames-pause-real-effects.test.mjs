@@ -20,14 +20,14 @@ test('Task8: pause freezes content (ids/text identical), resume shows live frame
   await withNullVendor(async () => {
     const holder = { frames: { c1: makeFrames('c1', 12, 1) } }
     const post = async (path) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({
           frames: holder.frames,
           connections: [{ id: 'c1', name: 'C1', conn: { mode: 'rtu', port: 'COM3', sim: true } }],
           serialSources: undefined,
         })
       }
-      if (path === '/dsh-vision-bench/serial/ports') return { ok: true, ports: ['COM3'] }
+      if (path === '/dsh-corn-bench/serial/ports') return { ok: true, ports: ['COM3'] }
       return { ok: true }
     }
     // Force FALLBACK row path (deterministic DOM rows) — pause lifecycle asserts real content.

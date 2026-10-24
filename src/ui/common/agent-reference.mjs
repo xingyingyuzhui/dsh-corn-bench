@@ -170,7 +170,7 @@ export function postEvidence(post, cwd, evidence, onFail, options = {}) {
   if (!list.length) return Promise.resolve(null)
   const sessionId = typeof options?.sessionId === 'string' ? options.sessionId.trim() : ''
   const body = sessionId ? { cwd, sessionId, evidence: list } : { cwd, evidence: list }
-  return post('/dsh-vision-bench/evidence', body, 15000)
+  return post('/dsh-corn-bench/evidence', body, 15000)
     .then((data) => {
       if (data && data.ok === false) {
         if (typeof onFail === 'function') {

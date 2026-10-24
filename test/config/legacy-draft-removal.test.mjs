@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { workspaceKey } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { workspaceDir } from '../../src/infrastructure/persistence/workspace-migration.mjs'
 
 test('legacy configDrafts are ignored on load and dropped on next save', async () => {
@@ -34,7 +34,7 @@ test('legacy configDrafts are ignored on load and dropped on next save', async (
   const saved = JSON.parse(readFileSync(cfgPath, 'utf8'))
   assert.equal(saved.configDrafts, undefined)
 
-  const draft = await runVisionBench(home, { action: 'draft', op: 'list' }, cwd, { source: 'agent' })
+  const draft = await runCornBench(home, { action: 'draft', op: 'list' }, cwd, { source: 'agent' })
   assert.equal(draft.ok, false)
   assert.equal(draft.errorCode, 'OP_REMOVED')
   await rm(home, { recursive: true, force: true })

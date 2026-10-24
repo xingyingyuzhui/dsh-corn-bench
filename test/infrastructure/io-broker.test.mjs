@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { createVisionIoBroker } from '../../bench-io-broker.mjs'
+import { createCornIoBroker } from '../../bench-io-broker.mjs'
 
 const fakeWorker = fileURLToPath(new URL('../fixtures/fake-io-worker.mjs', import.meta.url))
 
@@ -26,7 +26,7 @@ async function waitForLogMatch(path, re, timeoutMs = 2000) {
 }
 
 test('broker correlates concurrent requests by id', async () => {
-  const broker = createVisionIoBroker({ workerPath: fakeWorker })
+  const broker = createCornIoBroker({ workerPath: fakeWorker })
   try {
     const health = await broker.health()
     assert.equal(health.ok, true)
@@ -65,7 +65,7 @@ test('broker correlates concurrent requests by id', async () => {
 })
 
 test('broker abort cleans pending map', async () => {
-  const broker = createVisionIoBroker({ workerPath: fakeWorker })
+  const broker = createCornIoBroker({ workerPath: fakeWorker })
   try {
     await broker.health()
     const ac = new AbortController()
@@ -95,9 +95,9 @@ test('broker abort cleans pending map', async () => {
 test('broker timeout sends cancel and ignores late response', async () => {
   const delayWorker = fileURLToPath(new URL('../fixtures/delay-io-worker.mjs', import.meta.url))
   const log = join(tmpdir(), 'dvb-io-cancel-' + Date.now() + '.log')
-  const broker = createVisionIoBroker({
+  const broker = createCornIoBroker({
     workerPath: delayWorker,
-    env: { ...process.env, VISION_IO_DELAY_MS: '2200', VISION_IO_OPLOG: log },
+    env: { ...process.env, CORN_IO_DELAY_MS: '2200', CORN_IO_OPLOG: log },
   })
   try {
     await broker.health()
@@ -133,9 +133,9 @@ test('broker timeout sends cancel and ignores late response', async () => {
 test('queued write that times out is cancelled before exec', async () => {
   const delayWorker = fileURLToPath(new URL('../fixtures/delay-io-worker.mjs', import.meta.url))
   const log = join(tmpdir(), 'dvb-io-write-to-' + Date.now() + '.log')
-  const broker = createVisionIoBroker({
+  const broker = createCornIoBroker({
     workerPath: delayWorker,
-    env: { ...process.env, VISION_IO_DELAY_MS: '2200', VISION_IO_OPLOG: log },
+    env: { ...process.env, CORN_IO_DELAY_MS: '2200', CORN_IO_OPLOG: log },
   })
   try {
     await broker.health()
@@ -185,9 +185,9 @@ test('queued write that times out is cancelled before exec', async () => {
 
 test('stop leaves pending map empty', async () => {
   const delayWorker = fileURLToPath(new URL('../fixtures/delay-io-worker.mjs', import.meta.url))
-  const broker = createVisionIoBroker({
+  const broker = createCornIoBroker({
     workerPath: delayWorker,
-    env: { ...process.env, VISION_IO_DELAY_MS: '800' },
+    env: { ...process.env, CORN_IO_DELAY_MS: '800' },
   })
   try {
     await broker.health()
@@ -215,7 +215,7 @@ test('stop leaves pending map empty', async () => {
 })
 
 test('missing worker path becomes unhealthy instead of throwing uncaught', async () => {
-  const broker = createVisionIoBroker({ workerPath: '/no/such/vision-io-worker.mjs' })
+  const broker = createCornIoBroker({ workerPath: '/no/such/corn-io-worker.mjs' })
   const ran = await broker.health()
   assert.equal(ran.ok, false)
   assert.equal(broker.getState() === 'unhealthy' || broker.getState() === 'stopped', true)

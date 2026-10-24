@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { loadWorkspace } from '../store/workspace-store.mjs'
 
-const PLUGIN_NAME = 'dsh-vision-bench'
+const PLUGIN_NAME = 'dsh-corn-bench'
 const SUMMARY_MAX = 160
 const SENSITIVE = /(password|passwd|secret|token|api[_-]?key|authorization|bearer)\s*[:=]\s*\S+/gi
 
@@ -36,10 +36,9 @@ const currentAgents = () => {
  * @param {any} [detail]
  * @returns {any}
  */
-export function formatVisionNotice(summary, detail = '') {
+export function formatCornNotice(summary, detail = '') {
   const head = String(summary || '').trim()
-  // Summaries from before the Corn rename still start with Vision.
-  const body = /^\[?(?:Corn|Vision)/.test(head)
+  const body = /^\[?Corn/.test(head)
     ? head
     : `[Corn 已生效] ${head}。这是配置结果通知，不是新的操作请求，不要再执行一遍。`
   const extra = String(detail || '').trim()
@@ -120,7 +119,7 @@ export const notifyBenchEvent = async (home, cwd, summary, detail = '', opts = {
           ? agent.steer.bind(agent)
           : null
     if (!deliver) return { ok: false, skipped: 'no-method' }
-    const text = formatVisionNotice(summary, detail)
+    const text = formatCornNotice(summary, detail)
     const message = buildMessage(text, summary)
     await deliver(message)
     return { ok: true, boundId: targetId }
@@ -152,4 +151,4 @@ export const maybeNotifyResult = (home, cwd, label, ran) => {
   })
 }
 
-export const _internal = { PLUGIN_NAME, buildMessage, formatVisionNotice, sanitizeNoticeSummary }
+export const _internal = { PLUGIN_NAME, buildMessage, formatCornNotice, sanitizeNoticeSummary }

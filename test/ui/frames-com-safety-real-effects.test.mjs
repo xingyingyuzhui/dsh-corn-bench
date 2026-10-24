@@ -151,14 +151,14 @@ test('empty live sources show no HMI CTA; closing the tab does not unlink', asyn
   await withNullVendor(async () => {
     const closeCalls = []
     const post = async (path) => {
-      if (path === '/dsh-vision-bench/state') {
+      if (path === '/dsh-corn-bench/state') {
         return framesStatePayload({
           frames: {},
           connections: [RTU_C1],
           serialSources: [],
         })
       }
-      if (path === '/dsh-vision-bench/serial/close' || path === '/dsh-vision-bench/connection/close') {
+      if (path === '/dsh-corn-bench/serial/close' || path === '/dsh-corn-bench/connection/close') {
         closeCalls.push(path)
         return { ok: true }
       }

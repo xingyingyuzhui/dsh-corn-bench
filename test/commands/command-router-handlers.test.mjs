@@ -6,8 +6,8 @@ import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../../src/application/commands/vision-command-router.mjs'
-import { executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
+import { runCornBench } from '../../src/application/commands/corn-command-router.mjs'
+import { executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
 import { ensureWorkspaceClaimed } from '../../src/application/modbus/workspace-session-view.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -30,17 +30,17 @@ function seed(home, cwd) {
 }
 
 test('router maps unknown action and removed draft without handler details', async () => {
-  const unknown = await runVisionBench('/tmp', { action: 'not-a-thing' }, '/tmp/x', {}, {})
+  const unknown = await runCornBench('/tmp', { action: 'not-a-thing' }, '/tmp/x', {}, {})
   assert.equal(unknown.ok, false)
   assert.equal(unknown.errorCode, 'UNKNOWN_ACTION')
-  const draft = await runVisionBench('/tmp', { action: 'draft' }, '/tmp/x', {}, {})
+  const draft = await runCornBench('/tmp', { action: 'draft' }, '/tmp/x', {}, {})
   assert.equal(draft.errorCode, 'OP_REMOVED')
 })
 
 test('system.ping is routed before workspace checks', async () => {
-  const ran = await runVisionBench('', { action: 'system.ping' }, '', { source: 'system' }, {})
+  const ran = await runCornBench('', { action: 'system.ping' }, '', { source: 'system' }, {})
   assert.equal(ran.ok, true)
-  assert.equal(ran.data.service, 'dsh-vision-bench')
+  assert.equal(ran.data.service, 'dsh-corn-bench')
   assert.equal(typeof ran.data.pid, 'number')
 })
 
@@ -49,7 +49,7 @@ test('project/config/visualization handlers cover happy and mismatch paths', asy
   const cwd = join(home, 'board')
   seed(home, cwd)
   try {
-    const status = await executeVisionCommand({ home, cwd, action: 'status', source: 'user', sessionId: 's1' })
+    const status = await executeCornCommand({ home, cwd, action: 'status', source: 'user', sessionId: 's1' })
     assert.equal(status.ok, true)
     assert.equal(status.cwd, cwd)
     assert.equal(status.session.sessionId, 's1')
@@ -57,7 +57,7 @@ test('project/config/visualization handlers cover happy and mismatch paths', asy
     await ensureWorkspaceClaimed(home, cwd, 's1')
     assert.equal(loadWorkspace(home, cwd).modbus.privateClaimSessionId, 's1')
 
-    const mismatch = await executeVisionCommand({
+    const mismatch = await executeCornCommand({
       home,
       cwd,
       action: 'points',
@@ -76,7 +76,7 @@ test('project/config/visualization handlers cover happy and mismatch paths', asy
     assert.equal(mismatch.ok, false)
     assert.equal(mismatch.errorCode, 'TARGET_MISMATCH')
 
-    const missingSession = await executeVisionCommand({
+    const missingSession = await executeCornCommand({
       home,
       cwd,
       action: 'points',
@@ -94,7 +94,7 @@ test('project/config/visualization handlers cover happy and mismatch paths', asy
     assert.equal(missingSession.ok, false)
     assert.equal(missingSession.errorCode, 'SESSION_REQUIRED')
 
-    const drift = await executeVisionCommand({
+    const drift = await executeCornCommand({
       home,
       cwd,
       action: 'points',
@@ -112,7 +112,7 @@ test('project/config/visualization handlers cover happy and mismatch paths', asy
     assert.equal(drift.ok, false)
     assert.equal(drift.errorCode, 'CONFIG_DRIFT')
 
-    const viz = await executeVisionCommand({
+    const viz = await executeCornCommand({
       home,
       cwd,
       action: 'visualization',
@@ -190,7 +190,7 @@ test('config mutations without a positive integer version do not write', async (
   try {
     for (const spec of ops) {
       for (const expectedConfigVersion of [undefined, 0, -1, '2', Number.NaN]) {
-        const ran = await executeVisionCommand({
+        const ran = await executeCornCommand({
           home,
           cwd,
           action: spec.action,
@@ -224,7 +224,7 @@ test('config mutations without a positive integer version do not write', async (
 })
 
 test('router is a composition layer and handlers own business branches', () => {
-  const router = readFileSync(join(root, 'src/application/commands/vision-command-router.mjs'), 'utf8')
+  const router = readFileSync(join(root, 'src/application/commands/corn-command-router.mjs'), 'utf8')
   const lines = router.split('\n').length
   assert.ok(lines <= 260, `router too large: ${lines}`)
   assert.match(router, /handleConfigCommand/)

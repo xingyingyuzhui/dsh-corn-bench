@@ -1,7 +1,7 @@
 /**
  * Phase-0 Desktop B1: boot the official desktop-host pipe carrier with
- * @dsh-vision/probe-fetch linked into an isolated profile, then POST
- * /api/vision-probe through DesktopHostProcess.fetch (same path as
+ * @dsh-corn/probe-fetch linked into an isolated profile, then POST
+ * /api/corn-probe through DesktopHostProcess.fetch (same path as
  * dsh-app:// renderer fetch). No Electron GUI; no user ~/.dsh mutation.
  *
  * Usage (from harness apps/desktop, so workspace deps resolve):
@@ -17,19 +17,19 @@ import { createPluginProfile } from '../../../../../deepseek-harness-desktop-off
 import { prepareDevelopmentProject } from '../../../../../deepseek-harness-desktop-official/apps/desktop/scripts/development-project.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const probeSrc = join(here, 'vision-probe-fetch')
+const probeSrc = join(here, 'corn-probe-fetch')
 const harnessRoot = resolve(here, '../../../../../deepseek-harness-desktop-official')
 const appRoot = join(harnessRoot, 'apps', 'desktop')
-const buildRoot = join(appRoot, '.desktop-build', 'vision-probe-b1')
+const buildRoot = join(appRoot, '.desktop-build', 'corn-probe-b1')
 const projectDir = join(buildRoot, 'project')
-const pluginName = '@dsh-vision/probe-fetch'
+const pluginName = '@dsh-corn/probe-fetch'
 
 function readJson(path: string): Record<string, unknown> {
   return JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
 }
 
 async function main(): Promise<void> {
-  const home = mkdtempSync(join(tmpdir(), 'dsh-vision-desktop-b1-'))
+  const home = mkdtempSync(join(tmpdir(), 'dsh-corn-desktop-b1-'))
   const profile = join(home, 'profiles', 'desktop')
   const release = {
     schemaVersion: 1 as const,
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
   })
 
   createPluginProfile(profile)
-  const pluginDir = join(profile, 'node_modules', '@dsh-vision', 'probe-fetch')
+  const pluginDir = join(profile, 'node_modules', '@dsh-corn', 'probe-fetch')
   mkdirSync(dirname(pluginDir), { recursive: true })
   cpSync(probeSrc, pluginDir, {
     recursive: true,
@@ -70,11 +70,11 @@ async function main(): Promise<void> {
     profile,
     // Non-zero inspect port enables --allow-linked-profile (dev project symlinks).
     19_231,
-    { ...process.env, DSH_HOME: home, DSH_VISION_PROBE_TAG: 'desktop-b1-pipe' },
+    { ...process.env, DSH_HOME: home, DSH_CORN_PROBE_TAG: 'desktop-b1-pipe' },
   )
 
   const log: Record<string, unknown> = {
-    event: 'vision.probe.desktop.b1',
+    event: 'corn.probe.desktop.b1',
     home,
     profile,
     projectDir,
@@ -85,14 +85,14 @@ async function main(): Promise<void> {
     const ready = await host.start()
     log.ready = ready
 
-    const miss = await host.fetch(new Request('dsh-app://app/api/vision-probe-missing', {
+    const miss = await host.fetch(new Request('dsh-app://app/api/corn-probe-missing', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{}',
     }))
     log.missingStatus = miss.status
 
-    const hit = await host.fetch(new Request('dsh-app://app/api/vision-probe', {
+    const hit = await host.fetch(new Request('dsh-app://app/api/corn-probe', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ping: 1, carrier: 'desktop-host-pipe' }),
@@ -122,11 +122,11 @@ async function main(): Promise<void> {
       projectDir,
       profile,
       19_232,
-      { ...process.env, DSH_HOME: home, DSH_VISION_PROBE_TAG: 'desktop-b1-removed' },
+      { ...process.env, DSH_HOME: home, DSH_CORN_PROBE_TAG: 'desktop-b1-removed' },
     )
     try {
       await host2.start()
-      const gone = await host2.fetch(new Request('dsh-app://app/api/vision-probe', {
+      const gone = await host2.fetch(new Request('dsh-app://app/api/corn-probe', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: '{}',

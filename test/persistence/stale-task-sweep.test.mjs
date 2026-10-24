@@ -69,7 +69,7 @@ test('v4 running task becomes error and stays error after reload', async () => {
 test('legacy workspace is swept and migrated', async () => {
   await withHome(async (home, cwd) => {
     const key = workspaceKey(cwd)
-    const root = join(home, 'vision-bench', 'workspaces')
+    const root = join(home, 'corn-bench', 'workspaces')
     mkdirSync(root, { recursive: true })
     const legacy = join(root, `${key}.json`)
     writeFileSync(

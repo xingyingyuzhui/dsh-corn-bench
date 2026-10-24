@@ -17,7 +17,7 @@ export default {
       file: 'test/alpha3-contract.test.mjs',
       purpose: 'architecture-boundary',
       reason: 'Host/Client 分层与兼容入口契约',
-      targets: ['client.js', 'host.js', 'src/ui/client/client-entry.mjs', 'src/interfaces/web/vision-web-compat.mjs'],
+      targets: ['client.js', 'host.js', 'src/ui/client/client-entry.mjs', 'src/interfaces/web/corn-web-compat.mjs'],
     },
     {
       file: 'test/alpha3-remote-spike.test.mjs',
@@ -28,7 +28,7 @@ export default {
         'host.js',
         'package.json',
         'src/ui/client/client-entry.mjs',
-        'src/interfaces/web/vision-web-compat.mjs',
+        'src/interfaces/web/corn-web-compat.mjs',
       ],
     },
     {
@@ -59,7 +59,7 @@ export default {
       file: 'test/commands/command-router-handlers.test.mjs',
       purpose: 'architecture-boundary',
       reason: '命令路由须保持薄组合层，禁止直写 mutateConfig/modbusWrite',
-      targets: ['src/application/commands/vision-command-router.mjs'],
+      targets: ['src/application/commands/corn-command-router.mjs'],
     },
     {
       file: 'test/dependency-boundaries.test.mjs',
@@ -106,7 +106,7 @@ export default {
       file: 'test/project/file-security.test.mjs',
       purpose: 'security-banned-pattern',
       reason: '路径穿越与命令注入防护',
-      targets: ['host.js', 'src/interfaces/rpc/vision-rpc-router.mjs', 'src/interfaces/web/vision-web-compat.mjs'],
+      targets: ['host.js', 'src/interfaces/rpc/corn-rpc-router.mjs', 'src/interfaces/web/corn-web-compat.mjs'],
     },
     {
       file: 'test/release.test.mjs',
@@ -159,7 +159,7 @@ export default {
       reason: '视图注册与 RPC client 入口契约',
       targets: [
         'bench-view.mjs',
-        'src/infrastructure/host/vision-rpc-client.mjs',
+        'src/infrastructure/host/corn-rpc-client.mjs',
         'src/ui/client/client-entry.mjs',
         'src/ui/debug/debug-view.mjs',
         'src/ui/debug/debug-flash-panel.mjs',
@@ -188,14 +188,14 @@ export default {
         'src/application/modbus/*',
         'src/application/modbus/write-service.mjs',
         'src/infrastructure/harness/preset-declaration.mjs',
-        'src/infrastructure/host/vision-preset-attach.mjs',
+        'src/infrastructure/host/corn-preset-attach.mjs',
       ],
     },
     {
       file: 'test/architecture/source-assertions.test.mjs',
       purpose: 'architecture-boundary',
       reason: '门禁自测：路径字面量仅作分类与许可清单用例，不读取生产源码',
-      targets: ['bench-notify.mjs', 'bench-tool.mjs', 'bench-view.mjs', 'bench-y.mjs', 'client.js', 'host.js', 'package.json', 'runtime/modbus_read.py', 'runtime/vision-io-worker.mjs', 'scripts/run-tests.mjs', 'src/types/workspace.d.ts', 'src/ui/', 'src/ui/bar.mjs', 'src/ui/foo.mjs', 'src/ui/helper.mjs', 'src/ui/hmi', 'src/ui/hmi/', 'src/ui/hmi/hmi-page.mjs', 'src/ui/x.mjs'],
+      targets: ['bench-notify.mjs', 'bench-tool.mjs', 'bench-view.mjs', 'bench-y.mjs', 'client.js', 'host.js', 'package.json', 'runtime/modbus_read.py', 'runtime/corn-io-worker.mjs', 'scripts/run-tests.mjs', 'src/types/workspace.d.ts', 'src/ui/', 'src/ui/bar.mjs', 'src/ui/foo.mjs', 'src/ui/helper.mjs', 'src/ui/hmi', 'src/ui/hmi/', 'src/ui/hmi/hmi-page.mjs', 'src/ui/x.mjs'],
     },
   ],
 }

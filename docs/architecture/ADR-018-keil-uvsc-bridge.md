@@ -6,7 +6,7 @@ Accepted (0.27.0-dev / PR-D).
 
 ## Context
 
-早期实现中为 Keil 仿真器后端设计了一个伪造的自定义 JSON 通信层（带 10 字节自定义头），与真实的 Keil µVision UVSOCK / UVSC C ABI 规范完全不兼容。此外，原实现假定用户已在外部手动启动并配置好 Keil，无法支持由 Agent 全自动启动仿真调试的预期工作流。
+早期实现中为 Keil 仿真器后端设计了一个伪造的自定义 JSON 通信层（带 10 字节自定义头），与真实的 Keil µCorn UVSOCK / UVSC C ABI 规范完全不兼容。此外，原实现假定用户已在外部手动启动并配置好 Keil，无法支持由 Agent 全自动启动仿真调试的预期工作流。
 
 ## Decision
 

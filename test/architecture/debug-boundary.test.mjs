@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ACTIONS } from '../../bench-tool.mjs'
 import { apply } from '../../host.js'
-import { VISION_RPC_CHANNEL } from '../../src/shared/vision-rpc-contract.mjs'
-import { DEBUG_SECTIONS } from '../../src/ui/workspace/vision-route.mjs'
+import { CORN_RPC_CHANNEL } from '../../src/shared/corn-rpc-contract.mjs'
+import { DEBUG_SECTIONS } from '../../src/ui/workspace/corn-route.mjs'
 
-test('debug boundary: VISION_RPC_CHANNEL remains strictly unique', () => {
-  assert.equal(VISION_RPC_CHANNEL, '/vision-bench')
+test('debug boundary: CORN_RPC_CHANNEL remains strictly unique', () => {
+  assert.equal(CORN_RPC_CHANNEL, '/corn-bench')
 })
 
-test('debug boundary: Host registers exactly one HTTP route (/dsh-vision-bench/command), no debug HTTP routes', async () => {
+test('debug boundary: Host registers exactly one HTTP route (/dsh-corn-bench/command), no debug HTTP routes', async () => {
   const routes = []
   const registeredChannels = []
   const fetchPaths = []
@@ -66,8 +66,8 @@ test('debug boundary: Host registers exactly one HTTP route (/dsh-vision-bench/c
 
   // Exactly one HTTP route on webServer
   assert.equal(routes.length, 1, 'webServer must have exactly one registered route')
-  assert.equal(routes[0]?.path, '/dsh-vision-bench/command')
-  assert.deepEqual(fetchPaths, ['/api/vision-bench/dispatch'])
+  assert.equal(routes[0]?.path, '/dsh-corn-bench/command')
+  assert.deepEqual(fetchPaths, ['/api/corn-bench/dispatch'])
 
   // No separate debug HTTP routes
   assert.ok(
@@ -76,10 +76,10 @@ test('debug boundary: Host registers exactly one HTTP route (/dsh-vision-bench/c
   )
 
   // Connection RPC channel is strictly unique
-  assert.deepEqual(registeredChannels, ['/vision-bench'])
+  assert.deepEqual(registeredChannels, ['/corn-bench'])
 })
 
-test('debug boundary: vision_bench ACTIONS contains no debug ops (must live in vision_debug)', () => {
+test('debug boundary: corn_bench ACTIONS contains no debug ops (must live in corn_debug)', () => {
   const actionsList = Array.from(ACTIONS)
   const debugActions = actionsList.filter((action) => {
     const act = String(action).toLowerCase()
@@ -96,7 +96,7 @@ test('debug boundary: vision_bench ACTIONS contains no debug ops (must live in v
   assert.deepEqual(
     debugActions,
     [],
-    `vision_bench ACTIONS must stay clean without debug operations; found: ${debugActions.join(', ')}`,
+    `corn_bench ACTIONS must stay clean without debug operations; found: ${debugActions.join(', ')}`,
   )
 })
 

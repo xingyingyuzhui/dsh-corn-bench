@@ -4,7 +4,7 @@ import test from 'node:test'
 import { AGENT_TEXT_CAPS, utf8ByteLength } from '../../src/application/commands/agent-result-caps.mjs'
 import { projectAgentResult } from '../../src/application/commands/agent-result-projection.mjs'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 test('timeline pages of long Chinese summaries stay under the output cap without skips', async (t) => {
@@ -46,7 +46,7 @@ test('timeline pages of long Chinese summaries stay under the output cap without
   const seen = []
   let cursor = ''
   for (let guard = 0; guard < 20; guard += 1) {
-    const host = await runVisionBench(
+    const host = await runCornBench(
       home,
       { action: 'timeline.list', limit: 50, ...(cursor ? { cursor } : {}) },
       cwd,
@@ -80,7 +80,7 @@ test('timeline pages of long Chinese summaries stay under the output cap without
     summary: 'new',
   }
   saveWorkspace(home, cwd, { timeline: [newer, ...timeline] })
-  const still = await runVisionBench(
+  const still = await runCornBench(
     home,
     { action: 'timeline.list', limit: 50, cursor: seen[0] },
     cwd,
@@ -89,7 +89,7 @@ test('timeline pages of long Chinese summaries stay under the output cap without
   assert.equal(still.ok, true, still.error)
   assert.equal(still.events[0].id, seen[1])
 
-  const expired = await runVisionBench(
+  const expired = await runCornBench(
     home,
     { action: 'timeline.list', cursor: 'dropped-anchor' },
     cwd,

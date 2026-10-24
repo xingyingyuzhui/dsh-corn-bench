@@ -35,7 +35,7 @@ test('brand credit shows the corn icon, author link and license link', () => {
 
 test('brand constants point at the author repository and the noncommercial license', () => {
   assert.equal(BRAND_AUTHOR, 'xingyingyuzhui')
-  assert.equal(BRAND_REPO_URL, 'https://github.com/xingyingyuzhui/dsh-vision-bench')
+  assert.equal(BRAND_REPO_URL, 'https://github.com/xingyingyuzhui/dsh-corn-bench')
   assert.match(BRAND_LICENSE_URL, /\/LICENSE\.md$/)
   assert.match(BRAND_ICON_URI, /^data:image\/webp;base64,/)
   assert.match(COPY_ZH.brandLicense, /PolyForm Noncommercial 1\.0\.0/)

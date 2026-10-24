@@ -9,14 +9,14 @@ import { dirname } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { runSelfCheck } from '../bench-check.mjs'
-import { stopVisionIoBroker } from '../bench-io-broker.mjs'
+import { stopCornIoBroker } from '../bench-io-broker.mjs'
 import { saveBindings } from '../bench-store.mjs'
-import { executeVisionCommand } from '../src/application/commands/vision-command-service.mjs'
+import { executeCornCommand } from '../src/application/commands/corn-command-service.mjs'
 import {
-  pingVisionHost,
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../src/infrastructure/host/vision-host-client.mjs'
+  pingCornHost,
+  registerCornHost,
+  unregisterCornHost,
+} from '../src/infrastructure/host/corn-host-client.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -31,15 +31,15 @@ function listen(handler) {
 }
 
 async function withOrigin(origin, fn) {
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = origin
-  unregisterVisionHost()
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = origin
+  unregisterCornHost()
   try {
     return await fn()
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
-    unregisterVisionHost()
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
+    unregisterCornHost()
   }
 }
 
@@ -58,7 +58,7 @@ test('runSelfCheck reports structured results without bindings', async () => {
         'bind-uv4',
         'bind-openocd',
         'bind-gdb',
-        'vision-preset',
+        'corn-preset',
         'workspace',
         'serial-scan',
         'host-bridge',
@@ -81,7 +81,7 @@ test('runSelfCheck reports structured results without bindings', async () => {
       assert.equal(ran.requiredOk, false)
       assert.equal(ran.ok, false)
     })
-    await stopVisionIoBroker('test')
+    await stopCornIoBroker('test')
   } finally {
     await rm(home, { recursive: true, force: true })
   }
@@ -102,7 +102,7 @@ test('runSelfCheck probes a runnable interpreter', async () => {
       assert.ok(ran.capabilities)
       assert.equal(typeof ran.capabilities.modbusTcp.ready, 'boolean')
     })
-    await stopVisionIoBroker('test')
+    await stopCornIoBroker('test')
   } finally {
     await rm(home, { recursive: true, force: true })
   }
@@ -164,24 +164,24 @@ test('openocdFlash.ready 不依赖 Python，且探测失败则为 false', async 
       })
       assert.equal(echoish.capabilities.openocdFlash.ready, false)
     })
-    await stopVisionIoBroker('test')
+    await stopCornIoBroker('test')
   } finally {
     await rm(home, { recursive: true, force: true })
   }
 })
 
 test('in-process Host ping succeeds', async () => {
-  const stop = registerVisionHost({
+  const stop = registerCornHost({
     async dispatch(cmd) {
       assert.equal(cmd.action, 'system.ping')
-      return executeVisionCommand({ ...cmd, home: '/tmp' })
+      return executeCornCommand({ ...cmd, home: '/tmp' })
     },
   })
   try {
-    const ping = await pingVisionHost({ timeoutMs: 2000 })
+    const ping = await pingCornHost({ timeoutMs: 2000 })
     assert.equal(ping.ok, true)
     assert.equal(ping.available, true)
-    assert.equal(ping.data.service, 'dsh-vision-bench')
+    assert.equal(ping.data.service, 'dsh-corn-bench')
     assert.equal(ping.data.transport, 'in-process')
     assert.equal(typeof ping.data.version, 'string')
     assert.equal(ping.data.pid, process.pid)
@@ -194,7 +194,7 @@ test('in-process Host ping succeeds', async () => {
 
 test('HTTP Host ping succeeds and records real roundtrip', async () => {
   const { server, origin } = await listen((req, res) => {
-    if (req.method !== 'POST' || req.url !== '/dsh-vision-bench/command') {
+    if (req.method !== 'POST' || req.url !== '/dsh-corn-bench/command') {
       res.writeHead(404)
       res.end()
       return
@@ -206,7 +206,7 @@ test('HTTP Host ping succeeds and records real roundtrip', async () => {
           ok: true,
           action: 'system.ping',
           data: {
-            service: 'dsh-vision-bench',
+            service: 'dsh-corn-bench',
             version: '0.22.0',
             pid: 4242,
             timestamp: '2026-08-30T00:00:00.000Z',
@@ -216,7 +216,7 @@ test('HTTP Host ping succeeds and records real roundtrip', async () => {
     }, 60)
   })
   try {
-    const ping = await withOrigin(origin, () => pingVisionHost({ timeoutMs: 2000 }))
+    const ping = await withOrigin(origin, () => pingCornHost({ timeoutMs: 2000 }))
     assert.equal(ping.ok, true)
     assert.equal(ping.data.transport, 'http')
     assert.equal(ping.data.pid, 4242)
@@ -227,14 +227,14 @@ test('HTTP Host ping succeeds and records real roundtrip', async () => {
 })
 
 test('Host ping maps refused / timeout / invalid JSON / 401 / 403', async () => {
-  const refused = await withOrigin('http://127.0.0.1:1', () => pingVisionHost({ timeoutMs: 500 }))
+  const refused = await withOrigin('http://127.0.0.1:1', () => pingCornHost({ timeoutMs: 500 }))
   assert.equal(refused.ok, false)
   assert.equal(refused.available, false)
   assert.equal(refused.errorCode, 'HOST_UNAVAILABLE')
 
   const slow = await listen(() => {})
   try {
-    const timed = await withOrigin(slow.origin, () => pingVisionHost({ timeoutMs: 80 }))
+    const timed = await withOrigin(slow.origin, () => pingCornHost({ timeoutMs: 80 }))
     assert.equal(timed.ok, false)
     assert.equal(timed.errorCode, 'HOST_TIMEOUT')
     assert.ok(timed.roundtripMs >= 50)
@@ -247,7 +247,7 @@ test('Host ping maps refused / timeout / invalid JSON / 401 / 403', async () => 
     res.end('not-json{')
   })
   try {
-    const invalid = await withOrigin(badJson.origin, () => pingVisionHost({ timeoutMs: 1000 }))
+    const invalid = await withOrigin(badJson.origin, () => pingCornHost({ timeoutMs: 1000 }))
     assert.equal(invalid.ok, false)
     assert.equal(invalid.errorCode, 'HOST_INVALID_RESPONSE')
   } finally {
@@ -259,7 +259,7 @@ test('Host ping maps refused / timeout / invalid JSON / 401 / 403', async () => 
     res.end(JSON.stringify({ ok: false, error: 'nope' }))
   })
   try {
-    const ran = await withOrigin(unauth.origin, () => pingVisionHost({ timeoutMs: 1000 }))
+    const ran = await withOrigin(unauth.origin, () => pingCornHost({ timeoutMs: 1000 }))
     assert.equal(ran.ok, false)
     assert.equal(ran.errorCode, 'HOST_UNAUTHORIZED')
   } finally {
@@ -271,7 +271,7 @@ test('Host ping maps refused / timeout / invalid JSON / 401 / 403', async () => 
     res.end(JSON.stringify({ ok: false, error: 'nope' }))
   })
   try {
-    const ran = await withOrigin(forbid.origin, () => pingVisionHost({ timeoutMs: 1000 }))
+    const ran = await withOrigin(forbid.origin, () => pingCornHost({ timeoutMs: 1000 }))
     assert.equal(ran.ok, false)
     assert.equal(ran.errorCode, 'HOST_FORBIDDEN')
   } finally {
@@ -285,7 +285,7 @@ test('HTTP Host ping rejects an unrelated server that only returns ok:true', asy
     res.end(JSON.stringify({ ok: true }))
   })
   try {
-    const ran = await withOrigin(unrelated.origin, () => pingVisionHost({ timeoutMs: 1000 }))
+    const ran = await withOrigin(unrelated.origin, () => pingCornHost({ timeoutMs: 1000 }))
     assert.equal(ran.ok, false)
     assert.equal(ran.available, false)
     assert.equal(ran.errorCode, 'HOST_INVALID_RESPONSE')
@@ -296,13 +296,13 @@ test('HTTP Host ping rejects an unrelated server that only returns ok:true', asy
 
 test('system.ping is side-effect free and self-check uses real availability', async () => {
   const src = readFileSync(join(root, 'src/application/commands/handlers/system-command-handler.mjs'), 'utf8')
-  assert.doesNotMatch(src, /serialport|modbus-serial|VisionIoBroker|notifyConnectionRelease|mutateConfig/)
+  assert.doesNotMatch(src, /serialport|modbus-serial|CornIoBroker|notifyConnectionRelease|mutateConfig/)
   const checkSrc = readFileSync(join(root, 'src/application/system/self-check.mjs'), 'utf8')
   assert.doesNotMatch(checkSrc, /push\(\s*['"]host-bridge['"]\s*,\s*true/)
-  assert.match(checkSrc, /pingVisionHost/)
+  assert.match(checkSrc, /pingCornHost/)
 
-  const ping = await executeVisionCommand({ action: 'system.ping', source: 'system', cwd: '' })
+  const ping = await executeCornCommand({ action: 'system.ping', source: 'system', cwd: '' })
   assert.equal(ping.ok, true)
-  assert.equal(ping.data.service, 'dsh-vision-bench')
+  assert.equal(ping.data.service, 'dsh-corn-bench')
   assert.equal(typeof ping.data.pid, 'number')
 })

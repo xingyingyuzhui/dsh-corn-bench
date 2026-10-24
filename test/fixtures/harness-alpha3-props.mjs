@@ -6,7 +6,7 @@
  *   WorkspaceView — dsh-cordis-client-runner WorkspaceView
  *     { workspaceId, path, title, sessionIds, createdAt, updatedAt }
  *
- * Do not add useSessions. That hook is not part of the alpha.3 Vision contract.
+ * Do not add useSessions. That hook is not part of the alpha.3 Corn contract.
  */
 
 export const ALPHA3_DSH_VERSION = '0.1.2-alpha.3'

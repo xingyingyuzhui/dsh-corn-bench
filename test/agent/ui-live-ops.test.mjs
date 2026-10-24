@@ -4,7 +4,7 @@ import { listPendingWrites, resolvePendingWrite } from '../../bench-actions.mjs'
 import { ERROR_CODES, modbusWrite } from '../../bench-modbus.mjs'
 import { agentRefToText, buildAgentRef } from '../../bench-shared.mjs'
 import { loadWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
 import { saveSessionModbusPatch } from '../../src/application/modbus/workspace-session-view.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
@@ -44,7 +44,7 @@ test('buildAgentRef produces stable ID+configVersion+timeRange and read/write er
 
   const cSim = agentRtu('c1', 'COM9', { name: 'C1' })
   bench.save({ modbus: { version: 3, connections: [cSim], devices: [d1], points: [p1] } })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [5] },
     cwd,
@@ -72,21 +72,21 @@ test('Agent live ops need deviceId on multi-device connections; pending write bi
       points: [p1],
     },
   })
-  const readMissing = await runVisionBench(
+  const readMissing = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', function: 3, address: 0 },
     cwd,
     { source: 'agent', sessionId: 's1' },
   )
   assert.equal(readMissing.errorCode, ERROR_CODES.TARGET_REQUIRED)
-  const writeMissing = await runVisionBench(
+  const writeMissing = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', function: 3, address: 0, values: [1] },
     cwd,
     { source: 'agent', sessionId: 's1' },
   )
   assert.equal(writeMissing.errorCode, ERROR_CODES.TARGET_REQUIRED)
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [5] },
     cwd,
@@ -102,7 +102,7 @@ test('Agent live ops need deviceId on multi-device connections; pending write bi
   assert.equal(pending.endpoint.unitId, 1)
   assert.equal((await resolvePendingWrite(home, cwd, first.requestId, false, { sessionId: 's1' })).rejected, true)
   assert.equal((loadWorkspace(home, cwd).modbus.values || []).length, 0)
-  const second = await runVisionBench(
+  const second = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [6] },
     cwd,

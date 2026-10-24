@@ -2,12 +2,12 @@
 
 ## 1. 目标
 
-把 dsh-vision-bench 从“可以被 DSH 0.1.2-alpha.3 加载”推进到“按 alpha.3 的正式契约运行”，并关闭升级后暴露的会话定位、原生 Tab 导航、通知消息和浏览器通信边界问题。
+把 dsh-corn-bench 从“可以被 DSH 0.1.2-alpha.3 加载”推进到“按 alpha.3 的正式契约运行”，并关闭升级后暴露的会话定位、原生 Tab 导航、通知消息和浏览器通信边界问题。
 
 目标版本：
 
 - DSH：0.1.2-alpha.3
-- Vision：建议发布 0.26.0
+- Corn：建议发布 0.26.0
 - Node.js：24.x
 - 首轮验收平台：macOS
 - Windows 串口、Modbus、OpenOCD 真机验收：保留为后续独立验收，不作为本轮阻塞项
@@ -23,8 +23,8 @@
   - /opt/homebrew/bin/dsh
 - launchd 服务 com.qin.deepseek-harness-web 已用 alpha.3 重启。
 - 127.0.0.1:3080 已完成令牌握手和登录后页面响应检查。
-- Web Profile 已能加载 Vision、dsh-at-file 和 dsh-better-sidebar。
-- Vision 当前质量门通过：
+- Web Profile 已能加载 Corn、dsh-at-file 和 dsh-better-sidebar。
+- Corn 当前质量门通过：
   - npm test：669 项通过
   - npm run test:full：通过
   - lint：319 个文件
@@ -46,7 +46,7 @@
 
 ## 3. 结论
 
-Vision 不是“整体不可用”，也不需要推倒重写。后端命令边界、工作区持久化、Modbus、OpenOCD、审批、可视化组件和 Agent 工具主体仍可保留。
+Corn 不是“整体不可用”，也不需要推倒重写。后端命令边界、工作区持久化、Modbus、OpenOCD、审批、可视化组件和 Agent 工具主体仍可保留。
 
 真正需要迁移的是四条 Harness 集成边界：
 
@@ -56,7 +56,7 @@ Vision 不是“整体不可用”，也不需要推倒重写。后端命令边�
 | P0 | 原生 Tab / Agent 聚焦 | 依赖不存在的 slots.select | 跨 Tab 聚焦不再可靠 |
 | P1 | Client 服务声明 | 只声明 slots，却读取 locale | alpha.3 严格服务访问下静默降级 |
 | P1 | Agent 通知消息 | 动态导入旧核心包，fallback 缺 id | followup/steer 消息不满足 alpha.3 结构 |
-| P0 安全 | 浏览器 → Host 通信 | 自定义 HTTP 路由以静态请求头代替认证 | 未登录本地请求可读写 Vision 状态 |
+| P0 安全 | 浏览器 → Host 通信 | 自定义 HTTP 路由以静态请求头代替认证 | 未登录本地请求可读写 Corn 状态 |
 | P2 | Agent preset 生命周期 | 仍按“修改后当前 Session 生效”理解 | alpha.3 使用 generation，已有 Session 不热更新 |
 
 现有 669 项测试全绿并不能证明 alpha.3 兼容，因为测试夹具仍主动提供旧 useSessions，恰好遮住了最关键的破坏性变化。
@@ -156,14 +156,14 @@ Vision 不是“整体不可用”，也不需要推倒重写。后端命令边�
 
 新增：
 
-- src/ui/workspace/vision-view-request.mjs
-- test/vision-view-request.test.mjs
+- src/ui/workspace/corn-view-request.mjs
+- test/corn-view-request.test.mjs
 
 修改：
 
 - src/ui/bench-runtime.mjs
 - src/ui/bench-view.mjs
-- src/ui/workspace/vision-navigation-store.mjs
+- src/ui/workspace/corn-navigation-store.mjs
 - HMI、调试、监控三页的跨页入口
 - Agent focus 消费逻辑
 
@@ -193,7 +193,7 @@ Vision 不是“整体不可用”，也不需要推倒重写。后端命令边�
 - 用户手动切换一级或二级 Tab 后，保留当前已有的 navigation lease。
 - lease 期间 Agent 请求只更新角标/提示，不强制抢焦点。
 - 用户主动点击“前往 Agent 目标”后再执行跳转。
-- 用户在聊天页时，公开 API 没有全局强切 Vision Tab 的能力；只排队聚焦请求并显示提示，不读取私有 Store、不操作 DOM。
+- 用户在聊天页时，公开 API 没有全局强切 Corn Tab 的能力；只排队聚焦请求并显示提示，不读取私有 Store、不操作 DOM。
 - 同一 routeKey 去重，Session A/B 的队列互相隔离。
 
 必须增加的测试：
@@ -251,7 +251,7 @@ Agent 通知文件：
   - role: user
   - content
   - source.kind: plugin
-  - source.plugin: dsh-vision-bench
+  - source.plugin: dsh-corn-bench
   - source.form: notice
   - source.summary
 - summary 做长度上限和敏感内容过滤。
@@ -260,7 +260,7 @@ Agent 通知文件：
 
 - 中文 locale 在 alpha.3 中正常注册。
 - client manifest 与 bundle inject 完全一致。
-- 每条 Vision notice 均有非空、唯一 id。
+- 每条 Corn notice 均有非空、唯一 id。
 - 在真实 alpha.3 Session 中分别验证空闲 followup 与运行中 steer。
 
 ### 阶段 4：关闭自定义 HTTP 认证缺口
@@ -269,10 +269,10 @@ Agent 通知文件：
 
 当前已确认：
 
-- 未携带 DSH 登录 cookie/token，只加 X-DSH-Vision-Bench: 1，即可访问 /dsh-vision-bench/state。
+- 未携带 DSH 登录 cookie/token，只加 X-DSH-Corn-Bench: 1，即可访问 /dsh-corn-bench/state。
 - Origin 正则只能限制普通浏览器跨域，不是身份认证。
 - 本地任意进程可伪造静态请求头。
-- Vision 能写 Modbus、执行刷写，因此不能把“仅监听 localhost”视为充分授权。
+- Corn 能写 Modbus、执行刷写，因此不能把“仅监听 localhost”视为充分授权。
 
 #### 阶段 4A：Remote 可行性 spike
 
@@ -283,8 +283,8 @@ Agent 通知文件：
 验证：
 
 - Host 使用 TypertRemoteService 与 Remote 装饰器公开最小只读方法。
-- Client 通过 ctx.remote.visionBench 调用。
-- Vision 以正式 tarball 安装到隔离 Profile，而不是 link 到外部仓库。
+- Client 通过 ctx.remote.cornBench 调用。
+- Corn 以正式 tarball 安装到隔离 Profile，而不是 link 到外部仓库。
 - official Remote 运行时解析到同一套 alpha.3 核心实例。
 - 测量 client bundle 增量、启动时间和错误恢复。
 
@@ -311,8 +311,8 @@ Agent 通知文件：
 实现：
 
 - 页面状态、配置命令、审批操作全部走官方 Remote。
-- Client 注入 remote 与 remote.visionBench。
-- 删除浏览器对 /dsh-vision-bench/state、command、approval 等业务路由的 fetch。
+- Client 注入 remote 与 remote.cornBench。
+- 删除浏览器对 /dsh-corn-bench/state、command、approval 等业务路由的 fetch。
 - 删除浏览器静态认证请求头。
 - Remote 方法必须接收/校验 sessionId，并从 Session/workspace 关系解析 cwd，禁止只信任浏览器提交的 cwd。
 - 写命令继续经过现有单写者、版本检查、审批和幂等边界。
@@ -328,14 +328,14 @@ Agent 子进程：
 短期防护：
 
 - Remote 全量迁移完成前，Host 只允许 loopback 监听。
-- 发现非 loopback bind 时，Vision 应拒绝启动有写能力的路由并给出明确错误。
+- 发现非 loopback bind 时，Corn 应拒绝启动有写能力的路由并给出明确错误。
 - 所有写路由补 origin、content-type、请求大小和 schema 检查；这些只是纵深防御，不能代替认证。
 
 安全测试：
 
 - 未登录请求无法读状态。
 - 未登录请求无法写点位、批准或刷写。
-- 伪造 X-DSH-Vision-Bench 无效。
+- 伪造 X-DSH-Corn-Bench 无效。
 - Session A 不能批准 Session B 的操作。
 - cwd 伪造无效。
 - capability 过期或不匹配时拒绝。
@@ -351,13 +351,13 @@ Agent 子进程：
 
 建议提交：
 
-    fix(alpha3): align Vision preset UX with mount generations
+    fix(alpha3): align Corn preset UX with mount generations
 
 主要文件：
 
 - src/preset/seed.mjs
 - src/host/preset-health.mjs
-- Vision 设置/状态提示组件
+- Corn 设置/状态提示组件
 - README.md
 
 实现：
@@ -371,7 +371,7 @@ Agent 子进程：
 
 测试：
 
-- 新安装后，新 Session 获得 Vision 工具和预设。
+- 新安装后，新 Session 获得 Corn 工具和预设。
 - 修改 preset 后，当前 Session 保持原 generation。
 - 新 Session 使用新 generation。
 - 重复执行 seed 不产生无意义写入。
@@ -381,7 +381,7 @@ Agent 子进程：
 
 建议提交：
 
-    release: prepare dsh-vision-bench 0.26.0 for DSH alpha.3
+    release: prepare dsh-corn-bench 0.26.0 for DSH alpha.3
 
 修改：
 
@@ -408,7 +408,7 @@ Agent 子进程：
 静态门禁：
 
     rg "useSessions|slots\.select|setNavViewSelector" src
-    rg "X-DSH-Vision-Bench" src
+    rg "X-DSH-Corn-Bench" src
 
 期望：
 
@@ -419,9 +419,9 @@ Agent 子进程：
 
 | Profile | 用途 | 必须通过 |
 | --- | --- | --- |
-| alpha.3 + 官方内置插件 + Vision tarball | 证明 Vision 自身兼容 | 是 |
+| alpha.3 + 官方内置插件 + Corn tarball | 证明 Corn 自身兼容 | 是 |
 | 用户当前完整 Profile | 证明日常环境可用 | 是 |
-| 未安装 better-sidebar | 证明 Vision 已不依赖旧侧栏 | 是 |
+| 未安装 better-sidebar | 证明 Corn 已不依赖旧侧栏 | 是 |
 | Windows + 串口/Modbus/OpenOCD 真机 | 设备链验收 | 本轮记录为未验收 |
 
 浏览器手工验收：
@@ -433,11 +433,11 @@ Agent 子进程：
 - 用户主动切页时 Agent 不抢焦点。
 - 串口报文、告警、可视化组件能定位到正确对象。
 - 刷新页面和切换 Session 后状态隔离。
-- 未登录窗口不能访问 Vision 数据。
+- 未登录窗口不能访问 Corn 数据。
 
 ## 7. Profile 遗留风险
 
-这些问题不属于 Vision 代码，但会影响“完整用户 Profile 已兼容”的结论：
+这些问题不属于 Corn 代码，但会影响“完整用户 Profile 已兼容”的结论：
 
 - dsh-excel-panel 0.6.1 仍声明 dsh-better-sidebar ^0.12.0，与当前 0.18.0-alpha.0 不匹配。
 - @omdsh-dev/dsh-genui 0.8.4 仍依赖已移除的 rc.6 时代包，包括 dsh-client-runtime。
@@ -445,9 +445,9 @@ Agent 子进程：
 
 处理方式：
 
-1. Vision 的 alpha.3 验收必须先在隔离 Profile 完成。
+1. Corn 的 alpha.3 验收必须先在隔离 Profile 完成。
 2. 对 excel-panel 和 genui 分别做安装、页面挂载和核心交互检查。
-3. 未通过前只标记“环境兼容风险”，不能归因于 Vision，也不能宣称完整 Profile 全兼容。
+3. 未通过前只标记“环境兼容风险”，不能归因于 Corn，也不能宣称完整 Profile 全兼容。
 
 ## 8. 工作量与依赖成本
 
@@ -464,21 +464,21 @@ Agent 子进程：
 - 每阶段单独提交，禁止把路径、导航、Remote 和 preset 生命周期揉成一个提交。
 - 阶段 1–3 可独立回滚，不改工作区落盘 schema。
 - 阶段 4 保留一个发布周期的 Host 内部适配层，但浏览器不得自动退回未认证 HTTP。
-- 本轮不升级 visualization schema，不产生旧版 Vision 无法读取的新磁盘格式。
+- 本轮不升级 visualization schema，不产生旧版 Corn 无法读取的新磁盘格式。
 - DSH 本体异常时，使用升级前备份恢复 /Users/qin/.dsh，并恢复原 CLI 版本；恢复前停止 launchd 服务。
 
 ## 10. 完成定义
 
-只有同时满足以下条件，才可宣称 Vision 匹配 DSH 0.1.2-alpha.3：
+只有同时满足以下条件，才可宣称 Corn 匹配 DSH 0.1.2-alpha.3：
 
-- alpha.3 隔离 Profile 能从 tarball 安装并启动 Vision。
+- alpha.3 隔离 Profile 能从 tarball 安装并启动 Corn。
 - 三个原生 Tab 可挂载并得到正确 workspace path。
 - 生产代码不再依赖 useSessions、slots.select 或私有 DOM/Store。
 - Agent 聚焦使用 viewRequest/openView，且不抢用户焦点。
 - locale 服务声明与运行时访问一致。
 - followup/steer 消息满足 alpha.3 的 id/role/content/source 契约。
-- 浏览器不能绕过 DSH 身份边界访问 Vision 状态或写操作。
-- 新 Session 正确获得 Vision preset；旧 Session 生命周期说明准确。
+- 浏览器不能绕过 DSH 身份边界访问 Corn 状态或写操作。
+- 新 Session 正确获得 Corn preset；旧 Session 生命周期说明准确。
 - npm run test:full 和打包检查通过。
 - macOS 浏览器手工流程通过。
 - Windows 真机验收明确列为未验收，而不是默认为通过。

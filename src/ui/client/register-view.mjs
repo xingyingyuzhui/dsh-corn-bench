@@ -7,7 +7,7 @@ export function registerView(ctx, React, t, DebugPage, HmiPage, MonitorPage) {
     return slots.register(
       {
         name: 'conversation.view',
-        id: 'vision-bench-debug',
+        id: 'corn-bench-debug',
         order: 20,
         locale: NS,
         label() {
@@ -21,7 +21,7 @@ export function registerView(ctx, React, t, DebugPage, HmiPage, MonitorPage) {
     return slots.register(
       {
         name: 'conversation.view',
-        id: 'vision-bench-hmi',
+        id: 'corn-bench-hmi',
         order: 21,
         locale: NS,
         label() {
@@ -37,7 +37,7 @@ export function registerView(ctx, React, t, DebugPage, HmiPage, MonitorPage) {
       return slots.register(
         {
           name: 'conversation.view',
-          id: 'vision-bench-monitor',
+          id: 'corn-bench-monitor',
           order: 22,
           locale: NS,
           label() {

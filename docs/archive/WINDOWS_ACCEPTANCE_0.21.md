@@ -8,9 +8,9 @@
 - [ ] 干净 Windows 11
 - [ ] 已安装 DeepSeek Harness
 - [ ] 未安装 Python
-- [ ] 安装 `dsh-vision-bench@0.21.0` 的 `.tgz`
+- [ ] 安装 `dsh-corn-bench@0.21.0` 的 `.tgz`
 - [ ] 重启 `dsh web`
-- [ ] Vision 模式存在
+- [ ] Corn 模式存在
 - [ ] 上位机页面正常打开
 - [ ] Node Modbus 运行时健康
 

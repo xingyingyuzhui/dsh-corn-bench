@@ -11,13 +11,13 @@ import {
 } from '../../src/application/modbus/agent-runtime-visibility.mjs'
 import { isUniquelyOwnedConnection } from '../../src/application/modbus/poll-session-ownership.mjs'
 import { saveWorkspace, loadWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 /**
@@ -215,22 +215,22 @@ test('Agent status/alarm/trend: A cannot see B private runtime; disk unchanged',
   })
   const originA = { source: 'agent', sessionId: 'session-a' }
 
-  const statusHost = await runVisionBench(home, { action: 'status' }, cwd, originA)
+  const statusHost = await runCornBench(home, { action: 'status' }, cwd, originA)
   assert.equal(statusHost.ok, true, statusHost.error)
   assert.deepEqual(Object.keys(statusHost.modbus.pollingByConnection || {}).sort(), ['c-a'])
   assert.equal((statusHost.tasks || []).some((/** @type {any} */ x) => x.id === 'tb'), false)
   assert.deepEqual(statusHost.log || [], [])
   assert.ok((statusHost.logHiddenCount || 0) >= 1)
 
-  const dispatch = createVisionCommandDispatcher(home)
-  unregisterVisionHost()
-  const stop = registerVisionHost(dispatch)
+  const dispatch = createCornCommandDispatcher(home)
+  unregisterCornHost()
+  const stop = registerCornHost(dispatch)
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
 
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const agent = { session: { header: { cwd, id: 'session-a' } } }
   const status = await tool.execute({ action: 'status' }, { agent })
   assert.equal(status.ok, true, status.error)
@@ -247,7 +247,7 @@ test('Agent status/alarm/trend: A cannot see B private runtime; disk unchanged',
   const foreign = await tool.execute({ action: 'alarm', alarmId: 'p-b', connectionId: 'c-a' }, { agent })
   assert.equal(foreign.ok, false)
 
-  const alarmHost = await runVisionBench(home, { action: 'alarm' }, cwd, originA)
+  const alarmHost = await runCornBench(home, { action: 'alarm' }, cwd, originA)
   assert.equal(alarmHost.ok, true, alarmHost.error)
   assert.deepEqual(Object.keys(alarmHost.alarms || {}).sort(), ['p-a'])
 

@@ -1,10 +1,12 @@
 <img src="assets/corn-icon.png" width="96" alt="Corn" align="right">
 
-# Corn · dsh-vision-bench
+# Corn · dsh-corn-bench
 
-作者：[xingyingyuzhui](https://github.com/xingyingyuzhui) · 仓库：<https://github.com/xingyingyuzhui/dsh-vision-bench> · 授权：[PolyForm Noncommercial 1.0.0](LICENSE.md)（非商业授权）
+作者：[xingyingyuzhui](https://github.com/xingyingyuzhui) · 仓库：<https://github.com/xingyingyuzhui/dsh-corn-bench> · 授权：[PolyForm Noncommercial 1.0.0](LICENSE.md)（非商业授权）
 
-Corn 是这个插件的对外品牌（原名 Vision）。界面、设置分区和 Agent 预设都显示为 **Corn** / **Corn模式**；包名 `dsh-vision-bench`、预设 id `vision-bench`、工具名 `vision_bench`、路由 `/api/vision-bench/dispatch` 和数据目录 `$DSH_HOME/vision-bench/` 保持不变，已装用户原地升级，绑定、点表和会话都不受影响。
+包名 `dsh-corn-bench`，Agent 预设 **Corn模式**（id `corn-bench`），工具 `corn_bench` / `corn_debug`，数据目录 `$DSH_HOME/corn-bench/`。
+
+从 0.30.2 及更早版本升级：先卸载旧插件，再装 `dsh-corn-bench`。首次启动会把旧数据目录整体搬到 `$DSH_HOME/corn-bench/`（绑定、工作区、点表、日志、Agent 权限都在里面）；界面的导航偏好也会自动迁移。已有 `corn-bench/` 时不覆盖。旧预设不会被自动删除，新建 Session 时选 **Corn模式**。
 
 版本见 [CHANGELOG.md](CHANGELOG.md)。支持 DSH `0.1.5-rc.1` – `0.2.1-rc.2`（三轨：≤0.1.6 目录式；0.1.7 声明式；0.2.x 声明式，契约钉 `0.2.1-rc.2`）。DSH 0.2.x 需要 Node 24+。
 
@@ -25,27 +27,27 @@ Corn 是这个插件的对外品牌（原名 Vision）。界面、设置分区�
 ### Web
 
 ```sh
-dsh plugin --profile web add github:xingyingyuzhui/dsh-vision-bench
+dsh plugin --profile web add github:xingyingyuzhui/dsh-corn-bench
 ```
 
 本机开发请 `npm pack` 再 add 那个 `.tgz`，不要 `link:` 源码树（会把 `node_modules/`、`coverage/` 整棵链进 profile）：
 
 ```sh
 npm pack
-dsh plugin --profile web add ./dsh-vision-bench-*.tgz
+dsh plugin --profile web add ./dsh-corn-bench-*.tgz
 ```
 
 装完重启 `dsh web`。打开 **调试** / **上位机** / **监控**，或 **设置 → Corn**。新会话选 **Corn模式**。
 
 ### Desktop
 
-官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装 —— 把下面 `${version}` 换成 [Releases](https://github.com/xingyingyuzhui/dsh-vision-bench/releases) 里最新标签的版本号：
+官方产品安装用打包应用里的 **应用 → 桌面插件…**。它接受包名、Git 地址、tarball 或本地绝对路径，所以已发布的版本可以立刻装 —— 把下面 `${version}` 换成 [Releases](https://github.com/xingyingyuzhui/dsh-corn-bench/releases) 里最新标签的版本号：
 
 ```
-github:xingyingyuzhui/dsh-vision-bench#v${version}
+github:xingyingyuzhui/dsh-corn-bench#v${version}
 ```
 
-或下载对应 Release 的 `dsh-vision-bench-${version}.tgz`（同目录有 `.sha256`），把它**绝对路径**填进同一个框。裸包名 `dsh-vision-bench` 需要 registry 上有这个包 —— 当前 npmjs.org 仍是 404。
+或下载对应 Release 的 `dsh-corn-bench-${version}.tgz`（同目录有 `.sha256`），把它**绝对路径**填进同一个框。裸包名 `dsh-corn-bench` 需要 registry 上有这个包 —— 当前 npmjs.org 仍是 404。
 
 本机实验室（先 **Cmd+Q** 完全退出 DeepSeek Harness）：
 
@@ -58,10 +60,10 @@ node scripts/probes/install-desktop-local.mjs
 ## 卸载
 
 ```sh
-dsh plugin --profile web remove dsh-vision-bench
+dsh plugin --profile web remove dsh-corn-bench
 ```
 
-Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/vision-bench/bindings.json`。用户预设 **Corn模式** 不会随卸载删除。
+Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/corn-bench/bindings.json`。用户预设 **Corn模式** 不会随卸载删除。
 
 ## 三个工作区
 
@@ -77,11 +79,11 @@ Desktop 在 **桌面插件…** 里移除。绑定写在 `$DSH_HOME/vision-bench
 
 ## Corn模式
 
-宿主 `dsh-vision-bench` 顶层只注入 `connection`，UI 发 `POST /api/vision-bench/dispatch`。旧 `/vision-bench` RPC 与 Agent HTTP 命令桥仅在有 `webServer` 时挂载。Agent 工具是另一条 loader：`dsh-vision-bench/agent`（`export name` 为 `dsh-vision-bench-tools`），由 **Corn模式** 预设插入，不和宿主同名。
+宿主 `dsh-corn-bench` 顶层只注入 `connection`，UI 发 `POST /api/corn-bench/dispatch`。旧 `/corn-bench` RPC 与 Agent HTTP 命令桥仅在有 `webServer` 时挂载。Agent 工具是另一条 loader：`dsh-corn-bench/agent`（`export name` 为 `dsh-corn-bench-tools`），由 **Corn模式** 预设插入，不和宿主同名。
 
-DSH `0.1.5-rc.1`–`0.1.6` 的 Corn模式是目录式预设：首次安装或升级后执行 `node scripts/seed-preset.mjs`（或设置页重建），写入 `$DSH_HOME/.agent-presets/vision-bench/`。DSH `0.1.7+` 由 Host 自动声明注册，无需 seed。**新建 Session 后生效**。
+DSH `0.1.5-rc.1`–`0.1.6` 的 Corn模式是目录式预设：首次安装或升级后执行 `node scripts/seed-preset.mjs`（或设置页重建），写入 `$DSH_HOME/.agent-presets/corn-bench/`。DSH `0.1.7+` 由 Host 自动声明注册，无需 seed。**新建 Session 后生效**。
 
-`vision_bench` 只出现在这个预设里。Agent 需要时自己调用，不把现场状态塞进每一轮系统提示。
+`corn_bench` 只出现在这个预设里。Agent 需要时自己调用，不把现场状态塞进每一轮系统提示。
 
 | action | 作用 |
 |---|---|
@@ -95,7 +97,7 @@ DSH `0.1.5-rc.1`–`0.1.6` 的 Corn模式是目录式预设：首次安装或升
 | `manual` | 请求用户完成现场人工操作；`text` 必填 |
 | `visualization` | `op=list\|get\|add\|update\|remove\|layout`。`layout` 必须带 `expectedConfigVersion` 与 `items[{id,x,y,w,h}]`；`CONFIG_DRIFT` 后重新 list/get 再提交 |
 
-另有 `vision_debug`（与 `vision_bench` 隔离）和 `debug_snapshot`。
+另有 `corn_debug`（与 `corn_bench` 隔离）和 `debug_snapshot`。
 
 ## 能力说明
 
@@ -111,7 +113,7 @@ DSH `0.1.5-rc.1`–`0.1.6` 的 Corn模式是目录式预设：首次安装或升
 
 **会话。** Corn 自动服务当前 Session。后台 Session 的操作只记录，不抢焦点。Agent 定位目标时短时高亮，右下角提示「Agent 已定位到 …」。
 
-**运行调试（实验性能力已落地，真机暂缓）。** `DebugRuntime` 是唯一状态权威。GDB/MI + OpenOCD；`TargetLease` 互斥；启动必须带不可变 `ResolvedDebugLaunchSpec` 和 `approvalRequestId`。Keil UVSOCK 仿真器有 fake server 测试，Windows µVision 真机未做。ProgramModel 用 Lezer C/C++ AST（`confidence: 'ast'`），启发式分析器降级为 `heuristic`。`vision_debug` 的 `verify` 做场景化断言（表达式、遥测、无告警、`stable-for-duration`）。
+**运行调试（实验性能力已落地，真机暂缓）。** `DebugRuntime` 是唯一状态权威。GDB/MI + OpenOCD；`TargetLease` 互斥；启动必须带不可变 `ResolvedDebugLaunchSpec` 和 `approvalRequestId`。Keil UVSOCK 仿真器有 fake server 测试，Windows µCorn 真机未做。ProgramModel 用 Lezer C/C++ AST（`confidence: 'ast'`），启发式分析器降级为 `heuristic`。`corn_debug` 的 `verify` 做场景化断言（表达式、遥测、无告警、`stable-for-duration`）。
 
 Windows 无 Python 时，从 `.tgz` 安装即可用 Keil 工程扫描 / 编译和 Modbus 主机读写。Keil 仍要本机 UV4；烧录仍要外部 OpenOCD。macOS 自动测试不能代替 Windows 10/11 实机，见 `docs/WINDOWS_ACCEPTANCE_0.27.md`（状态 `DEFERRED_WINDOWS_ACCEPTANCE`）。
 
@@ -129,6 +131,10 @@ npm run build
 ```
 
 `npm test` 含 `build:check`。不要手改生成的 `client.js`。`dsh plugin add` 装到运行时后只有生产依赖，不要在那个安装目录跑测试。
+
+## 归档
+
+原合集仓库已并入本仓库：现行工程计划在 [`docs/plans/suite/`](docs/plans/suite/)，历史计划与合集变更记录在 [`docs/archive/suite/`](docs/archive/suite/)。已移除的旧 harness 插件（0.2.1，仅适用 DSH ≤ 0.1.6）源码快照和原合集的完整 git 历史保存在 Release [`archive/legacy-2026-10`](https://github.com/xingyingyuzhui/dsh-corn-bench/releases/tag/archive/legacy-2026-10)。
 
 ## 授权
 

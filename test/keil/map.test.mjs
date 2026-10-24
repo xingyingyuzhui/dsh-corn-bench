@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { keilMap } from '../../bench-actions.mjs'
 import { saveBindings, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { mapProject } from '../../src/application/keil/project-service.mjs'
 
 const UVPROJX = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
@@ -94,14 +94,14 @@ test('keilMap lists groups, includes, missing and unreadable files', async () =>
   }
 })
 
-test('vision_bench map returns compact file tree for the selected project', async () => {
+test('corn_bench map returns compact file tree for the selected project', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-map-tool-'))
   try {
     const cwd = await makeProject(home)
     saveBindings(home, { python: '', uv4: '', openocd: '' })
     const project = join(cwd, 'app.uvprojx')
-    await runVisionBench(home, { action: 'select', path: project, target: 'Debug' }, cwd)
-    const mapped = await runVisionBench(home, { action: 'map' }, cwd)
+    await runCornBench(home, { action: 'select', path: project, target: 'Debug' }, cwd)
+    const mapped = await runCornBench(home, { action: 'map' }, cwd)
     assert.equal(mapped.ok, true, mapped.error)
     assert.equal(mapped.map.target, 'Debug')
     assert.equal(mapped.map.counts.files, 3)

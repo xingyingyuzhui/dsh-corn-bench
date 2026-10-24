@@ -3,23 +3,23 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test, { beforeEach } from 'node:test'
-import { createAgentPresetAttacher } from '../../src/infrastructure/host/vision-preset-attach.mjs'
+import { createAgentPresetAttacher } from '../../src/infrastructure/host/corn-preset-attach.mjs'
 import {
   PRESET_ID,
-  activateVisionPresetDeclaration,
+  activateCornPresetDeclaration,
   getDeclarationState,
   resetDeclarationState,
   setDeclarationState,
   userPresetDir,
 } from '../../src/infrastructure/harness/preset-declaration.mjs'
 
-const SLOT = Symbol.for('dsh-vision-bench.preset-declaration')
+const SLOT = Symbol.for('dsh-corn-bench.preset-declaration')
 
 const OWNED_MARKER = JSON.stringify({
-  owner: 'dsh-vision-bench',
+  owner: 'dsh-corn-bench',
   presetSchemaVersion: 3,
   basePresetId: 'standard',
-  pluginRowId: 'vision-bench-tools',
+  pluginRowId: 'corn-bench-tools',
 })
 
 function declarationSlot() {
@@ -55,7 +55,7 @@ async function homeWithLegacyPreset() {
   await mkdir(dir, { recursive: true })
   await writeFile(join(dir, 'agent.cordis.yml'), '- id: persona\n  name: persona\n')
   await writeFile(join(dir, 'preset.yml'), 'name: Corn模式\n')
-  await writeFile(join(dir, '.dsh-vision-bench'), OWNED_MARKER)
+  await writeFile(join(dir, '.dsh-corn-bench'), OWNED_MARKER)
   return home
 }
 
@@ -161,7 +161,7 @@ test('a new fiber waits for the previous unregister, then registers once', async
     assert.equal(state.via, 'agentPresets.register')
     assert.equal(state.error, '')
     const entries = await readdir(join(home, '.agent-presets'))
-    assert.equal(entries.filter((name) => name.startsWith('.vision-bench.backup.')).length, 1)
+    assert.equal(entries.filter((name) => name.startsWith('.corn-bench.backup.')).length, 1)
     assert.ok(!entries.includes(PRESET_ID))
     stopB()
   } finally {
@@ -191,7 +191,7 @@ test('a stale fiber write does not replace the active declaration', async () => 
         return [{ id: PRESET_ID, name: 'Corn模式' }]
       },
     }
-    await activateVisionPresetDeclaration(registry, home, { epoch: 1, duplicateRetries: 0 })
+    await activateCornPresetDeclaration(registry, home, { epoch: 1, duplicateRetries: 0 })
     const state = getDeclarationState()
     assert.equal(state.phase, 'registered')
     assert.equal(state.at, 'new-fiber')
@@ -207,13 +207,13 @@ test('an external declaration does not migrate the legacy directory', async () =
   try {
     const registry = {
       async register() {
-        throw new Error('Duplicate agent preset: vision-bench')
+        throw new Error('Duplicate agent preset: corn-bench')
       },
       async list() {
         return [{ id: PRESET_ID, name: 'Corn模式' }]
       },
     }
-    const activation = await activateVisionPresetDeclaration(registry, home, { duplicateRetries: 0 })
+    const activation = await activateCornPresetDeclaration(registry, home, { duplicateRetries: 0 })
     assert.equal(activation.via, 'external-declaration')
     assert.equal(activation.migration.migrated, false)
     assert.ok((await readdir(userPresetDir(home))).includes('agent.cordis.yml'))
@@ -232,7 +232,7 @@ test('a vanished external row is registered again', async () => {
     /** @param {any} definition */
     async register(definition) {
       calls += 1
-      if (calls < 5) throw new Error('Duplicate agent preset: vision-bench')
+      if (calls < 5) throw new Error('Duplicate agent preset: corn-bench')
       rows.push(definition)
       return async () => {
         rows.length = 0
@@ -261,7 +261,7 @@ test('a recheck that still cannot see the row marks the declaration failed', asy
   const home = await mkdtemp(join(tmpdir(), 'dvb-hmr-'))
   const registry = {
     async register() {
-      throw new Error('Duplicate agent preset: vision-bench')
+      throw new Error('Duplicate agent preset: corn-bench')
     },
     async list() {
       return []
@@ -270,7 +270,7 @@ test('a recheck that still cannot see the row marks the declaration failed', asy
   const stop = startFiber(registry, home, { recheckDelayMs: 20 })
   try {
     await waitFor(() => getDeclarationState().phase === 'failed', 1500)
-    assert.match(getDeclarationState().error, /vision-bench/)
+    assert.match(getDeclarationState().error, /corn-bench/)
   } finally {
     stop()
     await rm(home, { recursive: true, force: true })

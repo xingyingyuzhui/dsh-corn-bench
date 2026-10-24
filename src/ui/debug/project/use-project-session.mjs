@@ -2,8 +2,8 @@ import { formatErrorMessage } from '../../common/ui-format.mjs'
 import { subscribeState } from '../../common/state-subscription.mjs'
 import { beginRequest, postWithAbort, shouldApplyRequest } from '../../common/latest-request-gate.mjs'
 import { pageSessionId, sessionCwd } from '../../common/session-scope.mjs'
-import { getNav, subscribeNav } from '../../workspace/vision-navigation-store.mjs'
-import { DEBUG_SECTIONS, VIEW_DEBUG } from '../../workspace/vision-route.mjs'
+import { getNav, subscribeNav } from '../../workspace/corn-navigation-store.mjs'
+import { DEBUG_SECTIONS, VIEW_DEBUG } from '../../workspace/corn-route.mjs'
 import { buildFunctionCallGraph, buildProjectGraph } from './project-graph-model.mjs'
 import {
   emptyPreviewState,
@@ -214,7 +214,7 @@ export function createUseProjectSession(React, t, post) {
       setError('')
       const promise = postWithAbort(
         post,
-        '/dsh-vision-bench/keil/map',
+        '/dsh-corn-bench/keil/map',
         { cwd, project: keil.project, target: keil.target },
         ac.signal,
       )
@@ -307,7 +307,7 @@ export function createUseProjectSession(React, t, post) {
           shouldApplyRequest(previewRequestRef, requestId, reqIdentity, identityRef.current, mountedRef)
         setJumpLine(Number(line) || 0)
         setPreview({ ...emptyPreviewState(rel, reqIdentity), loading: true, rel, identityKey: reqIdentity })
-        postWithAbort(post, '/dsh-vision-bench/project/file', { cwd, path: rel }, ac.signal)
+        postWithAbort(post, '/dsh-corn-bench/project/file', { cwd, path: rel }, ac.signal)
           .then((data) => {
             if (!mayApply()) return
             if (data?.ok) {

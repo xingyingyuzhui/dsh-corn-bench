@@ -11,7 +11,7 @@ Both the Harness Agent (tools) and the Host UI can create connections, change po
 ## Decision
 
 - **Host owns authoritative workspace state** and is the only process that persists it.
-- **Host owns the single Vision I/O Worker.** Agent never constructs `VisionIoBroker`, never opens COM, and never writes workspace files.
+- **Host owns the single Corn I/O Worker.** Agent never constructs `CornIoBroker`, never opens COM, and never writes workspace files.
 - Agent tools normalize arguments and dispatch a Host command (`source`, `action`, `payload`, `expectedConfigVersion`). In-process handle wins; otherwise Host HTTP. Failures are distinguished (`HOST_UNAVAILABLE`, `HOST_TIMEOUT`, `HOST_UNAUTHORIZED`, `HOST_FORBIDDEN`, `HOST_INVALID_RESPONSE`, `HOST_HTTP_STATUS_ERROR`).
 - `system.ping` is the only supported Host probe and must be side-effect free (see ADR-007).
 - HTTP routes and Agent tools call the **same Host command / application services**.

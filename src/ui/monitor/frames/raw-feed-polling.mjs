@@ -49,7 +49,7 @@ export function startRawFeedPolling(deps) {
   const requestFeed = (since) => {
     const selNow = parseFramePortSelection(selection)
     return post(
-      '/dsh-vision-bench/serial/feed',
+      '/dsh-corn-bench/serial/feed',
       {
         cwd: realCwd,
         sessionId: sessionId || undefined,

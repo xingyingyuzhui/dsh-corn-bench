@@ -9,8 +9,8 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
-import { dispatchVisionCommand, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
-import { handleCommand } from '../../src/interfaces/http/vision-command-routes.mjs'
+import { dispatchCornCommand, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
+import { handleCommand } from '../../src/interfaces/http/corn-command-routes.mjs'
 
 function sessionPack(home, cwd, sessionId) {
   return projectModbusForSession(loadWorkspace(home, cwd).modbus, sessionId)
@@ -31,7 +31,7 @@ function listen(handler) {
 
 function startHost(home, cwd) {
   return listen((req, res) => {
-    if (req.method !== 'POST' || req.url !== '/dsh-vision-bench/command') {
+    if (req.method !== 'POST' || req.url !== '/dsh-corn-bench/command') {
       res.writeHead(404)
       res.end()
       return
@@ -43,7 +43,7 @@ function startHost(home, cwd) {
         const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')
         const fakeReq = {
           method: 'POST',
-          headers: { 'x-dsh-vision-bench': '1' },
+          headers: { 'x-dsh-corn-bench': '1' },
         }
         const result = await handleCommand(home, fakeReq, async () => ({ ...body, cwd: body.cwd || cwd }))
         res.writeHead(200, { 'content-type': 'application/json' })
@@ -62,8 +62,8 @@ function spawnChild(origin, command, extraEnv = {}) {
       shell: false,
       env: {
         ...process.env,
-        VISION_BENCH_HOST_ORIGIN: origin,
-        VISION_BENCH_CHILD_COMMAND: JSON.stringify(command),
+        CORN_BENCH_HOST_ORIGIN: origin,
+        CORN_BENCH_CHILD_COMMAND: JSON.stringify(command),
         ...extraEnv,
       },
     })
@@ -86,11 +86,11 @@ function spawnChild(origin, command, extraEnv = {}) {
 }
 
 test('HTTP fallback distinguishes unavailable vs status vs invalid JSON', async () => {
-  unregisterVisionHost()
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
+  unregisterCornHost()
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = 'http://127.0.0.1:1'
   try {
-    const down = await dispatchVisionCommand({
+    const down = await dispatchCornCommand({
       requireHost: true,
       commandId: 'c-down',
       action: 'status',
@@ -100,12 +100,12 @@ test('HTTP fallback distinguishes unavailable vs status vs invalid JSON', async 
     assert.equal(down.ok, false)
     assert.ok(['HOST_UNAVAILABLE', 'HOST_HTTP_STATUS_ERROR', 'HOST_INVALID_RESPONSE'].includes(down.errorCode))
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
   }
 
   const { server, origin } = await listen((req, res) => {
-    if (req.url === '/dsh-vision-bench/command') {
+    if (req.url === '/dsh-corn-bench/command') {
       res.writeHead(503, { 'content-type': 'application/json' })
       res.end('{"ok":false}')
       return
@@ -113,9 +113,9 @@ test('HTTP fallback distinguishes unavailable vs status vs invalid JSON', async 
     res.writeHead(404)
     res.end()
   })
-  process.env.VISION_BENCH_HOST_ORIGIN = origin
+  process.env.CORN_BENCH_HOST_ORIGIN = origin
   try {
-    const ran = await dispatchVisionCommand({
+    const ran = await dispatchCornCommand({
       requireHost: true,
       commandId: 'c-503',
       action: 'status',
@@ -127,8 +127,8 @@ test('HTTP fallback distinguishes unavailable vs status vs invalid JSON', async 
     assert.equal(ran.httpStatus, 503)
     assert.ok(ran.origin)
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
     await new Promise((r) => server.close(r))
   }
 })
@@ -146,11 +146,11 @@ test('uses HTTP transport when in-process host is unavailable', async () => {
     },
   })
   const { server, origin } = await startHost(home, cwd)
-  const prev = process.env.VISION_BENCH_HOST_ORIGIN
-  process.env.VISION_BENCH_HOST_ORIGIN = origin
-  unregisterVisionHost()
+  const prev = process.env.CORN_BENCH_HOST_ORIGIN
+  process.env.CORN_BENCH_HOST_ORIGIN = origin
+  unregisterCornHost()
   try {
-    const added = await dispatchVisionCommand({
+    const added = await dispatchCornCommand({
       requireHost: true,
       home,
       cwd,
@@ -170,9 +170,9 @@ test('uses HTTP transport when in-process host is unavailable', async () => {
     assert.equal(added.ok, true, added.error)
     assert.equal(sessionPack(home, cwd, 's1').points.length, 1)
   } finally {
-    if (prev == null) delete process.env.VISION_BENCH_HOST_ORIGIN
-    else process.env.VISION_BENCH_HOST_ORIGIN = prev
-    unregisterVisionHost()
+    if (prev == null) delete process.env.CORN_BENCH_HOST_ORIGIN
+    else process.env.CORN_BENCH_HOST_ORIGIN = prev
+    unregisterCornHost()
     await new Promise((r) => server.close(r))
     await rm(home, { recursive: true, force: true })
   }
@@ -180,9 +180,9 @@ test('uses HTTP transport when in-process host is unavailable', async () => {
 
 test('real Node child process talks to HTTP Host without becoming I/O owner', async () => {
   const fixtureSrc = readFileSync(fixturePath, 'utf8')
-  assert.match(fixtureSrc, /vision-host-client/)
-  assert.doesNotMatch(fixtureSrc, /bench-modbus-transport|vision-io-worker|serialport|modbus-serial/)
-  assert.doesNotMatch(fixtureSrc, /createServer|bench-modbus-transport|vision-io-worker/)
+  assert.match(fixtureSrc, /corn-host-client/)
+  assert.doesNotMatch(fixtureSrc, /bench-modbus-transport|corn-io-worker|serialport|modbus-serial/)
+  assert.doesNotMatch(fixtureSrc, /createServer|bench-modbus-transport|corn-io-worker/)
 
   const home = await mkdtemp(join(tmpdir(), 'dvb-http-child-'))
   const cwd = join(home, 'board')
@@ -196,7 +196,7 @@ test('real Node child process talks to HTTP Host without becoming I/O owner', as
     },
   })
   const { server, origin } = await startHost(home, cwd)
-  unregisterVisionHost()
+  unregisterCornHost()
   try {
     const status = await spawnChild(origin, {
       cwd,
@@ -292,7 +292,7 @@ test('real Node child process talks to HTTP Host without becoming I/O owner', as
     assert.notEqual(bad.code, 0)
     assert.equal(bad.parsed.result?.errorCode || bad.parsed.errorCode, 'HOST_UNAVAILABLE')
   } finally {
-    unregisterVisionHost()
+    unregisterCornHost()
     await new Promise((r) => server.close(r))
     await rm(home, { recursive: true, force: true })
   }

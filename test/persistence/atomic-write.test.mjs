@@ -60,7 +60,7 @@ test('migration-v3-v4: legacy file migrates with backup and loads via v4', async
   mkdirSync(cwd)
   const key = workspaceKey(cwd)
   const legacy = legacyWorkspaceFile(home, key)
-  mkdirSync(join(home, 'vision-bench', 'workspaces'), { recursive: true })
+  mkdirSync(join(home, 'corn-bench', 'workspaces'), { recursive: true })
   writeFileSync(
     legacy,
     JSON.stringify({
@@ -128,7 +128,7 @@ test('crash-recovery: corrupt v4 without marker falls back to legacy', async () 
   mkdirSync(cwd)
   const key = workspaceKey(cwd)
   const legacy = legacyWorkspaceFile(home, key)
-  mkdirSync(join(home, 'vision-bench', 'workspaces'), { recursive: true })
+  mkdirSync(join(home, 'corn-bench', 'workspaces'), { recursive: true })
   writeFileSync(legacy, JSON.stringify({ modbus: { version: 3, points: [], connections: [], devices: [] } }) + '\n')
   const dir = workspaceDir(home, key)
   mkdirSync(dir, { recursive: true })

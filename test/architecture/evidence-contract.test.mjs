@@ -278,8 +278,8 @@ test('Task4: POST /evidence via host appends typed frame evidence and survives r
   const cwd = join(home, 'board')
   try {
     const cv = await setup(home, cwd)
-    const { runVisionBench } = await import('../helpers/run-vision-bench.mjs')
-    const res = await runVisionBench(
+    const { runCornBench } = await import('../helpers/run-corn-bench.mjs')
+    const res = await runCornBench(
       home,
       {
         action: 'evidence',
@@ -289,7 +289,7 @@ test('Task4: POST /evidence via host appends typed frame evidence and survives r
       { source: 'user', sessionId: 's1' },
     )
     assert.equal(res.ok, true, 'host evidence must accept typed frame: ' + res.error)
-    const again = await runVisionBench(home, { action: 'evidence' }, cwd, { source: 'user', sessionId: 's1' })
+    const again = await runCornBench(home, { action: 'evidence' }, cwd, { source: 'user', sessionId: 's1' })
     assert.equal(again.ok, true)
     const ws = loadWorkspace(home, cwd)
     const frame = ws.focus.evidence.find((e) => e.kind === 'frame')

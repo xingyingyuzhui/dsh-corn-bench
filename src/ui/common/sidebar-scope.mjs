@@ -45,4 +45,4 @@ export function filterByScope(list, scope, getIds) {
   })
 }
 
-export { shouldRouteFocus } from '../workspace/vision-route.mjs'
+export { shouldRouteFocus } from '../workspace/corn-route.mjs'

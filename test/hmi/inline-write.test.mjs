@@ -15,7 +15,7 @@ test('当前值行内写入：点击值单元格只在该行打开编辑器，�
   const writes = []
   const mb = { ...MB, values: [{ key: 'p1', pointId: 'p1', raw: 235, value: 23.5, ok: true, at: Date.now() }] }
   const post = async (path, body) => {
-    if (/\/dsh-vision-bench\/state$/.test(path))
+    if (/\/dsh-corn-bench\/state$/.test(path))
       return {
         ok: true,
         workspace: { modbus: mb, focus: null },
@@ -25,7 +25,7 @@ test('当前值行内写入：点击值单元格只在该行打开编辑器，�
         connectionStates: [{ connectionId: 'c1', status: 'connected' }],
       }
     if (/\/serial\/ports$/.test(path)) return { ok: true, ports: ['COM3'] }
-    if (/\/dsh-vision-bench\/modbus\/write$/.test(path)) {
+    if (/\/dsh-corn-bench\/modbus\/write$/.test(path)) {
       writes.push(body)
       return {
         ok: true,
@@ -33,7 +33,7 @@ test('当前值行内写入：点击值单元格只在该行打开编辑器，�
         framesLog: [],
       }
     }
-    if (/\/dsh-vision-bench\/workspace$/.test(path)) {
+    if (/\/dsh-corn-bench\/workspace$/.test(path)) {
       // 持久化点列表
       if (body.modbus && body.modbus.points) mb.points = body.modbus.points
       if (body.modbus && body.modbus.values) mb.values = body.modbus.values
@@ -78,7 +78,7 @@ test('FC01 开关行内写入：确认写入固定到设备2（p2）', async () 
   const writes = []
   const mb = { ...MB }
   const post = async (path, body) => {
-    if (/\/dsh-vision-bench\/state$/.test(path))
+    if (/\/dsh-corn-bench\/state$/.test(path))
       return {
         ok: true,
         workspace: { modbus: mb, focus: null },
@@ -88,7 +88,7 @@ test('FC01 开关行内写入：确认写入固定到设备2（p2）', async () 
         connectionStates: [{ connectionId: 'c1', status: 'connected' }],
       }
     if (/\/serial\/ports$/.test(path)) return { ok: true, ports: ['COM3'] }
-    if (/\/dsh-vision-bench\/modbus\/write$/.test(path)) {
+    if (/\/dsh-corn-bench\/modbus\/write$/.test(path)) {
       writes.push(body)
       return {
         ok: true,

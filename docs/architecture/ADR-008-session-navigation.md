@@ -11,7 +11,7 @@ Two conversations can share one workspace `cwd`. Navigation, `/state` polling, a
 ## Decision
 
 1. Navigation records are keyed only by `sessionId + '\0' + cwd`. There is no empty-session fallback. Anonymous scopes are a separate key and must not write named sessions.
-2. Active page scope is `{ token, sessionId, cwd, viewId }`. `wrapVisionPage` reads `sessionId` from page props; it does not guess from Focus.
+2. Active page scope is `{ token, sessionId, cwd, viewId }`. `wrapCornPage` reads `sessionId` from page props; it does not guess from Focus.
 3. Nav state is `{ preferred, active, agentReturn, leaseUntil, at }`.
    - `init` fills a missing record only, no lease.
    - `manual` updates preferred and active and starts a 10s lease.

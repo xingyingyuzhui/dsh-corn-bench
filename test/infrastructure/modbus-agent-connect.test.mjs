@@ -8,7 +8,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { connectOp } from '../../bench-modbus.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 
 const c1 = {
   id: 'c1',
@@ -105,7 +105,7 @@ test('server/slave role is supported and connects with role on endpoint (UI + Ag
   assert.equal(t.opened.length, 1, 'opened connection for server role')
   assert.equal(t.opened[0].endpoint.role, 'server')
   // Agent tool path also connects
-  const viaTool = await runVisionBench(
+  const viaTool = await runCornBench(
     home,
     { action: 'connect', connectionId: 's1' },
     cwd,
@@ -122,7 +122,7 @@ test('agent connect keeps an agent source identity in the request payload', asyn
   const t = fakeTransport()
   await connectOp(home, cwd, { connectionId: 'c1', source: 'agent' }, { transport: t })
   // transport-level source mapping lives in toReadRequest/toWriteRequest; verify
-  // read requests built by runVisionBench carry the agent source
+  // read requests built by runCornBench carry the agent source
   const { toReadRequest } = await import('../../bench-modbus-transport.mjs')
   const req = toReadRequest({
     cwd,

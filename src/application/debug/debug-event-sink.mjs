@@ -35,11 +35,11 @@ export function shouldPersistDebugEvent(event) {
  * @returns {string}
  */
 export function debugJournalDir(home) {
-  return join(home, 'vision-bench', 'debug-journal')
+  return join(home, 'corn-bench', 'debug-journal')
 }
 
 /**
- * Appends a debug event to a per-session NDJSON journal under `<home>/vision-bench/debug-journal/`.
+ * Appends a debug event to a per-session NDJSON journal under `<home>/corn-bench/debug-journal/`.
  *
  * Best-effort by design: a diagnostic sink must never break the debug hot path,
  * so every failure (missing home, read-only disk, permission error) is swallowed.

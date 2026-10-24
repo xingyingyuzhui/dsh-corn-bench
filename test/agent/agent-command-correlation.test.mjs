@@ -1,7 +1,7 @@
 // @ts-check
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { visionBenchTool } from '../../src/interfaces/agent/vision-bench-tool.mjs'
+import { cornBenchTool } from '../../src/interfaces/agent/corn-bench-tool.mjs'
 import {
   HOST_INVALID_RESPONSE,
   HOST_TIMEOUT,
@@ -9,10 +9,10 @@ import {
   COMMAND_ID_REUSE,
 } from '../../src/application/commands/command-contract.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { createBench, connection, pointSeries } from '../helpers/workspace-factory.mjs'
 import { saveWorkspace } from '../../bench-store.mjs'
 
@@ -21,11 +21,11 @@ import { saveWorkspace } from '../../bench-store.mjs'
  * @param {() => void} [extra]
  */
 function withHost(t, handle, extra) {
-  unregisterVisionHost()
-  const stop = registerVisionHost(handle)
+  unregisterCornHost()
+  const stop = registerCornHost(handle)
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
     if (extra) extra()
   })
 }
@@ -46,7 +46,7 @@ test('preflight with explicit commandId returns it and never calls Host', async 
       throw new Error('host must not run')
     },
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const result = await tool.execute(
     { action: 'read', pointId: 'p1', commandId: 'cmd-preflight-1' },
     { agent: agentOf('/tmp') },
@@ -67,7 +67,7 @@ test('preflight without commandId generates a non-empty id and never calls Host'
       throw new Error('host must not run')
     },
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const result = await tool.execute({ action: 'read', pointId: 'p1' }, { agent: agentOf('/tmp') })
   assert.equal(result.ok, false)
   assert.equal(result.errorCode, 'TARGET_REQUIRED')
@@ -84,7 +84,7 @@ test('aborted signal before Host keeps the same commandId and skips Host', async
       throw new Error('host must not run')
     },
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const ac = new AbortController()
   ac.abort()
   const result = await tool.execute(
@@ -98,9 +98,9 @@ test('aborted signal before Host keeps the same commandId and skips Host', async
 })
 
 test('Host unavailable / timeout / invalid response keep the entry commandId', async (t) => {
-  unregisterVisionHost()
-  t.after(() => unregisterVisionHost())
-  const tool = visionBenchTool('/tmp')
+  unregisterCornHost()
+  t.after(() => unregisterCornHost())
+  const tool = cornBenchTool('/tmp')
   const unavailable = await tool.execute(
     { action: 'status', commandId: 'cmd-unavail' },
     { agent: agentOf('/tmp') },
@@ -154,9 +154,9 @@ test('successful Host round-trip keeps one commandId from entry through Host to 
   })
   /** @type {string[]} */
   const seen = []
-  unregisterVisionHost()
-  const real = createVisionCommandDispatcher(home)
-  const stop = registerVisionHost({
+  unregisterCornHost()
+  const real = createCornCommandDispatcher(home)
+  const stop = registerCornHost({
     async dispatch(cmd) {
       seen.push(String(cmd.commandId || ''))
       return real.dispatch(cmd)
@@ -164,9 +164,9 @@ test('successful Host round-trip keeps one commandId from entry through Host to 
   })
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const result = await tool.execute(
     { action: 'status', commandId: 'cmd-success-1' },
     { agent: agentOf(cwd) },
@@ -189,7 +189,7 @@ test('Host CONFIG_DRIFT keeps commandId and refresh fields', async (t) => {
       }
     },
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const result = await tool.execute(
     {
       action: 'points',
@@ -219,7 +219,7 @@ test('Host CONFLICT keeps commandId and conflicts', async (t) => {
       }
     },
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const result = await tool.execute(
     { action: 'config', operation: 'device.create', expectedConfigVersion: 1, commandId: 'cmd-conflict-1' },
     { agent: agentOf('/tmp') },
@@ -242,13 +242,13 @@ test('same commandId replay and COMMAND_ID_REUSE keep existing idempotency behav
       points: [],
     },
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const agent = agentOf(cwd)
   const first = await tool.execute({ action: 'status', commandId: 'cmd-idem-1' }, { agent })
   assert.equal(first.ok, true, first.error)

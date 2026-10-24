@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { createBench, connection, pointSeries } from '../helpers/workspace-factory.mjs'
 import { fingerprintOnDisk } from './points-get-helpers.mjs'
 
@@ -38,7 +38,7 @@ test('points get: batch ids success keeps order/dedupe and does not claim or mut
     },
   }
   const origin = { source: 'agent', sessionId: 'session-a' }
-  const ran = await runVisionBench(
+  const ran = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p1', 'p0', 'p1', 'p3'] },
     cwd,
@@ -77,19 +77,19 @@ test('points get: pointId/id aliases; conflicting selectors → FIELD_CONFLICT',
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const byPointId = await runVisionBench(home, { action: 'points', op: 'get', pointId: 'p0' }, cwd, origin)
+  const byPointId = await runCornBench(home, { action: 'points', op: 'get', pointId: 'p0' }, cwd, origin)
   assert.equal(byPointId.ok, true, byPointId.error)
   assert.deepEqual(
     byPointId.points.map((/** @type {any} */ p) => p.id),
     ['p0'],
   )
-  const byId = await runVisionBench(home, { action: 'points', op: 'get', id: 'p1' }, cwd, origin)
+  const byId = await runCornBench(home, { action: 'points', op: 'get', id: 'p1' }, cwd, origin)
   assert.equal(byId.ok, true, byId.error)
   assert.deepEqual(
     byId.points.map((/** @type {any} */ p) => p.id),
     ['p1'],
   )
-  const same = await runVisionBench(
+  const same = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p0'], pointId: 'p0', id: 'p0' },
     cwd,
@@ -97,7 +97,7 @@ test('points get: pointId/id aliases; conflicting selectors → FIELD_CONFLICT',
   )
   assert.equal(same.ok, true, same.error)
   assert.equal(same.returned, 1)
-  const conflict = await runVisionBench(
+  const conflict = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p0'], pointId: 'p1' },
     cwd,
@@ -120,23 +120,23 @@ test('points get: empty / bad / oversize selectors fail without list fallback or
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const empty = await runVisionBench(home, { action: 'points', op: 'get' }, cwd, origin)
+  const empty = await runCornBench(home, { action: 'points', op: 'get' }, cwd, origin)
   assert.equal(empty.ok, false)
   assert.equal(empty.errorCode, ERROR_CODES.TARGET_REQUIRED)
   assert.ok(Array.isArray(empty.missingFields))
   assert.ok(empty.missingFields.includes('ids') || empty.missingFields.includes('pointId'))
   assert.notEqual(empty.errorCode, ERROR_CODES.CONFIG_VERSION_REQUIRED)
 
-  const blank = await runVisionBench(home, { action: 'points', op: 'get', ids: ['', '  '] }, cwd, origin)
+  const blank = await runCornBench(home, { action: 'points', op: 'get', ids: ['', '  '] }, cwd, origin)
   assert.equal(blank.ok, false)
   assert.equal(blank.errorCode, ERROR_CODES.TARGET_REQUIRED)
 
-  const badType = await runVisionBench(home, { action: 'points', op: 'get', ids: [1, 'p0'] }, cwd, origin)
+  const badType = await runCornBench(home, { action: 'points', op: 'get', ids: [1, 'p0'] }, cwd, origin)
   assert.equal(badType.ok, false)
   assert.ok(['INVALID_FIELD', 'TARGET_REQUIRED'].includes(String(badType.errorCode)))
 
   const ids33 = Array.from({ length: 33 }, (_, i) => `x${i}`)
-  const over = await runVisionBench(home, { action: 'points', op: 'get', ids: ids33 }, cwd, origin)
+  const over = await runCornBench(home, { action: 'points', op: 'get', ids: ids33 }, cwd, origin)
   assert.equal(over.ok, false)
   assert.ok(['INVALID_FIELD', 'TARGET_REQUIRED'].includes(String(over.errorCode)))
   assert.notEqual(over.errorCode, ERROR_CODES.CONFIG_VERSION_REQUIRED)
@@ -159,7 +159,7 @@ test('points get: partial and total missing', async (t) => {
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const partial = await runVisionBench(
+  const partial = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p0', 'missing', 'p1'] },
     cwd,
@@ -175,7 +175,7 @@ test('points get: partial and total missing', async (t) => {
     ['p0', 'p1'],
   )
 
-  const none = await runVisionBench(home, { action: 'points', op: 'get', ids: ['nope', 'gone'] }, cwd, origin)
+  const none = await runCornBench(home, { action: 'points', op: 'get', ids: ['nope', 'gone'] }, cwd, origin)
   assert.equal(none.ok, false)
   assert.equal(none.errorCode, ERROR_CODES.POINT_NOT_FOUND)
   assert.equal(none.partial, undefined)
@@ -206,7 +206,7 @@ test('points get: optional connection/device filter; wrong filter → missing no
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const ok = await runVisionBench(
+  const ok = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p-c1'], connectionId: 'c1', deviceId: 'd1' },
     cwd,
@@ -215,7 +215,7 @@ test('points get: optional connection/device filter; wrong filter → missing no
   assert.equal(ok.ok, true, ok.error)
   assert.equal(ok.points[0].id, 'p-c1')
 
-  const filteredOut = await runVisionBench(
+  const filteredOut = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p-c2'], connectionId: 'c1' },
     cwd,

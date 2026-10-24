@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ERROR_CODES, modbusWrite, resolvePendingWrite } from '../../bench-modbus.mjs'
 import { loadWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { mutateConfig } from '../../src/application/config/config-mutation-service.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 import {
@@ -26,7 +26,7 @@ test('approved write reports protocol result and readback consistency (§16.5-34
       points: [agentHrPoint('p1', 'c1', 'd1', 0, { name: 'T1' })],
     },
   })
-  const okReq = await runVisionBench(
+  const okReq = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [7] },
     cwd,
@@ -37,7 +37,7 @@ test('approved write reports protocol result and readback consistency (§16.5-34
   assert.match(okRun.summary, /回读一致/)
   assert.deepEqual(okRun.readback, [7])
   assert.ok(okRun.frames && okRun.frames.request)
-  const badReq = await runVisionBench(
+  const badReq = await runCornBench(
     home,
     { action: 'write', connectionId: 'c1', deviceId: 'd1', function: 3, address: 0, values: [5] },
     cwd,
@@ -130,7 +130,7 @@ test('direct config mutation refuses stale expectedConfigVersion', async (t) => 
   })
   assert.equal(drifted.ok, false)
   assert.equal(drifted.errorCode, 'CONFIG_DRIFT')
-  const agentDraft = await runVisionBench(home, { action: 'draft', op: 'create' }, cwd, { source: 'agent' })
+  const agentDraft = await runCornBench(home, { action: 'draft', op: 'create' }, cwd, { source: 'agent' })
   assert.equal(agentDraft.ok, false)
   assert.equal(agentDraft.errorCode, 'OP_REMOVED')
 })

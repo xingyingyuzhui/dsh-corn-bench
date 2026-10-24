@@ -2,10 +2,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import { encodeListCursor, pagePointsList } from '../../src/application/modbus/points-list-page.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 const SID = 'session-a'
@@ -43,13 +43,13 @@ async function agentPoints(t) {
       },
     },
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   return (/** @type {any} */ args) =>
     tool.execute({ action: 'points', op: 'list', limit: 10, ...args }, { agent: { session: { header: { cwd, id: SID } } } })
 }

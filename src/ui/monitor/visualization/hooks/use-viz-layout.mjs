@@ -58,7 +58,7 @@ export function useVizLayout(React, { cwd, sessionId, post, packRef, setMb, setN
     const sent = { ...draft }
     const version = packRef.current?.configVersion || 1
     layoutInflight.current = true
-    post('/dsh-vision-bench/command', {
+    post('/dsh-corn-bench/command', {
       cwd,
       sessionId: sessionId || '',
       source: 'user',
@@ -74,7 +74,7 @@ export function useVizLayout(React, { cwd, sessionId, post, packRef, setMb, setN
         if (!aliveRef.current) return
         if (data && data.ok === false) {
           if (data.errorCode === 'CONFIG_DRIFT') {
-            return post('/dsh-vision-bench/state', { cwd, sessionId: sessionId || '' }).then((fresh) => {
+            return post('/dsh-corn-bench/state', { cwd, sessionId: sessionId || '' }).then((fresh) => {
               if (!aliveRef.current) return
               if (fresh?.workspace?.modbus) setMb(fresh.workspace.modbus)
               layoutQueued.current = true

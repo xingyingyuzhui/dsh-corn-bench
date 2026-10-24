@@ -16,7 +16,7 @@ const tests = [
   'test/host-lifecycle-stage4.test.mjs',
   'test/ui/debug-runtime-pending-control.test.mjs',
   'test/ui/state-subscription-idle.test.mjs',
-  'test/interfaces/vision-fetch-cancel.test.mjs',
+  'test/interfaces/corn-fetch-cancel.test.mjs',
   'test/host-contract.test.mjs',
 ]
 
@@ -27,7 +27,7 @@ const run = spawnSync(
 )
 
 const report = {
-  event: 'vision.stage4.lifecycle',
+  event: 'corn.stage4.lifecycle',
   package: `${pkg.name}@${pkg.version}`,
   tests,
   exitCode: run.status ?? 1,
@@ -44,8 +44,8 @@ const report = {
     fullSoak10to15min: 'deferred — run isolated Web XOR Desktop Home; do not share DSH_HOME',
   },
   notes: [
-    'Desktop claims no Vision listen port (Fetch via connection only).',
-    'Product soak: blank profile baseline vs Vision-enabled; record apply/dispose once per enable/disable.',
+    'Desktop claims no Corn listen port (Fetch via connection only).',
+    'Product soak: blank profile baseline vs Corn-enabled; record apply/dispose once per enable/disable.',
   ],
 }
 

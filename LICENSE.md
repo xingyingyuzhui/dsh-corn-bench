@@ -1,5 +1,5 @@
 Required Notice: Copyright 2026 xingyingyuzhui (https://github.com/xingyingyuzhui)
-Required Notice: Corn (dsh-vision-bench) — https://github.com/xingyingyuzhui/dsh-vision-bench
+Required Notice: Corn (dsh-corn-bench) — https://github.com/xingyingyuzhui/dsh-corn-bench
 
 # PolyForm Noncommercial License 1.0.0
 

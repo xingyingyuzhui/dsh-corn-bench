@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createMonitorWorkspace } from '../../src/ui/workspace/monitor-workspace.mjs'
-import { clearNavStore, getNav, isManualNavLeaseActive, navigate } from '../../src/ui/workspace/vision-navigation-store.mjs'
-import { MONITOR_SECTIONS, VIEW_MONITOR } from '../../src/ui/workspace/vision-route.mjs'
+import { clearNavStore, getNav, isManualNavLeaseActive, navigate } from '../../src/ui/workspace/corn-navigation-store.mjs'
+import { MONITOR_SECTIONS, VIEW_MONITOR } from '../../src/ui/workspace/corn-route.mjs'
 
 function makeReact() {
   const el = (type, props, ...children) => ({ type, props: props || {}, children })

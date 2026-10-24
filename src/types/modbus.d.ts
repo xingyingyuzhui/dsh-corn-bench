@@ -23,7 +23,7 @@ export type ModbusEndpointFingerprint = {
   unitId?: number
 }
 
-export type VisionBenchError = {
+export type CornBenchError = {
   ok: false
   errorCode: string
   error: string
@@ -31,13 +31,13 @@ export type VisionBenchError = {
   details?: Record<string, unknown>
 }
 
-export type VisionBenchOk<T extends Record<string, unknown> = Record<string, unknown>> = {
+export type CornBenchOk<T extends Record<string, unknown> = Record<string, unknown>> = {
   ok: true
 } & T
 
-export type VisionBenchResult<T extends Record<string, unknown> = Record<string, unknown>> =
-  | VisionBenchOk<T>
-  | VisionBenchError
+export type CornBenchResult<T extends Record<string, unknown> = Record<string, unknown>> =
+  | CornBenchOk<T>
+  | CornBenchError
 
 export type { Connection, ConnectionEndpoint, Device, Point, PointValue }
 

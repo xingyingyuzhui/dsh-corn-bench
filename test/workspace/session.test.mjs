@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { MAX_TIMELINE, isMajorKind, isTaskType, normalizeTask, taskTypeLabel, trimTimeline } from '../../bench-journal.mjs'
-import { _internal, formatVisionNotice, notifyBenchEvent, setAgentsRegistry } from '../../bench-notify.mjs'
+import { _internal, formatCornNotice, notifyBenchEvent, setAgentsRegistry } from '../../bench-notify.mjs'
 import {
   bindSession,
   createManualRequest,
@@ -141,7 +141,7 @@ test('notifyBenchEvent only delivers to the bound live agent', async () => {
     assert.equal(typeof message.id, 'string')
     assert.ok(message.id)
     assert.equal(message.role, 'user')
-    assert.equal(message.source.kind, 'dsh-vision-bench')
+    assert.equal(message.source.kind, 'dsh-corn-bench')
     assert.equal(message.source.form, 'notice')
     assert.match(message.content[0].text, /台架写点失败/)
     assert.match(message.content[0].text, /\[Corn 已生效\]/)
@@ -204,13 +204,13 @@ test('openTask accepts reserved types into the shared journal', async () => {
 })
 
 test('config notices are labeled as completed results, not new commands', () => {
-  const text = formatVisionNotice('添加点位 abc')
+  const text = formatCornNotice('添加点位 abc')
   assert.match(text, /\[Corn 已生效\]/)
   assert.match(text, /不是新的操作请求/)
   assert.match(text, /添加点位 abc/)
-  const already = formatVisionNotice('Vision写点完成：ok')
-  assert.equal(already.startsWith('Vision写点完成'), true)
-  assert.equal(formatVisionNotice('Corn写点完成：ok'), 'Corn写点完成：ok')
+  const already = formatCornNotice('Corn写点完成：ok')
+  assert.equal(already.startsWith('Corn写点完成'), true)
+  assert.equal(formatCornNotice('Corn写点完成：ok'), 'Corn写点完成：ok')
 })
 
 test('notice builder emits producer-owned (session format v4) notices with unique ids', () => {
@@ -220,7 +220,7 @@ test('notice builder emits producer-owned (session format v4) notices with uniqu
   assert.equal(a.content[0].type, 'text')
   assert.equal(a.content[0].text, '正文')
   // DSH v4 admission: a non-empty producer kind, never the retired 'plugin' wrapper.
-  assert.equal(a.source.kind, 'dsh-vision-bench')
+  assert.equal(a.source.kind, 'dsh-corn-bench')
   assert.notEqual(a.source.kind, 'plugin')
   assert.equal('plugin' in a.source, false)
   assert.equal(a.source.form, 'notice')

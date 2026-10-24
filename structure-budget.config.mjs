@@ -29,91 +29,91 @@ export default {
           "max": 490,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/ui/debug/project/use-project-session.mjs",
           "max": 440,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/infrastructure/debug/keil/uvsock-client.mjs",
           "max": 486,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/ui/components/custom-select.mjs",
           "max": 470,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/ui/monitor/frames/use-frames-page.mjs",
           "max": 429,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
-          "file": "src/interfaces/rpc/vision-rpc-router.mjs",
+          "file": "src/interfaces/rpc/corn-rpc-router.mjs",
           "max": 412,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/application/debug/debug-launch-spec-service.mjs",
           "max": 427,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/domain/program/program-model.mjs",
           "max": 445,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "runtime/io/connection-manager.mjs",
           "max": 422,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/ui/hmi/device-card-item.mjs",
           "max": 421,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/ui/hmi/hmi-page.mjs",
           "max": 421,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/infrastructure/keil/uv4-build-runner.mjs",
           "max": 411,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "src/infrastructure/modbus/io-broker.mjs",
           "max": 411,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P6",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         }
       ]
     },
@@ -132,21 +132,21 @@ export default {
           "max": 67,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P5",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "bench-shared.mjs",
           "max": 67,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P5",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "bench-store.mjs",
           "max": 61,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P5",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         }
       ]
     },
@@ -167,35 +167,35 @@ export default {
           "max": 441,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "test/config/point-patch-semantics.test.mjs",
           "max": 413,
           "reason": "Point patch + batch atomicity coverage",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
-          "file": "test/ui/vision-view-request.test.mjs",
+          "file": "test/ui/corn-view-request.test.mjs",
           "max": 398,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "test/agent/agent-result-projection-bounds.test.mjs",
           "max": 389,
           "reason": "Agent projection pagination + budget coverage; split later",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "test/agent/alarm-notify-gate.test.mjs",
           "max": 390,
           "reason": "Alarm notify gate coverage; split later",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
 
         {
@@ -203,21 +203,21 @@ export default {
           "max": 368,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "test/visualization/model.test.mjs",
           "max": 368,
           "reason": "P5-4 debt ratchet; split in later P4/P6",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         },
         {
           "file": "test/hmi/connection-presentation.test.mjs",
           "max": 356,
           "reason": "Connection presentation coverage",
           "stage": "P4",
-          "owner": "vision-bench"
+          "owner": "corn-bench"
         }
       ]
     }

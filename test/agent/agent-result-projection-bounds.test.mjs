@@ -6,7 +6,7 @@ import {
   projectAgentResult,
   utf8ByteLength,
 } from '../../src/application/commands/agent-result-projection.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { saveWorkspace } from '../../bench-store.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 
@@ -359,9 +359,9 @@ test('sim scratch read: structured raw matches sim RX registers', async (t) => {
     },
   })
   const origin = { source: 'agent', sessionId }
-  await runVisionBench(home, { action: 'status' }, cwd, origin)
+  await runCornBench(home, { action: 'status' }, cwd, origin)
 
-  const scratch = await runVisionBench(
+  const scratch = await runCornBench(
     home,
     { action: 'read', connectionId: 'c1', deviceId: 'd1', function: 3, address: 900, count: 2 },
     cwd,

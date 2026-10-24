@@ -5,7 +5,7 @@ import {
   projectAgentResult,
   utf8ByteLength,
 } from '../../src/application/commands/agent-result-projection.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { createBench } from '../helpers/workspace-factory.mjs'
 
@@ -187,7 +187,7 @@ test('real handler + projection: trendKey path keeps newest samples and consiste
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const raw = await runVisionBench(home, { action: 'trend', trendKey: 'c1:d1:p1', start: 0 }, cwd, origin)
+  const raw = await runCornBench(home, { action: 'trend', trendKey: 'c1:d1:p1', start: 0 }, cwd, origin)
   assert.equal(raw.ok, true, raw.error)
   const projected = projectAgentResult(
     { action: 'trend', trendKey: 'c1:d1:p1', start: 0 },
@@ -203,7 +203,7 @@ test('real handler + projection: trendKey path keeps newest samples and consiste
   // Newest sample of the window is the last one returned.
   assert.equal(s.samples[s.samples.length - 1][0], samples1[samples1.length - 1][0])
   // Second page via end=oldestReturnedAt-1 continues older samples.
-  const olderRaw = await runVisionBench(
+  const olderRaw = await runCornBench(
     home,
     {
       action: 'trend',

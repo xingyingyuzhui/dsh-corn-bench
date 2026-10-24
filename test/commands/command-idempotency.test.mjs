@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { _internal, executeVisionCommand } from '../../src/application/commands/vision-command-service.mjs'
+import { _internal, executeCornCommand } from '../../src/application/commands/corn-command-service.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
 
 function sessionPack(home, cwd, sessionId) {
@@ -47,7 +47,7 @@ function seed(home, cwd, name, sessionIds = ['s1', 's2']) {
 }
 
 const addPoint = (home, cwd, sessionId, commandId, address) =>
-  executeVisionCommand({
+  executeCornCommand({
     home,
     cwd,
     sessionId,
@@ -89,7 +89,7 @@ test('duplicate command in the same scope runs once even when concurrent', async
   seed(home, cwd, 'C1')
   const cv = loadWorkspace(home, cwd).modbus.configVersion
   const mk = () =>
-    executeVisionCommand({
+    executeCornCommand({
       home,
       cwd,
       sessionId: 's1',

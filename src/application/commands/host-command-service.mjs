@@ -1,11 +1,11 @@
 // @ts-check
 
 import { executeDebugCommand } from '../debug/debug-command-service.mjs'
-import { executeVisionCommand } from './vision-command-service.mjs'
+import { executeCornCommand } from './corn-command-service.mjs'
 
 /**
  * Universal host command dispatcher.
- * Routes debug.* actions to executeDebugCommand and all others to executeVisionCommand.
+ * Routes debug.* actions to executeDebugCommand and all others to executeCornCommand.
  * Parity with ADR-013 & Phase 5 Section 9.5.
  *
  * @param {any} input
@@ -17,5 +17,5 @@ export async function executeHostCommand(input, deps) {
   if (action.startsWith('debug.')) {
     return executeDebugCommand(input, deps)
   }
-  return executeVisionCommand(input)
+  return executeCornCommand(input)
 }

@@ -9,7 +9,7 @@ import {
   ensurePresetOverlay,
   inspectPresetHealth,
   parseCompositionDocument,
-  seedVisionBenchPreset,
+  seedCornBenchPreset,
 } from '../../bench-preset.mjs'
 import { createTempDir } from '../helpers/workspace-factory.mjs'
 import { LEGACY_PERSONA_A, personaComposition, trackBackup, withFsPatched } from '../helpers/preset-fixtures.mjs'
@@ -36,12 +36,12 @@ test('ensurePresetOverlay migrates obsolete workflow-worker-thread to workflow-p
     ].join('\n'),
   )
   await writeFile(
-    join(dir, '.dsh-vision-bench'),
+    join(dir, '.dsh-corn-bench'),
     JSON.stringify({
-      owner: 'dsh-vision-bench',
+      owner: 'dsh-corn-bench',
       presetSchemaVersion: 3,
       basePresetId: 'standard',
-      pluginRowId: 'vision-bench-tools',
+      pluginRowId: 'corn-bench-tools',
     }),
   )
   const out = ensurePresetOverlay(dir)

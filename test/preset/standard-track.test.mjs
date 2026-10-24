@@ -3,10 +3,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
-  activateVisionPresetDeclaration,
-  buildVisionPresetDefinition,
+  activateCornPresetDeclaration,
+  buildCornPresetDefinition,
   getDeclarationState,
-  registerVisionPreset,
+  registerCornPreset,
 } from '../../src/infrastructure/harness/preset-declaration.mjs'
 import {
   describeStandardDrift,
@@ -29,14 +29,14 @@ test('registration restates the rows of the detected track', async () => {
   /** @type {any[]} */
   const seen = []
   const capture = (/** @type {any} */ extra) => ({ ...extra, register: async (/** @type {any} */ d) => { seen.push(d); return () => {} } })
-  const legacy = await registerVisionPreset(capture({}), { platform: 'linux' })
-  const current = await registerVisionPreset(capture({ readDocument: async () => ({ content: '' }) }), { platform: 'linux' })
+  const legacy = await registerCornPreset(capture({}), { platform: 'linux' })
+  const current = await registerCornPreset(capture({ readDocument: async () => ({ content: '' }) }), { platform: 'linux' })
   assert.equal(legacy.snapshot, '0.1.7-alpha.2')
   assert.equal(current.snapshot, '0.2.1-rc.2')
   const ids = (/** @type {any} */ d) => d.plugins.map((/** @type {any} */ r) => r.id)
   assert.equal(ids(seen[0]).includes('time-context'), false)
   assert.equal(ids(seen[1]).includes('time-context'), true)
-  assert.equal(ids(seen[1]).at(-1), 'vision-bench-tools')
+  assert.equal(ids(seen[1]).at(-1), 'corn-bench-tools')
 })
 
 test('documentNames reads plain and quoted names from entry-list YAML', () => {
@@ -45,7 +45,7 @@ test('documentNames reads plain and quoted names from entry-list YAML', () => {
 })
 
 test('standardDrift reports names missing from and extra to the live standard', async () => {
-  const rows = buildVisionPresetDefinition({ platform: 'linux' }).plugins.filter((r) => r.id !== 'vision-bench-tools')
+  const rows = buildCornPresetDefinition({ platform: 'linux' }).plugins.filter((r) => r.id !== 'corn-bench-tools')
   const live = [...rowNames(rows)].filter((n) => n !== '@deepseek-ai/dsh-time-context').concat(['@x/new-tool'])
   const registry = { readDocument: async () => ({ content: live.map((n) => `- name: '${n}'`).join('\n') }) }
   const drift = await standardDrift(registry, rows)
@@ -62,16 +62,16 @@ test('standardDrift is unchecked, never thrown, on old or failing hosts', async 
   assert.equal(describeStandardDrift({ missing: [], extra: [] }), '')
 })
 
-test('activation compares only standard rows, never the appended Vision tool row', async () => {
-  const standardNames = [...rowNames(buildVisionPresetDefinition({ platform: 'linux' }).plugins)].filter(
-    (n) => n !== 'dsh-vision-bench/agent',
+test('activation compares only standard rows, never the appended Corn tool row', async () => {
+  const standardNames = [...rowNames(buildCornPresetDefinition({ platform: 'linux' }).plugins)].filter(
+    (n) => n !== 'dsh-corn-bench/agent',
   )
   const registry = {
     register: async () => async () => {},
-    list: async () => [{ id: 'vision-bench' }],
+    list: async () => [{ id: 'corn-bench' }],
     readDocument: async () => ({ content: standardNames.map((n) => `- name: '${n}'`).join('\n') }),
   }
-  const activation = await activateVisionPresetDeclaration(registry, '/nonexistent-home', { platform: 'linux' })
+  const activation = await activateCornPresetDeclaration(registry, '/nonexistent-home', { platform: 'linux' })
   assert.equal(activation.via, 'agentPresets.register')
   assert.equal(getDeclarationState().snapshot, '0.2.1-rc.2')
   assert.equal(getDeclarationState().snapshotDrift, '')

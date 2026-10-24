@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 
 test('visualization update/remove keep id and do not auto-delete degraded components', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-viz-'))
@@ -35,7 +35,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
     },
   })
   const cv = loadWorkspace(home, cwd).modbus.configVersion
-  const updated = await runVisionBench(
+  const updated = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -51,7 +51,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(loadWorkspace(home, cwd).modbus.visualization.components[0].id, 'viz_a')
   assert.equal(loadWorkspace(home, cwd).modbus.visualization.components[0].name, '趋势2')
 
-  const mismatch = await runVisionBench(
+  const mismatch = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -66,11 +66,11 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(mismatch.ok, false)
   assert.equal(mismatch.errorCode, 'VIZ_TARGET_MISMATCH')
 
-  const listed = await runVisionBench(home, { action: 'visualization', op: 'list' }, cwd, { source: 'agent' })
+  const listed = await runCornBench(home, { action: 'visualization', op: 'list' }, cwd, { source: 'agent' })
   assert.equal(listed.ok, true)
   assert.equal(loadWorkspace(home, cwd).modbus.visualization.schemaVersion, 2)
   assert.equal(loadWorkspace(home, cwd).modbus.version, 3)
-  const laid = await runVisionBench(
+  const laid = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -85,7 +85,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.deepEqual(loadWorkspace(home, cwd).modbus.visualization.components[0].layout, { x: 2, y: 1, w: 4, h: 3 })
   assert.ok(laid.nextConfigVersion > laid.previousConfigVersion)
 
-  const missingVer = await runVisionBench(
+  const missingVer = await runCornBench(
     home,
     { action: 'visualization', op: 'layout', items: [{ id: 'viz_a', x: 0, y: 0, w: 3, h: 3 }] },
     cwd,
@@ -94,7 +94,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(missingVer.ok, false)
   assert.equal(missingVer.errorCode, 'CONFIG_VERSION_REQUIRED')
 
-  const drift = await runVisionBench(
+  const drift = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -108,7 +108,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(drift.ok, false)
   assert.equal(drift.errorCode, 'CONFIG_DRIFT')
 
-  const emptyItems = await runVisionBench(
+  const emptyItems = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -123,7 +123,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(emptyItems.errorCode, 'LAYOUT_REQUIRED')
 
   const before = loadWorkspace(home, cwd).modbus.visualization.components[0].layout
-  const ghost = await runVisionBench(
+  const ghost = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -138,7 +138,7 @@ test('visualization update/remove keep id and do not auto-delete degraded compon
   assert.equal(ghost.errorCode, 'VIZ_NOT_FOUND')
   assert.deepEqual(loadWorkspace(home, cwd).modbus.visualization.components[0].layout, before)
 
-  const bad = await runVisionBench(
+  const bad = await runCornBench(
     home,
     {
       action: 'visualization',
@@ -173,7 +173,7 @@ test('layout 变更可被状态轮询看到', async () => {
       },
     },
   })
-  const laid = await runVisionBench(
+  const laid = await runCornBench(
     home,
     {
       action: 'visualization',

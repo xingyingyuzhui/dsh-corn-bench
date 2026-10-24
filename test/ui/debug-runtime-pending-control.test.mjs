@@ -100,11 +100,11 @@ test('PR-4: useDebugEvents: pause and step set pendingControl without optimistic
   let lastCommand = null
 
   const mockPost = async (path, body) => {
-    if (path === '/dsh-vision-bench/debug/command') {
+    if (path === '/dsh-corn-bench/debug/command') {
       lastCommand = body
       return { ok: true }
     }
-    if (path === '/dsh-vision-bench/debug/state') {
+    if (path === '/dsh-corn-bench/debug/state') {
       return { ok: true, active: true, session: { state: 'running' } }
     }
     return { ok: true }
@@ -128,7 +128,7 @@ test('F15: selectFrame drops out-of-order stale stack frame local responses', as
   const React = createMockReact()
 
   const mockPost = async (path, body) => {
-    if (path === '/dsh-vision-bench/debug/command' && body?.op === 'locals') {
+    if (path === '/dsh-corn-bench/debug/command' && body?.op === 'locals') {
       const frameLevel = body.frameLevel ?? body.args?.frameLevel
       if (frameLevel === 0) {
         // slow response for frame 0

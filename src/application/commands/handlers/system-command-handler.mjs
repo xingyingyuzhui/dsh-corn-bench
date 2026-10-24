@@ -2,7 +2,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { VISION_HOST_CLIENT_INSTANCE_ID } from '../../../infrastructure/host/vision-host-client.mjs'
+import { CORN_HOST_CLIENT_INSTANCE_ID } from '../../../infrastructure/host/corn-host-client.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -43,7 +43,7 @@ export async function handleSystemCommand(ctx) {
     ok: true,
     action: 'system.ping',
     data: {
-      service: 'dsh-vision-bench',
+      service: 'dsh-corn-bench',
       version: identity.pluginVersion || String(pkg.version || ''),
       pluginVersion: identity.pluginVersion || String(pkg.version || ''),
       buildId: identity.buildId,
@@ -51,8 +51,8 @@ export async function handleSystemCommand(ctx) {
       transport: ctx?.opts?.transport === 'http' ? 'http' : 'in-process',
       pid: process.pid,
       timestamp: new Date().toISOString(),
-      clientInstanceId: VISION_HOST_CLIENT_INSTANCE_ID,
-      hostFiber: 'dsh-vision-bench',
+      clientInstanceId: CORN_HOST_CLIENT_INSTANCE_ID,
+      hostFiber: 'dsh-corn-bench',
     },
   }
 }

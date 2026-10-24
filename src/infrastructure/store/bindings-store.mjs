@@ -12,7 +12,7 @@ export const BINDING_KEYS = ['python', 'uv4', 'openocd', 'gdb']
 export const emptyBindings = () => ({ python: '', uv4: '', openocd: '', gdb: '' })
 
 /** @param {string} home */
-export const storeDir = (home) => join(home, 'vision-bench')
+export const storeDir = (home) => join(home, 'corn-bench')
 
 /** @param {string} home */
 export const bindingsPath = (home) => join(storeDir(home), 'bindings.json')

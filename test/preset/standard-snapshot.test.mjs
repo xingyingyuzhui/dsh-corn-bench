@@ -49,10 +49,10 @@ test('the frozen 0.1.7 snapshot keeps its own child list', () => {
   assert.equal(ids.at(-1), 'tool-plugin-manager')
 })
 
-test('snapshot never carries the Vision tool row', () => {
+test('snapshot never carries the Corn tool row', () => {
   const rows = buildStandardPresetChildren({ platform: 'linux' })
-  assert.ok(!rows.some((row) => row.id === 'vision-bench-tools'))
-  assert.ok(!rows.some((row) => row.name === 'dsh-vision-bench/agent'))
+  assert.ok(!rows.some((row) => row.id === 'corn-bench-tools'))
+  assert.ok(!rows.some((row) => row.name === 'dsh-corn-bench/agent'))
 })
 
 test('snapshot keeps always-off providers disabled', () => {

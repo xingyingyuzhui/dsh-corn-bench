@@ -1,6 +1,6 @@
 // @ts-check
 export {
-  createVisionIoBroker,
-  getVisionIoBroker,
-  stopVisionIoBroker,
+  createCornIoBroker,
+  getCornIoBroker,
+  stopCornIoBroker,
 } from './io-broker.mjs'

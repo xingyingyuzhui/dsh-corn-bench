@@ -15,7 +15,7 @@ import {
   runningTasks,
 } from '../../bench-journal.mjs'
 import { finishTask, journalView, loadWorkspace, openTask, saveBindings, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { sessionIdOf } from '../../bench-tool.mjs'
 
 test('normalizeOrigin and task defaults', async () => {
@@ -105,20 +105,20 @@ test('openTask and finishTask persist a shared journal', async () => {
   }
 })
 
-test('vision_bench status exposes tasks and agent origin marks select', async () => {
+test('corn_bench status exposes tasks and agent origin marks select', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-tool-j-'))
   const cwd = join(home, 'board')
   await mkdir(cwd)
   try {
     const project = join(cwd, 'app.uvprojx')
     await writeFile(project, '<Project/>')
-    const selected = await runVisionBench(home, { action: 'select', path: project }, cwd, {
+    const selected = await runCornBench(home, { action: 'select', path: project }, cwd, {
       source: 'agent',
       sessionId: 'sess-9',
     })
     assert.equal(selected.ok, true)
     assert.equal(selected.source, 'agent')
-    const status = await runVisionBench(home, { action: 'status' }, cwd)
+    const status = await runCornBench(home, { action: 'status' }, cwd)
     assert.equal(status.ok, true)
     assert.ok(Array.isArray(status.tasks))
     assert.ok(Array.isArray(status.running))
@@ -268,17 +268,17 @@ test('finishTask stores logFile, phase and errors for Agent builds', async () =>
     await finishTask(home, cwd, task.id, {
       ok: false,
       summary: '编译失败 identifier foo',
-      logFile: '/tmp/vision-bench/logs/t9.log',
+      logFile: '/tmp/corn-bench/logs/t9.log',
       phase: 'compile',
       errors: ['main.c(12): error: #20: identifier "foo" is undefined'],
     })
     const ws = loadWorkspace(home, cwd)
     assert.equal(ws.tasks[0].status, 'error')
-    assert.equal(ws.tasks[0].logFile, '/tmp/vision-bench/logs/t9.log')
+    assert.equal(ws.tasks[0].logFile, '/tmp/corn-bench/logs/t9.log')
     assert.equal(ws.tasks[0].phase, 'compile')
     assert.equal(ws.tasks[0].errors[0].includes('foo'), true)
     const view = journalView(ws)
-    assert.equal(view.tasks[0].logFile, '/tmp/vision-bench/logs/t9.log')
+    assert.equal(view.tasks[0].logFile, '/tmp/corn-bench/logs/t9.log')
     assert.deepEqual(view.tasks[0].errors, ws.tasks[0].errors)
   } finally {
     await rm(home, { recursive: true, force: true })

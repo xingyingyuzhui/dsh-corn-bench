@@ -87,7 +87,7 @@ export function makeDeferredPost(handlers = {}) {
   const pending = { map: [], file: [] }
   let mapCall = 0
   const post = async (path, body) => {
-    if (/\/dsh-vision-bench\/keil\/map$/.test(path)) {
+    if (/\/dsh-corn-bench\/keil\/map$/.test(path)) {
       if (handlers.map) return handlers.map(body, pending)
       mapCall += 1
       const n = mapCall
@@ -95,13 +95,13 @@ export function makeDeferredPost(handlers = {}) {
         pending.map.push({ body, resolve, n })
       })
     }
-    if (/\/dsh-vision-bench\/project\/file$/.test(path)) {
+    if (/\/dsh-corn-bench\/project\/file$/.test(path)) {
       if (handlers.file) return handlers.file(body, pending)
       return new Promise((resolve) => {
         pending.file.push({ body, resolve })
       })
     }
-    if (/\/dsh-vision-bench\/state$/.test(path)) {
+    if (/\/dsh-corn-bench\/state$/.test(path)) {
       const keil =
         typeof handlers.keil === 'function'
           ? handlers.keil(body)

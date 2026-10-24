@@ -25,7 +25,7 @@ export function createHmiLiveActions(ctx, core) {
 
   async function refreshConnectionState() {
     if (!cwd) return
-    const data = await post('/dsh-vision-bench/state', { cwd, sessionId })
+    const data = await post('/dsh-corn-bench/state', { cwd, sessionId })
     if (Array.isArray(data?.connectionStates)) setConnectionStates(data.connectionStates)
     if (data?.workspace?.modbus) {
       setWorkspace((prev) => {
@@ -53,7 +53,7 @@ export function createHmiLiveActions(ctx, core) {
     setBusy(pointId || deviceId || 'read')
     setError('')
     post(
-      '/dsh-vision-bench/modbus/read',
+      '/dsh-corn-bench/modbus/read',
       {
         cwd,
         source: 'user',
@@ -93,7 +93,7 @@ export function createHmiLiveActions(ctx, core) {
           }
         }
         if (data.ok === false && data.error) setError(formatErrorMessage(data.error))
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => {
         if (!data) return
@@ -153,7 +153,7 @@ export function createHmiLiveActions(ctx, core) {
     }
     setInlineWrite((prev) => ({ ...prev, busy: true, result: null }))
     post(
-      '/dsh-vision-bench/modbus/write',
+      '/dsh-corn-bench/modbus/write',
       {
         cwd,
         source: 'user',
@@ -187,7 +187,7 @@ export function createHmiLiveActions(ctx, core) {
             modbus: { ...workspaceRef.current.modbus, values: data.values },
           }
         }
-        return post('/dsh-vision-bench/state', { cwd })
+        return post('/dsh-corn-bench/state', { cwd })
       })
       .then((data) => {
         if (!data) return
@@ -212,7 +212,7 @@ export function createHmiLiveActions(ctx, core) {
     if (!cwd || !id) return Promise.resolve()
     setLinkBusy(id)
     setError('')
-    return post('/dsh-vision-bench/connection/open', { cwd, sessionId, connectionId: id }, 15000)
+    return post('/dsh-corn-bench/connection/open', { cwd, sessionId, connectionId: id }, 15000)
       .then(async (data) => {
         if (data && data.ok === false) setError(formatErrorMessage(data.error) || t('fail'))
         const pack = normalizePack()
@@ -221,7 +221,7 @@ export function createHmiLiveActions(ctx, core) {
         if (!isServer) {
           const pollingCfg = pack.pollingByConnection?.[id] || {}
           const intervalMs = pollingCfg.intervalMs || 1000
-          await post('/dsh-vision-bench/polling/start', { cwd, sessionId, connectionId: id, intervalMs }, 15000).catch(
+          await post('/dsh-corn-bench/polling/start', { cwd, sessionId, connectionId: id, intervalMs }, 15000).catch(
             () => {},
           )
         }
@@ -246,8 +246,8 @@ export function createHmiLiveActions(ctx, core) {
     if (!cwd || !id) return Promise.resolve()
     setLinkBusy(id)
     setError('')
-    post('/dsh-vision-bench/polling/stop', { cwd, sessionId, connectionId: id }, 15000).catch(() => {})
-    return post('/dsh-vision-bench/connection/close', { cwd, sessionId, connectionId: id }, 15000)
+    post('/dsh-corn-bench/polling/stop', { cwd, sessionId, connectionId: id }, 15000).catch(() => {})
+    return post('/dsh-corn-bench/connection/close', { cwd, sessionId, connectionId: id }, 15000)
       .then(async (data) => {
         if (data && data.ok === false) setError(formatErrorMessage(data.error) || t('fail'))
         try {
@@ -292,11 +292,11 @@ export function createHmiLiveActions(ctx, core) {
       if (nextSim) {
         const pollingCfg = pack.pollingByConnection?.[connectionId] || {}
         const intervalMs = Math.max(200, Number(pollingCfg.intervalMs) || 1000)
-        await post('/dsh-vision-bench/connection/open', { cwd, sessionId, connectionId }, 15000).catch(() => {})
-        await post('/dsh-vision-bench/polling/start', { cwd, sessionId, connectionId, intervalMs }, 15000).catch(() => {})
+        await post('/dsh-corn-bench/connection/open', { cwd, sessionId, connectionId }, 15000).catch(() => {})
+        await post('/dsh-corn-bench/polling/start', { cwd, sessionId, connectionId, intervalMs }, 15000).catch(() => {})
       } else {
-        await post('/dsh-vision-bench/polling/stop', { cwd, sessionId, connectionId }, 15000).catch(() => {})
-        await post('/dsh-vision-bench/connection/close', { cwd, sessionId, connectionId }, 15000).catch(() => {})
+        await post('/dsh-corn-bench/polling/stop', { cwd, sessionId, connectionId }, 15000).catch(() => {})
+        await post('/dsh-corn-bench/connection/close', { cwd, sessionId, connectionId }, 15000).catch(() => {})
       }
       await refreshConnectionState()
     } catch (err) {
@@ -311,7 +311,7 @@ export function createHmiLiveActions(ctx, core) {
     if (!cwd || !d.activeConnId) return Promise.resolve()
     setLinkBusy('poll')
     setError('')
-    const url = d.watchEnabled ? '/dsh-vision-bench/polling/stop' : '/dsh-vision-bench/polling/start'
+    const url = d.watchEnabled ? '/dsh-corn-bench/polling/stop' : '/dsh-corn-bench/polling/start'
     const body = { cwd, sessionId, connectionId: d.activeConnId }
     if (!d.watchEnabled) {
       body.intervalMs = Math.max(200, Number(d.polling?.intervalMs) || 1000)
@@ -342,7 +342,7 @@ export function createHmiLiveActions(ctx, core) {
     setLinkBusy('poll')
     setError('')
     return post(
-      '/dsh-vision-bench/polling/start',
+      '/dsh-corn-bench/polling/start',
       {
         cwd,
         sessionId,

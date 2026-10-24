@@ -81,10 +81,10 @@ export function trackBackup(t, out) {
 }
 
 export const LEGACY_PERSONA_A =
-  'You are a Vision 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程、编译产物和 Modbus 连接以 vision_bench 工具为准：先 action=status，再 ls/select/build/read。不要猜测用户选了哪个工程。'
+  'You are a Corn 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程、编译产物和 Modbus 连接以 corn_bench 工具为准：先 action=status，再 ls/select/build/read。不要猜测用户选了哪个工程。'
 
 export const LEGACY_PERSONA_B =
-  'You are a Vision 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程、编译产物、进行中任务和时间线以 vision_bench 工具为准：先 action=status，再 map 看当前 Target 的文件树，然后 ls/select/build/read。不要猜测用户选了哪个工程或有哪些源文件。'
+  'You are a Corn 台架 agent powered by the {{model}} model. Your working directory is {{cwd}}. 现场工程、编译产物、进行中任务和时间线以 corn_bench 工具为准：先 action=status，再 map 看当前 Target 的文件树，然后 ls/select/build/read。不要猜测用户选了哪个工程或有哪些源文件。'
 
 /** @param {string} text */
 export function personaComposition(text) {
@@ -99,9 +99,9 @@ export function personaComposition(text) {
 export async function seedOwnedLegacy(dir, opts = {}) {
   const before = personaComposition(opts.persona || LEGACY_PERSONA_A)
   const beforePreset = opts.preset ?? 'name: user-preset\n'
-  const beforeMarker = opts.marker ?? JSON.stringify({ owner: 'dsh-vision-bench', presetSchemaVersion: 1 })
+  const beforeMarker = opts.marker ?? JSON.stringify({ owner: 'dsh-corn-bench', presetSchemaVersion: 1 })
   await writeFile(join(dir, 'agent.cordis.yml'), before)
   await writeFile(join(dir, 'preset.yml'), beforePreset)
-  await writeFile(join(dir, '.dsh-vision-bench'), beforeMarker)
+  await writeFile(join(dir, '.dsh-corn-bench'), beforeMarker)
   return { before, beforePreset, beforeMarker }
 }

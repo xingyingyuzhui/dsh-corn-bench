@@ -80,7 +80,7 @@ test('c8 --all include/exclude covers published production JS without generated 
   assert.ok(c8.exclude.includes(generatedClient))
   assert.ok(c8.exclude.includes(['test', '**'].join('/')))
   assert.ok(c8.exclude.includes(['scripts', '**'].join('/')))
-  assert.ok(!c8.exclude.some((pattern) => String(pattern).includes('vision-io-worker')))
+  assert.ok(!c8.exclude.some((pattern) => String(pattern).includes('corn-io-worker')))
   assert.deepEqual(c8.extension, ['.js', '.mjs'])
   assert.ok(Array.isArray(c8._rationale) && c8._rationale.length >= 4)
 })

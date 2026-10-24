@@ -3,7 +3,7 @@
  * P1-2：Host / RPC / 审批测试工厂。
  *
  * 抽取前，RPC 的**外层 envelope 契约**（`host.js` 里 `rpc.handle` 的返回值）
- * 在测试中被手写了 10 次——仅 `vision-connection-rpc.test.mjs` 一个文件里就有
+ * 在测试中被手写了 10 次——仅 `corn-connection-rpc.test.mjs` 一个文件里就有
  * 8 处 `{ ok: true, value: … }` 与 2 处 `{ ok: false, error: { code, message, details } }`。
  *
  * 手写 envelope 的问题不是啰嗦，而是**契约漂移**：`host.js` 换了形状，测试仍会用旧形状
@@ -31,11 +31,11 @@
 
 import { Readable } from 'node:stream'
 import { _internal, apply as applyHost } from '../../host.js'
-import { createVisionRpcPost } from '../../src/infrastructure/host/vision-rpc-client.mjs'
-import { createVisionRpcRouter } from '../../src/interfaces/rpc/vision-rpc-router.mjs'
-import { VISION_RPC_CHANNEL } from '../../src/shared/vision-rpc-contract.mjs'
+import { createCornRpcPost } from '../../src/infrastructure/host/corn-rpc-client.mjs'
+import { createCornRpcRouter } from '../../src/interfaces/rpc/corn-rpc-router.mjs'
+import { CORN_RPC_CHANNEL } from '../../src/shared/corn-rpc-contract.mjs'
 
-export { _internal, applyHost, VISION_RPC_CHANNEL }
+export { _internal, applyHost, CORN_RPC_CHANNEL }
 
 // ---------------------------------------------------------------------------
 // 外层 envelope —— host.js 的 rpc.handle 契约
@@ -51,7 +51,7 @@ export function rpcOk(value) {
 
 /**
  * 宿主/传输层失败 envelope。业务层的失败**不是**这个形状——业务失败会被
- * 包进 `rpcOk`，由客户端 `createVisionRpcPost` 解包后原样返回。
+ * 包进 `rpcOk`，由客户端 `createCornRpcPost` 解包后原样返回。
  * @param {string} code
  * @param {string} message
  * @param {Record<string, any>} [details]
@@ -103,7 +103,7 @@ export function mockConnection(handler) {
   const connection = {
     rpc: {
       async call(channel, endpoint, payload, signal) {
-        if (channel !== VISION_RPC_CHANNEL) throw new Error(`unexpected RPC channel ${channel}`)
+        if (channel !== CORN_RPC_CHANNEL) throw new Error(`unexpected RPC channel ${channel}`)
         calls.push({ channel, endpoint, payload, signal })
         const out = await handler(endpoint, payload, signal)
         return isEnvelope(out) ? out : rpcOk(out)
@@ -120,7 +120,7 @@ export function mockConnection(handler) {
  */
 export function createPost(handler) {
   const mock = mockConnection(handler)
-  return { calls: mock.calls, lastCall: mock.lastCall, connection: mock.connection, post: createVisionRpcPost(mock.connection) }
+  return { calls: mock.calls, lastCall: mock.lastCall, connection: mock.connection, post: createCornRpcPost(mock.connection) }
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +141,7 @@ export function mockRpcHost() {
   return {
     rpc: {
       handle(channel, fn) {
-        if (channel !== VISION_RPC_CHANNEL) throw new Error(`unexpected RPC channel ${channel}`)
+        if (channel !== CORN_RPC_CHANNEL) throw new Error(`unexpected RPC channel ${channel}`)
         handler = fn
         return () => {
           disposed = true
@@ -187,7 +187,7 @@ export function mockRpcHost() {
      */
     async invokeFetch(endpoint, payload = {}, signal) {
       if (!fetchHandler) throw new Error('fetch handler missing')
-      const request = new Request('http://host/api/vision-bench/dispatch', {
+      const request = new Request('http://host/api/corn-bench/dispatch', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ endpoint, payload }),
@@ -300,7 +300,7 @@ export const CAPABILITY_HEADERS = Object.freeze({
  * @param {Record<string, any>} [extra]
  */
 export function capabilityHeaders(extra = CAPABILITY_HEADERS) {
-  return { ...extra, 'x-dsh-vision-capability': _internal.issueBridgeCapability() }
+  return { ...extra, 'x-dsh-corn-capability': _internal.issueBridgeCapability() }
 }
 
 /**
@@ -340,7 +340,7 @@ export function fakeResponse() {
 // ---------------------------------------------------------------------------
 
 /**
- * 进程内 RPC 路由器。`deps` 透传给 `createVisionRpcRouter`（`getHome` 由 `home` 提供），
+ * 进程内 RPC 路由器。`deps` 透传给 `createCornRpcRouter`（`getHome` 由 `home` 提供），
  * 用于注入 `debugRuntime` / `verifyCommandService` / `telemetryReader` 等。
  *
  * `dispatchAs(sessionId, …)` 把会话身份写进 payload——跨会话调用的统一写法。
@@ -349,7 +349,7 @@ export function fakeResponse() {
  * @param {Record<string, any>} [deps]
  */
 export function createRouter(home, deps = {}) {
-  const router = createVisionRpcRouter({ getHome: () => home, ...deps })
+  const router = createCornRpcRouter({ getHome: () => home, ...deps })
   return {
     router,
     dispatch: router.dispatch,

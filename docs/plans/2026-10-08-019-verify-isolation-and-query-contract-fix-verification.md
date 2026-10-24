@@ -1,6 +1,6 @@
 # 019 Verify 隔离与查询契约：修复验证报告
 
-本报告记录 [2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md](./2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md) 相对审查 [2026-10-08-current-vision-review.md](../reviews/2026-10-08-current-vision-review.md) 的实际执行证据。所有命令在 `dsh-vision-bench/` 内执行；未执行项在 §6 标明，不计入通过。
+本报告记录 [2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md](./2026-10-08-019-verify-isolation-and-query-contract-fix-plan.md) 相对审查 [2026-10-08-current-corn-review.md](../reviews/2026-10-08-current-corn-review.md) 的实际执行证据。所有命令在 `dsh-corn-bench/` 内执行；未执行项在 §6 标明，不计入通过。
 
 本轮范围：**R1–R4、R7、R9–R11**。**未做 R5/R6（焦点迁移）、R8（幂等失败终态）**；**未推送**。
 

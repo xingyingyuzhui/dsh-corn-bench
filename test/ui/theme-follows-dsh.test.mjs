@@ -1,5 +1,5 @@
 // @ts-check
-/** Vision dark styling follows DSH's own theme (body[data-ds-dark-theme]), not the OS. */
+/** Corn dark styling follows DSH's own theme (body[data-ds-dark-theme]), not the OS. */
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { checkDark } from '../../src/ui/monitor/visualization/hooks/viz-chart-options.mjs'

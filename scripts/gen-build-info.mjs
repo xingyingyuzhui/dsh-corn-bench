@@ -131,5 +131,5 @@ export function verifyBuildInfo(projectRoot = root) {
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
 if (isMain) {
   const info = generateBuildInfo()
-  console.log(JSON.stringify({ event: 'vision.build-info', ...info }, null, 2))
+  console.log(JSON.stringify({ event: 'corn.build-info', ...info }, null, 2))
 }

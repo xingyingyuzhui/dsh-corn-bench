@@ -4,8 +4,8 @@ import { buildAgentRef, dispatchAgentRef, evidenceFromRef, hasHarnessInput, post
 import { emptyWorkspace, pickJournal } from '../common/ui-format.mjs'
 import { setTempWatch } from '../common/focus-store.mjs'
 import { getActiveScope } from '../common/session-scope.mjs'
-import { restoreUserLocation } from '../workspace/vision-navigation-store.mjs'
-import { requestOpenView } from '../workspace/vision-view-request.mjs'
+import { restoreUserLocation } from '../workspace/corn-navigation-store.mjs'
+import { requestOpenView } from '../workspace/corn-view-request.mjs'
 import { persistHmiPatch } from './hmi-config-persistence.mjs'
 
 function snapshotModbusPack(pack) {
@@ -69,7 +69,7 @@ export function createHmiCoreActions(ctx) {
 
   function scanPorts() {
     setScanning(true)
-    post('/dsh-vision-bench/serial/ports', {}, 30000)
+    post('/dsh-corn-bench/serial/ports', {}, 30000)
       .then((data) => setPorts(data && Array.isArray(data.ports) ? data.ports : []))
       .catch(() => setPorts([]))
       .finally(() => setScanning(false))
@@ -189,7 +189,7 @@ export function createHmiCoreActions(ctx) {
   function requestFocusUi(target, options) {
     if (!cwd) return
     post(
-      '/dsh-vision-bench/focus',
+      '/dsh-corn-bench/focus',
       {
         cwd,
         sessionId: sessionId || '',

@@ -4,7 +4,7 @@ import test from 'node:test'
 import { loadWorkspace, openTask, saveWorkspace } from '../bench-store.mjs'
 import { _internal, apply, inject, name } from '../host.js'
 import { clearFlashApprovals, defaultFlashApprovals } from '../src/application/flash/flash-approval-service.mjs'
-import { VISION_RPC_CHANNEL } from '../src/shared/vision-rpc-contract.mjs'
+import { CORN_RPC_CHANNEL } from '../src/shared/corn-rpc-contract.mjs'
 import {
   CAPABILITY_HEADERS,
   capabilityHeaders,
@@ -17,7 +17,7 @@ import { createBench } from './helpers/workspace-factory.mjs'
 
 
 test('host named exports', async () => {
-  assert.equal(name, 'dsh-vision-bench')
+  assert.equal(name, 'dsh-corn-bench')
   assert.deepEqual(inject, ['connection'])
   const pkg = JSON.parse(
     await (await import('node:fs/promises')).readFile(new URL('../package.json', import.meta.url), 'utf8'),
@@ -59,7 +59,7 @@ test('state returns idle ioRuntime without starting a Worker', async (t) => {
   await bench.useAsDshHome()
   // 断言失败也要拆掉宿主，否则 io worker 之类的资源会留在进程里。
   t.after(stop)
-  const result = await connection.rpc.call(VISION_RPC_CHANNEL, 'state', {}, AbortSignal.timeout(5000))
+  const result = await connection.rpc.call(CORN_RPC_CHANNEL, 'state', {}, AbortSignal.timeout(5000))
   assert.equal(result.ok, true)
   const snap = result.value
   assert.equal(snap.ok, true)
@@ -82,12 +82,12 @@ test('apply registers Fetch dispatch, Web command bridge, and disposes RPC', asy
     },
   }
   apply(ctx)
-  assert.deepEqual(disposed, ['/dsh-vision-bench/command'])
+  assert.deepEqual(disposed, ['/dsh-corn-bench/command'])
   assert.ok(connection.hasFetchHandler)
   assert.ok(connection.hasHandler)
   const hostSrc = await (await import('node:fs/promises')).readFile(new URL('../host.js', import.meta.url), 'utf8')
   assert.doesNotMatch(hostSrc, /schedulePresetSeed\(/)
-  assert.doesNotMatch(hostSrc, /seedVisionBenchPreset/)
+  assert.doesNotMatch(hostSrc, /seedCornBenchPreset/)
   assert.doesNotMatch(hostSrc, /bindAgentSurface/)
   assert.doesNotMatch(hostSrc, /role === 'agent'/)
   assert.match(hostSrc, /clearFlashApprovals\(\)/)
@@ -95,7 +95,7 @@ test('apply registers Fetch dispatch, Web command bridge, and disposes RPC', asy
   assert.doesNotMatch(hostSrc, /plugin-lifecycle\.jsonl/)
   assert.doesNotMatch(hostSrc, /roster copy is best-effort/)
   assert.doesNotMatch(hostSrc, /const browser = origin/)
-  assert.doesNotMatch(hostSrc, /route\('\/dsh-vision-bench\/state'/)
+  assert.doesNotMatch(hostSrc, /route\('\/dsh-corn-bench\/state'/)
   assert.doesNotMatch(hostSrc, /connection\.register\(/)
   await stop()
   assert.equal(connection.disposed, true)
@@ -194,7 +194,7 @@ test('command bridge rejects GET, missing capability, forged header, and foreign
   assert.match(box.body, /missing capability/)
 
   box = fakeResponse()
-  handler(fakeRequest('POST', { ...capabilityHeaders(), 'x-dsh-vision-capability': 'wrong-token' }), box.res)
+  handler(fakeRequest('POST', { ...capabilityHeaders(), 'x-dsh-corn-capability': 'wrong-token' }), box.res)
   assert.equal(box.status, 403)
   assert.match(box.body, /invalid capability/)
 
@@ -217,7 +217,7 @@ test('HTTP system.ping does not bind or mutate the workspace session', async (t)
   apply(ctx)
   await bench.useAsDshHome()
   t.after(stop)
-  const command = routes.find((r) => r.path === '/dsh-vision-bench/command').handler
+  const command = routes.find((r) => r.path === '/dsh-corn-bench/command').handler
   const box = fakeResponse()
   await new Promise((resolve) => {
     box.res.end = (text) => {
@@ -252,7 +252,7 @@ test('state and bindings round-trip against an isolated home', async (t) => {
   await bench.useAsDshHome()
   t.after(stop)
 
-  const empty = (await connection.rpc.call(VISION_RPC_CHANNEL, 'state', {}, AbortSignal.timeout(5000))).value
+  const empty = (await connection.rpc.call(CORN_RPC_CHANNEL, 'state', {}, AbortSignal.timeout(5000))).value
   assert.equal(empty.ok, true)
   assert.equal(empty.bindings.python, '')
   assert.equal(empty.health.python.bound, false)
@@ -260,7 +260,7 @@ test('state and bindings round-trip against an isolated home', async (t) => {
   const abs = join(home, 'python3')
   const saved = (
     await connection.rpc.call(
-      VISION_RPC_CHANNEL,
+      CORN_RPC_CHANNEL,
       'bindings/save',
       { bindings: { python: abs } },
       AbortSignal.timeout(5000),
@@ -282,7 +282,7 @@ test('state snapshot includes journal and workspace save cannot wipe tasks', asy
   saveWorkspace(home, cwd, { keil: { project, target: 'Debug' } })
   await openTask(home, cwd, { type: 'build', source: 'agent', sessionId: 'sess-3', summary: '编译 Debug' })
 
-  const snap = (await connection.rpc.call(VISION_RPC_CHANNEL, 'state', { cwd }, AbortSignal.timeout(5000))).value
+  const snap = (await connection.rpc.call(CORN_RPC_CHANNEL, 'state', { cwd }, AbortSignal.timeout(5000))).value
   assert.equal(snap.ok, true)
   assert.equal(snap.journal.running.length, 1)
   assert.equal(snap.journal.running[0].source, 'agent')
@@ -290,7 +290,7 @@ test('state snapshot includes journal and workspace save cannot wipe tasks', asy
 
   const saved = (
     await connection.rpc.call(
-      VISION_RPC_CHANNEL,
+      CORN_RPC_CHANNEL,
       'workspace/save',
       {
         cwd,
@@ -307,7 +307,7 @@ test('state snapshot includes journal and workspace save cannot wipe tasks', asy
 
   const rejected = (
     await connection.rpc.call(
-      VISION_RPC_CHANNEL,
+      CORN_RPC_CHANNEL,
       'workspace/save',
       { cwd, modbus: { points: [], version: 3 } },
       AbortSignal.timeout(5000),

@@ -2,7 +2,7 @@
 
 日期：2026-10-08。审查 HEAD：`bc3fcda37434af2ef9b4810010245680dfe42af4`；行为对比基线：`54581d0`。开始审查时工作树干净。
 
-依据：[020 计划](../plans/2026-10-08-020-verify-sampling-provenance-fix-plan.md)、[实现方交付](../plans/2026-10-08-020-verify-sampling-provenance-fix-verification.md)、[Harness 第 10–11 轮反馈](/Users/qin/DSH/vision-plugin-round10-11-verification.md)。原报告和计划未修改。
+依据：[020 计划](../plans/2026-10-08-020-verify-sampling-provenance-fix-plan.md)、[实现方交付](../plans/2026-10-08-020-verify-sampling-provenance-fix-verification.md)、[Harness 第 10–11 轮反馈](/Users/qin/DSH/corn-plugin-round10-11-verification.md)。原报告和计划未修改。
 
 **结论：查询参数、hint、初值拒绝和 legacy alarm owner 等修复已落地，但 020 尚不能完整验收。复审发现 3 项 P1、4 项 P2；11 条额外行为断言均失败。部分缺口能直接让 verify 在配置切换后错误 pass，不能用“14 项收敛、只有 status.log 遗留”描述整个插件。**
 
@@ -20,9 +20,9 @@
 | 额外独立复现 | **11 条断言，0 通过 / 11 失败**；对应下列 7 组缺口，未混入现有单测数量 |
 | Web / Desktop / 物理硬件 | 本次未安装或操作；实现方 Desktop lab 已明确受阻，不能计作验收通过 |
 
-额外复现：[脚本](/tmp/vision-review020-extra.test.mjs)、[输出](/tmp/vision-review020-extra.log)。生产 poll/device.update/sim-write 使用临时 home/cwd 和注入 transport；其它使用内存 fixture。没有修改用户 `/Users/qin/DSH` 的设备工作区，没有操作物理串口/TCP 设备。
+额外复现：[脚本](/tmp/corn-review020-extra.test.mjs)、[输出](/tmp/corn-review020-extra.log)。生产 poll/device.update/sim-write 使用临时 home/cwd 和注入 transport；其它使用内存 fixture。没有修改用户 `/Users/qin/DSH` 的设备工作区，没有操作物理串口/TCP 设备。
 
-本次日志：[/tmp/vision-review020-unit.log](/tmp/vision-review020-unit.log)、[/tmp/vision-review020-harness.log](/tmp/vision-review020-harness.log)，其它门禁在 `/tmp/vision-review020-*.log`。本次直接调用两个 build/package 检查器，没有执行会重写 build-info 的 pack:check。
+本次日志：[/tmp/corn-review020-unit.log](/tmp/corn-review020-unit.log)、[/tmp/corn-review020-harness.log](/tmp/corn-review020-harness.log)，其它门禁在 `/tmp/corn-review020-*.log`。本次直接调用两个 build/package 检查器，没有执行会重写 build-info 的 pack:check。
 
 报告的 gitSha/buildId 与当前 build-info 一致；较后的 HEAD 主要是生成信息/交付说明，不能仅因 HEAD 不是 `2ec1124` 就判定报告测了旧行为构建。现场 pid、体量和原始调用结果本次没有重新采集。
 
@@ -40,7 +40,7 @@
 
 ### F1：窗口保护在观察层被洗掉
 
-位置：[verify-observation.mjs:54](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-observation.mjs:54)、[verify-sampling.mjs:145](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-sampling.mjs:145)。
+位置：[verify-observation.mjs:54](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-observation.mjs:54)、[verify-sampling.mjs:145](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-sampling.mjs:145)。
 
 reader 返回正确的 fingerprint/generation，但 observeReading 重新组装对象时只保留 value/rawValue/timestamp/quality/provenance。sampleStableDuration 随后读取 reading.fingerprint/generation，两者已不存在，于是每个样本的窗口身份都变成空字符串。
 
@@ -58,7 +58,7 @@ reader 返回正确的 fingerprint/generation，但 observeReading 重新组装�
 
 ### F2：采样章使用了另一个会话的设备
 
-位置：[prepare-config-persistence.mjs:31](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/prepare-config-persistence.mjs:31)、[prepare-config-persistence.mjs:61](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/prepare-config-persistence.mjs:61)。
+位置：[prepare-config-persistence.mjs:31](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/prepare-config-persistence.mjs:31)、[prepare-config-persistence.mjs:61](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/prepare-config-persistence.mjs:61)。
 
 buildEffectivePointIndex 自行构建 byConn/byDev，将顶层和所有 session 的设备按裸 ID 放进一个 Map，后来的 B/d1 覆盖 A/d1。点位的 owner 被保留，但其设备/连接却从这张全局字典取出；缺少层、sid、connection 的定位和真实 resolvePointDevice 路由校验。
 
@@ -82,7 +82,7 @@ buildEffectivePointIndex 自行构建 byConn/byDev，将顶层和所有 session 
 
 ### F3：仿真退出后重新授予旧值新身份
 
-位置：[write-sim-execute.mjs:46](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/modbus/write-sim-execute.mjs:46)、[write-sim-execute.mjs:72](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/modbus/write-sim-execute.mjs:72)。
+位置：[write-sim-execute.mjs:46](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/modbus/write-sim-execute.mjs:46)、[write-sim-execute.mjs:72](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/modbus/write-sim-execute.mjs:72)。
 
 写 p1 时先将 conn.sim 改为 false，配置失效本来已删除该端点旧值；新分支随后遍历 priorValues，对未被写入的 p2 使用旧 raw/旧 at 加上新端点的 fingerprint/generation，再提交。
 
@@ -92,7 +92,7 @@ buildEffectivePointIndex 自行构建 byConn/byDev，将顶层和所有 session 
 
 ### F4：歧义解除后旧 token 与旧值一起复活
 
-位置：[sample-generation.mjs:81](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/sample-generation.mjs:81)、[sample-generation.mjs:120](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/sample-generation.mjs:120)。
+位置：[sample-generation.mjs:81](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/sample-generation.mjs:81)、[sample-generation.mjs:120](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/sample-generation.mjs:120)。
 
 当前逻辑保留 ambiguous ID 的 token；恢复单 owner 时 prevIndex 没有该点，代码把它当 new point，却优先复用 candidateGenerations 的旧 token，且不加入 invalidated。
 
@@ -102,7 +102,7 @@ buildEffectivePointIndex 自行构建 byConn/byDev，将顶层和所有 session 
 
 ### F5：reader 仍可把无章/错章数据洗成当前合格值
 
-位置：[scoped-point-reader.mjs:126](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/scoped-point-reader.mjs:126)、[scoped-point-reader.mjs:253](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/scoped-point-reader.mjs:253)、[verify-telemetry-adapter.mjs:88](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-telemetry-adapter.mjs:88)。
+位置：[scoped-point-reader.mjs:126](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/scoped-point-reader.mjs:126)、[scoped-point-reader.mjs:253](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/scoped-point-reader.mjs:253)、[verify-telemetry-adapter.mjs:88](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-telemetry-adapter.mjs:88)。
 
 两条边界复现：
 
@@ -115,7 +115,7 @@ buildEffectivePointIndex 自行构建 byConn/byDev，将顶层和所有 session 
 
 ### F6：未来 timestamp 可以提前制造覆盖证据
 
-位置：[verify-observation.mjs:40](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/application/verify/verify-observation.mjs:40)、[stable-window.mjs:47](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/verify/stable-window.mjs:47)。
+位置：[verify-observation.mjs:40](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/application/verify/verify-observation.mjs:40)、[stable-window.mjs:47](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/verify/stable-window.mjs:47)。
 
 observeReading 只校验正有限 timestamp，age 用 Math.max(0, now-timestamp)，未来时间被视为新鲜。stable window 也不比较样本时间和实际观察时间。
 
@@ -125,7 +125,7 @@ observeReading 只校验正有限 timestamp，age 用 Math.max(0, now-timestamp)
 
 ### F7：内部全局代次表进入了会话 RPC 快照
 
-位置：[modbus-migration.mjs:131](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/domain/modbus/modbus-migration.mjs:131)、[vision-rpc-workspace.mjs:125](/Users/qin/DSH/plugins/dsh-vision-suite/dsh-vision-bench/src/interfaces/rpc/vision-rpc-workspace.mjs:125)。
+位置：[modbus-migration.mjs:131](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/domain/modbus/modbus-migration.mjs:131)、[corn-rpc-workspace.mjs:125](/Users/qin/DSH/plugins/dsh-corn-suite/dsh-corn-bench/src/interfaces/rpc/corn-rpc-workspace.mjs:125)。
 
 normalizeModbus 保留整个 sampleGenerations；projectModbusForSession 携带它，omitSessionConfigs 只去掉私有配置。生产 RPC 使用的 sessionWorkspaceView 因而外发整张全局表。
 
@@ -145,7 +145,7 @@ normalizeModbus 保留整个 sampleGenerations；projectModbusForSession 携带�
 
 ### M1：A-11 不再按业务缺陷立项
 
-`vision-bench-tool.mjs` 已写明 status.log 隐藏无会话归属短日志，logHiddenCount 不是可读条数/未读计数，会话事件走 timeline.list。timeline 不是那 8 条无主日志的完整展开入口；也不能把 status.log 永远空作为所有调用方的通用契约。当前报告的“唯一遗留未修、建议补文档”漏掉了已有说明。
+`corn-bench-tool.mjs` 已写明 status.log 隐藏无会话归属短日志，logHiddenCount 不是可读条数/未读计数，会话事件走 timeline.list。timeline 不是那 8 条无主日志的完整展开入口；也不能把 status.log 永远空作为所有调用方的通用契约。当前报告的“唯一遗留未修、建议补文档”漏掉了已有说明。
 
 ### M2：响应体积应在 Agent 投影精简，不能省掉新采样
 
@@ -161,7 +161,7 @@ projectRead 在选择 wanted IDs 后未 compact value row，sampleIdentity 完�
 
 ### 验收边界
 
-- 报告没有测 vision_debug verify；该工具的 Modbus 验证并不要求先有活动 GDB 调试会话。没有活动 debug session 不能成为跳过核心 verify 行为的理由。
+- 报告没有测 corn_debug verify；该工具的 Modbus 验证并不要求先有活动 GDB 调试会话。没有活动 debug session 不能成为跳过核心 verify 行为的理由。
 - `read` 不改 configVersion，不等于无副作用：它会写任务、帧、运行值、时间线；“两轮只读”应限定成未修改配置/未写物理设备。
 - `summaryTruncated/budgetTruncated` 本轮定义在 timeline；不能把“points/frames 没同名字段”直接当回归，需分别看既有分页契约。
 - 没有真正回填游标、没有两会话验证、没有 sim→real 来源测试，不足以声明所有能力无退化。15 项清单的完成数不是整个插件的质量百分比。
@@ -171,6 +171,6 @@ projectRead 在选择 wanted IDs 后未 compact value row，sampleIdentity 完�
 
 先修 F1、F2、F3，堵住实际错误 pass 和旧值重新合格；同步处理 F4/F5，统一采样身份与 generation 的信任边界。F6/F7 作为独立时间/输出边界回归收齐，响应瘦身随后在 Agent 投影做。
 
-迁入上述独立复现，生产路径必须对照真实执行请求和实际代次；不要只扩 stampWorkspace fixture，让 producer、reader、测试仍共用同一个错误索引。门禁全绿后，另补真实 Agent 的 vision_debug verify、两会话、sim 端点切换、完整游标回填和 Web/Desktop lab 验收，再声明 020 完整闭环。
+迁入上述独立复现，生产路径必须对照真实执行请求和实际代次；不要只扩 stampWorkspace fixture，让 producer、reader、测试仍共用同一个错误索引。门禁全绿后，另补真实 Agent 的 corn_debug verify、两会话、sim 端点切换、完整游标回填和 Web/Desktop lab 验收，再声明 020 完整闭环。
 
 本次仅新增本审查文档及 /tmp 复现材料，未修改业务代码、原始反馈/计划、生成产物，未提交、推送或安装。

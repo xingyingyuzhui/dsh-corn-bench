@@ -20,7 +20,7 @@ export function renderConnectionOverview(el, t, ctx) {
     connListPanel,
     connFormPanel,
     pendingPanel,
-    visionCollabBar,
+    cornCollabBar,
   } = ctx
 
   const activeModal =

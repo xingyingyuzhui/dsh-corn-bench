@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { _internal } from '../../host.js'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
 import { createRouter } from '../helpers/rpc-factory.mjs'
@@ -52,12 +52,12 @@ test('agent status/list preview legacy topology without disk claim; write claim 
   try {
     const origin = { source: 'agent', sessionId: SESSION_A }
     const before = loadWorkspace(home, cwd)
-    const status = await runVisionBench(home, { action: 'status' }, cwd, origin)
+    const status = await runCornBench(home, { action: 'status' }, cwd, origin)
     assert.equal(status.ok, true, status.error)
     assert.ok(status.modbus.points.some((/** @type {any} */ p) => p.id === 'legacy-p1'))
     assert.equal(status.configVersion, status.modbus.configVersion)
 
-    const listed = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
+    const listed = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
     assert.equal(listed.ok, true, listed.error)
     assert.equal(listed.configVersion, status.configVersion)
     assert.deepEqual(
@@ -69,7 +69,7 @@ test('agent status/list preview legacy topology without disk claim; write claim 
     assert.equal(afterReads.modbus.privateClaimSessionId, before.modbus.privateClaimSessionId || '')
     assert.deepEqual(afterReads.modbus.sessionConfigs || {}, before.modbus.sessionConfigs || {})
 
-    const otherPreview = await runVisionBench(home, { action: 'status' }, cwd, {
+    const otherPreview = await runCornBench(home, { action: 'status' }, cwd, {
       source: 'agent',
       sessionId: SESSION_B,
     })
@@ -80,7 +80,7 @@ test('agent status/list preview legacy topology without disk claim; write claim 
     assert.equal(snap.ok, true, snap.error)
     assert.equal(loadWorkspace(home, cwd).modbus.privateClaimSessionId, SESSION_A)
 
-    const other = await runVisionBench(home, { action: 'status' }, cwd, {
+    const other = await runCornBench(home, { action: 'status' }, cwd, {
       source: 'agent',
       sessionId: SESSION_B,
     })
@@ -88,7 +88,7 @@ test('agent status/list preview legacy topology without disk claim; write claim 
     assert.deepEqual(other.modbus.points, [])
     assert.ok(!other.modbus.connections.some((/** @type {any} */ c) => c.id === 'legacy-c1'))
 
-    const anon = await runVisionBench(home, { action: 'status' }, cwd, { source: 'agent' })
+    const anon = await runCornBench(home, { action: 'status' }, cwd, { source: 'agent' })
     assert.equal(anon.ok, false)
     assert.equal(anon.errorCode, ERROR_CODES.SESSION_REQUIRED)
   } finally {

@@ -22,7 +22,7 @@ Scenario verification must never report PASS when telemetry is missing, alarms a
 - The top-level `status` enum is unchanged. Cancellation and timeout keep precedence. An unexpected internal fault is `error`. A normal run with any unverifiable assertion is `error` with `errorCode: VERIFY_UNVERIFIABLE`; otherwise a failed valid comparison is `fail`, else `pass`.
 - `failedCount = totalCount - passedCount`; `unverifiableCount` is the subset that could not be judged. The summary lists comparison failures and unverifiable items separately.
 - `stable-for-duration` never shortens its window. `durationMs` (default 1000) must be a finite positive number no larger than the effective timeout (caller override first), otherwise the request is rejected before a run is registered: `ok:false, errorCode: INVALID_FIELD, details: { field: 'durationMs', reason: 'INVALID_VALUE', durationMs, timeoutMs }`. If earlier steps leave less than the window, the run times out. One unusable sample makes the window unverifiable.
-- Entry points differ on `ok`: the `verify/run` RPC returns `ok: true` whenever a result came back (pass is `result.status === 'pass'`); the Agent `vision_debug verify` envelope keeps `ok = (status === 'pass')` and adds `failedCount`, `unverifiableCount` and `errorCode` when present, with every assertion's `outcome`/`reason` in `verifyResult`.
+- Entry points differ on `ok`: the `verify/run` RPC returns `ok: true` whenever a result came back (pass is `result.status === 'pass'`); the Agent `corn_debug verify` envelope keeps `ok = (status === 'pass')` and adds `failedCount`, `unverifiableCount` and `errorCode` when present, with every assertion's `outcome`/`reason` in `verifyResult`.
 
 ## Consequences
 

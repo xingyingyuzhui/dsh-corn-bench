@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Phase-0 automated contract for connection.fetch.register against the local
- * official harness checkout (no Vision Host, no hardware).
+ * official harness checkout (no Corn Host, no hardware).
  *
  * Usage: node scripts/probes/run-fetch-contract.mjs
  */
@@ -83,7 +83,7 @@ async function main() {
   const connection = ctx.get('connection')
 
   const dispose = connection.fetch.register({
-    path: '/api/vision-probe',
+    path: '/api/corn-probe',
     methods: ['POST', 'GET'],
     requestBody: 'buffered',
     fetch: async (request) =>
@@ -91,7 +91,7 @@ async function main() {
   })
   const shared = connection.createSharedFetchHandler('/api')
   const res = await shared.fetch(
-    new Request('http://host/api/vision-probe', {
+    new Request('http://host/api/corn-probe', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: '{}',
@@ -102,14 +102,14 @@ async function main() {
   if (!json.ok || json.probe !== 'fetch') throw new Error(`bad body ${JSON.stringify(json)}`)
 
   await dispose()
-  const gone = await shared.fetch(new Request('http://host/api/vision-probe', { method: 'POST' }))
+  const gone = await shared.fetch(new Request('http://host/api/corn-probe', { method: 'POST' }))
   if (gone.status !== 404) throw new Error(`expected 404 after dispose, got ${gone.status}`)
 
   await fiber.dispose()
   console.log(
     JSON.stringify({
       ok: true,
-      event: 'vision.probe.fetch.contract',
+      event: 'corn.probe.fetch.contract',
       harnessRoot: root,
       checks: ['register', 'dispatch', 'dispose-404'],
     }),

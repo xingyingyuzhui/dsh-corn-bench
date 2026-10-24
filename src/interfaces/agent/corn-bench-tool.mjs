@@ -1,0 +1,365 @@
+// @ts-check
+import { envelope, normalizeCommand } from '../../application/commands/command-contract.mjs'
+import { finalizeAgentCommandResult } from '../../application/commands/lossless-json.mjs'
+import { projectAgentResult } from '../../application/commands/agent-result-projection.mjs'
+import { attachConfigDriftRefresh } from '../../application/commands/config-drift-refresh.mjs'
+import { dispatchCornCommand } from '../../infrastructure/host/corn-host-client.mjs'
+import { validateAgentToolArgs } from './agent-tool-preflight.mjs'
+import { POINT_BATCH_ITEM_PROPERTIES } from './corn-bench-point-schema.mjs'
+
+export const ACTIONS = new Set([
+  'status',
+  'ls',
+  'select',
+  'build',
+  'read',
+  'write',
+  'map',
+  'manual',
+  'connect',
+  'points',
+  'frames',
+  'focus',
+  'focus.get',
+  'timeline.list',
+  'trend',
+  'visualization',
+  'alarm',
+  'evidence',
+  'config',
+  'configureConnection',
+  'openConnection',
+  'closeConnection',
+  'system.ping',
+])
+
+/**
+ * @param {any} [agent]
+ * @returns {any}
+ */
+export const cwdOf = (agent) => {
+  const session = agent && agent.session
+  const header = session && session.header
+  return header && header.cwd ? String(header.cwd) : ''
+}
+
+/**
+ * @param {any} [agent]
+ * @returns {any}
+ */
+export const sessionIdOf = (agent) => {
+  const session = agent && agent.session
+  const header = session && session.header
+  if (header && header.id) return String(header.id)
+  if (session && session.id) return String(session.id)
+  return ''
+}
+
+/**
+ * @param {any} [home]
+ * @returns {any}
+ */
+export function cornBenchTool(home) {
+  return {
+    name: 'corn_bench',
+    description:
+      'Corn 调试与上位机快速接口。查询或操作当前会话工作区的调试/上位机现场。' +
+      'status：已选工程、Target 与多连接摘要（不含历史帧/全量值）。顶层 kind/id 不适用于 status（INVALID_FIELD）。status.log 隐藏无会话归属的短日志，logHiddenCount 不是可读取条数也不是未读计数；会话事件用 timeline.list，status 不提供全量任务时间线。' +
+      'ls/select/build/map：工程与编译；' +
+      'read/write：读点与受控写点（必须带 connectionId+deviceId；Agent 写点需界面批准）；' +
+      'connect：仅打开或断开已保存连接（close=true 断开）。修改端点用 configureConnection，打开用 openConnection；' +
+      'points：op=list|get|add|update|remove|clear。list 返回当前会话可见点表；顶层 kind/id 不适用于 list（INVALID_FIELD）；Agent 默认 limit 20、最大 50，用返回的 nextCursor 作为 cursor 续查（不要用 offset 当游标）；续页 connectionId/deviceId 保持与首页一致，view 可省略（沿用游标的 view），显式传不同 view 会 CURSOR_EXPIRED。view=full（首页默认，含运行值）或 summary（不含运行值，仍有 valueStatus）。get 按 ids[]（最多 32，去重保序）或 pointId/id 只读查询，返回 points/requested/returned/missingIds，部分缺失 ok+partial，全部缺失 POINT_NOT_FOUND。可选 connectionId/deviceId 只过滤可见集合。list/get 每条点必有 valueStatus=available|missing|unavailable：available 仅表示来源校验通过（新鲜度仍看 ok/at）；missing 无运行记录；unavailable 有记录但无法安全归属（同 pointId 多私有主人或 provenance 不匹配）——配置仍可见且计入 returned，不得据此自动改名、改设备绑定、采集或写设备。Agent 出口超预算时 get 会截断 points 并设 truncated/omittedIds（预算未返回的已找到 ID），returned 始终等于 points.length；missingIds 只表示配置不存在，二者不混用。op=add 用 points[{name,function,address,connectionId,deviceId,...}] 数组一次写入多个点；op=update 同样用 points[]；op=remove 用 ids[] 或 pointId。不要逐个 add。address 是协议地址（保持寄存器 0 = 40001），不要填 40001。clear 必须带 connectionId+deviceId。监视开关用 monitorEnabled；trendEnabled 只是旧别名，同请求传相反值会 FIELD_CONFLICT。' +
+      'visualization：op=list|get|add|update|remove|layout。get 必须带 visualizationId（缺 ID 不会默认取第一个组件）。layout 必须携带 expectedConfigVersion 与 items[{id,x,y,w,h}]；CONFIG_DRIFT 后按 refresh 提示重新 list/get 再提交。' +
+      '所有配置修改必须携带最近一次 status/list/get 返回的 configVersion（字段名 expectedConfigVersion；configVersion 为别名）。CONFIG_DRIFT 后必须重新读取配置，再基于新版本重试；不得把 actualVersion 当重试凭证。适用 config、configureConnection、points add/update/remove/clear、visualization add/update/remove/layout。status、points list/get、visualization list/get 不要求版本。' +
+      'frames/trend/alarm：需要 connectionId（alarm 仅有 alarmId、trend 仅有 trendKey 时可例外）；顶层 kind/id 不适用于 trend（INVALID_FIELD；id 不是 trendKey 别名）；trend 用 trendKey、pointId/pointIds、connectionId/deviceId 与时间窗过滤；trend 的 limit 是每条序列的样本数；trend 分页用每条 series 的 hasMore/oldestReturnedAt（再查 pointIds:[id], end:oldestReturnedAt-1，沿用原 start；多序列分别翻页，不要用一条序列的边界过滤全部序列），不是 nextCursor。hasMore:false 时无后续翻页。' +
+      'focus 会改变 UI 焦点；focus.get 与 timeline.list 是只读，不改焦点、不落盘 claim。timeline.list 默认 limit 20、最大 50，只含当前会话归属的结构化事件，用 nextCursor 作为 cursor 续查。每条事件有 summaryTruncated（摘要是否被裁到 180 字）；Agent 投影另有 budgetTruncated，仅在字节预算缩小本页事件时为 true。旧 truncated 在 timeline 上表示“还有后续页或本页被预算缩小”，与 points get 的 truncated（预算未返回的已找到点）不同，不要当成统一的“内容截断”标记。evidence[] 会追加日志，不是纯只读。' +
+      'alarm 带 watch/followup=true 才订阅过程量告警跟进；watch/followup=false 取消本会话订阅（不需要 connectionId/alarmId）；二者同义，同时传且布尔值不同会 FIELD_CONFLICT。默认过程告警只记事件不唤醒 Agent。' +
+      'manual：请求用户完成现场操作；' +
+      'system.ping：无副作用探活 Host（不读写串口、不启动采集）。' +
+      '配置修改立即生效并记入操作记录；向真实设备写值、烧录、复位仍需用户批准。',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['action'],
+      properties: {
+        action: {
+          type: 'string',
+          enum: [...ACTIONS],
+          description: [...ACTIONS].join(' | '),
+        },
+        path: { type: 'string', description: 'ls 的目录或 select/build/map 的工程绝对路径' },
+        keilTarget: { type: 'string', description: 'Keil Target（build/map 也接受 target 字符串）' },
+        artifact: { type: 'string', enum: ['hex', 'bin', 'axf', 'elf'] },
+        mode: { type: 'string', enum: ['rtu', 'tcp'] },
+        port: { type: 'string' },
+        host: { type: 'string' },
+        slave: { type: 'number' },
+        unitId: { type: 'number' },
+        connectionId: {
+          type: 'string',
+          description: '规范字段。frames/trend/alarm 必填；read/write 与 deviceId 一起必填',
+        },
+        connId: {
+          type: 'string',
+          description: 'connectionId 的兼容别名；优先使用 connectionId',
+        },
+        deviceId: {
+          type: 'string',
+          description: '规范字段。read/write 与 connectionId 一起必填',
+        },
+        pointId: { type: 'string' },
+        function: { type: 'number' },
+        address: { type: 'number' },
+        count: { type: 'number' },
+        values: { type: 'array', items: { type: 'number' } },
+        baudrate: { type: 'number' },
+        bytesize: { type: 'number', enum: [7, 8] },
+        parity: { type: 'string', enum: ['N', 'E', 'O'] },
+        stopbits: { type: 'number', enum: [1, 2] },
+        sim: { type: 'boolean' },
+        op: { type: 'string', enum: ['list', 'get', 'add', 'update', 'remove', 'clear', 'layout'] },
+        operation: {
+          type: 'string',
+          description:
+            'action=config 的配置操作，如 connection.create / connection.update / connection.remove / points.* / visualization.*',
+        },
+        value: {
+          type: 'object',
+          description:
+            'action=config 的配置值（配合 operation/target）。configureConnection 与 points 不用这个字段，直接平铺参数。',
+          additionalProperties: true,
+        },
+        items: {
+          type: 'array',
+          description: 'visualization op=layout 的目标矩形列表',
+          items: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['id', 'x', 'y', 'w', 'h'],
+            properties: {
+              id: { type: 'string' },
+              x: { type: 'number' },
+              y: { type: 'number' },
+              w: { type: 'number' },
+              h: { type: 'number' },
+            },
+          },
+        },
+        point: {
+          type: 'object',
+          additionalProperties: true,
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            function: { type: 'number' },
+            address: { type: 'number' },
+            monitorEnabled: {
+              type: 'boolean',
+              description: '规范监视开关（可视化数据源）',
+            },
+            alarmEnabled: { type: 'boolean' },
+            trendEnabled: {
+              type: 'boolean',
+              description: 'monitorEnabled 的旧别名；同请求传相反值返回 FIELD_CONFLICT',
+            },
+            connectionId: { type: 'string' },
+            deviceId: { type: 'string' },
+          },
+        },
+        points: {
+          type: 'array',
+          description: 'op=add/update 一次提交多个点位。优先用这个数组，不要循环单点 add。',
+          items: {
+            type: 'object',
+            additionalProperties: true,
+            properties: POINT_BATCH_ITEM_PROPERTIES,
+          },
+        },
+        id: { type: 'string' },
+        ids: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'points op=get 按 ID 只读查询（最多 32，去重保序）；op=remove 一次删除多个点位',
+        },
+        text: { type: 'string' },
+        frameId: { type: 'string' },
+        trendKey: { type: 'string' },
+        alarmId: { type: 'string' },
+        kind: { type: 'string' },
+        limit: {
+          type: 'number',
+          description:
+            'points list：Agent 默认 20、最大 50。timeline.list：默认 20、最大 50。alarm：页大小。frames：条数。trend：每条序列的样本数（不是跨序列总数）',
+        },
+        offset: {
+          type: 'number',
+          description: 'frames 与 alarm 的数字偏移分页。不能当作 points list 或 timeline.list 的 cursor',
+        },
+        cursor: {
+          type: 'string',
+          description:
+            '只用于 points op=list 与 timeline.list：把上一页的 nextCursor 原样传回。其它 action 传 cursor 会 INVALID_FIELD。不要用 offset 代替它',
+        },
+        view: {
+          type: 'string',
+          enum: ['full', 'summary'],
+          description:
+            '只用于 points op=list。首页 full 为默认并含运行值；summary 不含运行值，仍返回 valueStatus。带 cursor 续页时可省略，沿用游标的 view。其它 action 或 points 的非 list 操作传 view 会 INVALID_FIELD',
+        },
+        start: { type: 'number' },
+        end: { type: 'number' },
+        pointIds: { type: 'array', items: { type: 'string' } },
+        visualizationId: {
+          type: 'string',
+          description: 'visualization get/update/remove 的组件 ID；get 缺省不会默认首个组件',
+        },
+        component: {
+          type: 'object',
+          additionalProperties: true,
+          properties: {
+            id: { type: 'string' },
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['line', 'bar', 'value', 'switch'] },
+            pointIds: { type: 'array', items: { type: 'string' } },
+            order: { type: 'number' },
+            settings: {
+              type: 'object',
+              additionalProperties: true,
+              properties: {
+                windowMs: { type: 'number' },
+                confirmWrite: { type: 'boolean' },
+              },
+            },
+            layout: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                x: { type: 'number' },
+                y: { type: 'number' },
+                w: { type: 'number' },
+                h: { type: 'number' },
+              },
+            },
+          },
+        },
+        tempWatchIds: { type: 'array', items: { type: 'string' } },
+        tempWatch: { type: 'array', items: { type: 'string' } },
+        evidence: {
+          type: 'array',
+          description: '追加证据日志（有副作用，非纯只读）',
+          items: {
+            type: 'object',
+            additionalProperties: true,
+            properties: {
+              kind: { type: 'string' },
+              visualizationId: { type: 'string' },
+              componentType: { type: 'string' },
+              pointIds: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+        focus: {
+          type: 'object',
+          description: '改变 UI 焦点（有副作用，非纯只读）',
+          additionalProperties: true,
+        },
+        target: {
+          type: 'object',
+          description: 'action=config 的操作目标，如 { connectionId, deviceId, pointId, visualizationId }',
+          additionalProperties: true,
+          properties: {
+            connectionId: { type: 'string' },
+            deviceId: { type: 'string' },
+            pointId: { type: 'string' },
+            visualizationId: { type: 'string' },
+            kind: { type: 'string' },
+          },
+        },
+        badgeOnly: { type: 'boolean' },
+        foreground: { type: 'boolean' },
+        expectedConfigVersion: {
+          type: 'number',
+          description:
+            '规范字段。配置修改必须携带最近一次 status/list/get 返回的 configVersion；不一致时返回 CONFIG_DRIFT（含 refresh 提示），缺失时返回 CONFIG_VERSION_REQUIRED',
+        },
+        configVersion: {
+          type: 'number',
+          description: 'expectedConfigVersion 的兼容别名；优先使用 expectedConfigVersion',
+        },
+        commandId: { type: 'string', description: '幂等键' },
+        name: { type: 'string' },
+        close: { type: 'boolean' },
+        watch: {
+          type: 'boolean',
+          description: 'action=alarm 时：true 订阅过程量告警 Agent 跟进；false 取消本会话订阅（不需要目标 ID）。与 followup 同义，同时传相反值返回 FIELD_CONFLICT',
+        },
+        followup: {
+          type: 'boolean',
+          description: 'action=alarm 时与 watch 同义：true 订阅，false 取消本会话订阅；同时传相反值返回 FIELD_CONFLICT',
+        },
+        monitorEnabled: {
+          type: 'boolean',
+          description: '规范监视开关（也可写在 point/points 内）',
+        },
+        trendEnabled: {
+          type: 'boolean',
+          description: 'monitorEnabled 旧别名（也可写在 point/points 内）',
+        },
+      },
+    },
+    output: {
+      schema: { type: 'object', additionalProperties: true },
+      render(/** @type {any} */ _args, /** @type {any} */ value) {
+        return [{ type: 'text', text: JSON.stringify(value) }]
+      },
+    },
+    timeoutMs: 620000,
+    async execute(/** @type {any} */ args, /** @type {any} */ exec) {
+      const agent = exec && exec.agent
+      const signal = exec && exec.signal
+      const cwd = cwdOf(agent)
+      const sessionId = sessionIdOf(agent)
+      const cmd = normalizeCommand({
+        home,
+        cwd,
+        sessionId,
+        source: 'agent',
+        action: args && args.action,
+        payload: args || {},
+        commandId: args && args.commandId,
+        expectedConfigVersion: args && (args.expectedConfigVersion ?? args.configVersion),
+        signal,
+        requireHost: true,
+      })
+      const finish = (/** @type {any} */ result) => {
+        const enveloped = envelope(cmd, result)
+        const withRefresh = attachConfigDriftRefresh(enveloped, {
+          action: args && args.action,
+          op: args && args.op,
+          operation: args && args.operation,
+          target: {
+            visualizationId: args && (args.visualizationId || args.id),
+            connectionId: args && (args.connectionId || args.connId),
+            deviceId: args && args.deviceId,
+            pointId: args && (args.pointId || args.id),
+          },
+        })
+        return finalizeAgentCommandResult(projectAgentResult(args || {}, withRefresh), 'agent')
+      }
+      if (signal && signal.aborted) return finish({ ok: false, cancelled: true, error: '已取消' })
+      const preflight = validateAgentToolArgs(args, { pack: null })
+      if (preflight) return finish(preflight)
+      const payload =
+        args && typeof args === 'object' ? { ...args, commandId: cmd.commandId } : { commandId: cmd.commandId }
+      return finish(
+        await dispatchCornCommand({
+          ...cmd,
+          payload,
+          commandId: cmd.commandId,
+        }),
+      )
+    },
+  }
+}
+
+export const _internal = { ACTIONS }

@@ -111,7 +111,7 @@ test('renderConnectionForm displays 采集间隔 select, openConnEdit and saveCo
   actions.saveConnEdit()
   assert.equal(persistedPack.pollingByConnection.c1.intervalMs, 500, 'saveConnEdit saves updated intervalMs')
   assert.equal(posts.length, 1, 'saveConnEdit updates running polling service')
-  assert.equal(posts[0].url, '/dsh-vision-bench/polling/start')
+  assert.equal(posts[0].url, '/dsh-corn-bench/polling/start')
   assert.equal(posts[0].body.intervalMs, 500)
 })
 

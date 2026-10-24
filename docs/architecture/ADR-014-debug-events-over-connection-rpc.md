@@ -6,7 +6,7 @@ Accepted (0.27.0-dev / Phase 0). Amended (0.29.0): long-poll rides the shared Fe
 
 ## Context
 
-嵌入式运行调试具有高频、异步事件（断点命中、Watchpoint 触发、单步完成、异常中断、控制台日志等）的特点。这与 Vision 原有的常规工作区配置及点位 2 秒轮询（`POLL_MS = 2000`）模式存在本质差异：
+嵌入式运行调试具有高频、异步事件（断点命中、Watchpoint 触发、单步完成、异常中断、控制台日志等）的特点。这与 Corn 原有的常规工作区配置及点位 2 秒轮询（`POLL_MS = 2000`）模式存在本质差异：
 
 1. 若将高频调试事件直接塞入普通 `/state` 轮询，会导致普通轮询报文膨胀、延迟严重（多达 2 秒延迟无法满足调试单步交互需求）；
 2. 若为调试单独引入 WebSocket / SSE 端口，则违背 ADR-012「不另开端口与服务器」的契约。
@@ -18,7 +18,7 @@ Accepted (0.27.0-dev / Phase 0). Amended (0.29.0): long-poll rides the shared Fe
    - `/state` 仅允许携带轻量的调试能力与会话摘要。
 2. **Cursor long-poll（语义不变，载体迁移）**：
    - 逻辑端点仍为 `debug/events/wait`（环形缓冲 + 单调 cursor）。
-   - **产品路径**：UI 经 `POST /api/vision-bench/dispatch`（Fetch）调用该端点；Web 兼容期也可经 `/vision-bench` RPC。
+   - **产品路径**：UI 经 `POST /api/corn-bench/dispatch`（Fetch）调用该端点；Web 兼容期也可经 `/corn-bench` RPC。
    - 有新事件立即返回；无事件挂起（上限约 20–25s）；支持 `AbortSignal` 取消。
 3. **空闲与失败预算**：
    - 无 chat `sessionId`/`cwd` → **零请求**。

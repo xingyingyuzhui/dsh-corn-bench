@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { ERROR_CODES } from '../../src/domain/modbus/errors.mjs'
-import { visionBenchTool } from '../../src/interfaces/agent/vision-bench-tool.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { cornBenchTool } from '../../src/interfaces/agent/corn-bench-tool.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { createBench, connection, pointSeries } from '../helpers/workspace-factory.mjs'
 import { ensureWorkspaceClaimed } from '../../src/application/modbus/workspace-session-view.mjs'
 import { agentOf, fingerprintOnDisk, pt, withRealHost } from './points-get-helpers.mjs'
@@ -38,13 +38,13 @@ test('points get: cross-session private points look like missing; shared points 
     },
   })
 
-  const aSeesB = await runVisionBench(
+  const aSeesB = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['priv-b'] },
     cwd,
     { source: 'agent', sessionId: 'session-a' },
   )
-  const aSeesMissing = await runVisionBench(
+  const aSeesMissing = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['does-not-exist'] },
     cwd,
@@ -63,7 +63,7 @@ test('points get: cross-session private points look like missing; shared points 
   sharedWs.modbus.points = [pt('shared-p', 'c1', 'd1', 1)]
   saveWorkspace(home, cwd, sharedWs)
 
-  const bSeesShared = await runVisionBench(
+  const bSeesShared = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['shared-p'] },
     cwd,
@@ -87,7 +87,7 @@ test('points get: unpartitioned does not persist claim; partitioned without sess
     },
   })
   const before = fingerprintOnDisk(home, cwd)
-  const legacy = await runVisionBench(
+  const legacy = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p0'], expectedConfigVersion: 1 },
     cwd,
@@ -97,11 +97,11 @@ test('points get: unpartitioned does not persist claim; partitioned without sess
   assert.equal(legacy.configVersion, 6)
   assert.deepEqual(fingerprintOnDisk(home, cwd), before, 'get must not persist claim')
 
-  await runVisionBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 'opener' })
+  await runCornBench(home, { action: 'status' }, cwd, { source: 'agent', sessionId: 'opener' })
   assert.deepEqual(fingerprintOnDisk(home, cwd), before, 'status must not persist claim either')
 
   await ensureWorkspaceClaimed(home, cwd, 'opener')
-  const anon = await runVisionBench(
+  const anon = await runCornBench(
     home,
     { action: 'points', op: 'get', ids: ['p0'] },
     cwd,
@@ -124,13 +124,13 @@ test('points typo and config points.get → UNKNOWN_OP, not CONFIG_VERSION_REQUI
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const typo = await runVisionBench(home, { action: 'points', op: 'typo' }, cwd, origin)
+  const typo = await runCornBench(home, { action: 'points', op: 'typo' }, cwd, origin)
   assert.equal(typo.ok, false)
   assert.equal(typo.errorCode, 'UNKNOWN_OP')
   assert.notEqual(typo.errorCode, ERROR_CODES.CONFIG_VERSION_REQUIRED)
   assert.match(String(typo.error || typo.hint || ''), /list|get|add|update|remove|clear/i)
 
-  const viaConfig = await runVisionBench(
+  const viaConfig = await runCornBench(
     home,
     { action: 'config', operation: 'points.get', target: { pointId: 'p0' }, value: {} },
     cwd,
@@ -155,11 +155,11 @@ test('points list and mutation ops still require version / keep FIELD_CONFLICT g
     },
   })
   const origin = { source: 'agent', sessionId: 's1' }
-  const listed = await runVisionBench(home, { action: 'points', op: 'list' }, cwd, origin)
+  const listed = await runCornBench(home, { action: 'points', op: 'list' }, cwd, origin)
   assert.equal(listed.ok, true, listed.error)
   assert.ok(listed.points.length >= 1)
 
-  const noVer = await runVisionBench(
+  const noVer = await runCornBench(
     home,
     {
       action: 'points',
@@ -172,7 +172,7 @@ test('points list and mutation ops still require version / keep FIELD_CONFLICT g
   assert.equal(noVer.ok, false)
   assert.equal(noVer.errorCode, ERROR_CODES.CONFIG_VERSION_REQUIRED)
 
-  const conflict = await runVisionBench(
+  const conflict = await runCornBench(
     home,
     {
       action: 'points',
@@ -200,7 +200,7 @@ test('Agent tool execute → Host → projection keeps commandId for get success
     },
   })
   withRealHost(t, home)
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const ok = await tool.execute(
     { action: 'points', op: 'get', ids: ['p0'], commandId: 'cmd-get-ok' },
     { agent: agentOf(cwd) },

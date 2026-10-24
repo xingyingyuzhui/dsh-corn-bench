@@ -6,11 +6,11 @@ import {
   setSharedDebugRuntime,
 } from '../src/application/debug/debug-runtime.mjs'
 import {
-  dispatchVisionCommand,
-  getVisionHost,
-  getVisionHostEpoch,
-  unregisterVisionHost,
-} from '../src/infrastructure/host/vision-host-client.mjs'
+  dispatchCornCommand,
+  getCornHost,
+  getCornHostEpoch,
+  unregisterCornHost,
+} from '../src/infrastructure/host/corn-host-client.mjs'
 import { apply, _internal } from '../host.js'
 import { createHostContext, mockRpcHost } from './helpers/rpc-factory.mjs'
 
@@ -22,20 +22,20 @@ async function applyHost() {
 }
 
 test('host lease: A apply → B apply → A dispose leaves B Fetch/capability/debug intact', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
 
   const a = await applyHost()
-  const epochA = getVisionHostEpoch()
-  const capA = process.env.VISION_BENCH_CAPABILITY
+  const epochA = getCornHostEpoch()
+  const capA = process.env.CORN_BENCH_CAPABILITY
   const runtimeA = peekSharedDebugRuntime()
   assert.ok(epochA)
   assert.ok(capA)
   assert.ok(runtimeA)
 
   const b = await applyHost()
-  const epochB = getVisionHostEpoch()
-  const capB = process.env.VISION_BENCH_CAPABILITY
+  const epochB = getCornHostEpoch()
+  const capB = process.env.CORN_BENCH_CAPABILITY
   const runtimeB = peekSharedDebugRuntime()
   assert.ok(epochB)
   assert.notEqual(epochB, epochA)
@@ -46,18 +46,18 @@ test('host lease: A apply → B apply → A dispose leaves B Fetch/capability/de
 
   await a.stop()
 
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, capB)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, capB)
   assert.equal(_internal.capabilityMatches(capB), true)
   assert.equal(peekSharedDebugRuntime(), runtimeB)
-  assert.equal(getVisionHostEpoch(), epochB)
-  assert.ok(getVisionHost())
+  assert.equal(getCornHostEpoch(), epochB)
+  assert.ok(getCornHost())
   assert.equal(b.connection.fetchDisposed, false)
   assert.equal(b.connection.hasFetchHandler, true)
 
   const live = await b.connection.invokeFetch('state', {})
   assert.equal(live.status, 200)
 
-  const ping = await dispatchVisionCommand({
+  const ping = await dispatchCornCommand({
     action: 'system.ping',
     cwd: '/tmp/host-lease',
     source: 'agent',
@@ -65,9 +65,9 @@ test('host lease: A apply → B apply → A dispose leaves B Fetch/capability/de
   assert.equal(ping.ok, true, ping.error || ping.errorCode)
 
   await b.stop()
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, undefined)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, undefined)
   assert.equal(peekSharedDebugRuntime(), null)
-  assert.equal(getVisionHost(), null)
+  assert.equal(getCornHost(), null)
   assert.equal(_internal.getActiveHostLease(), null)
   assert.equal(b.connection.fetchDisposed, true)
 })
@@ -75,13 +75,13 @@ test('host lease: A apply → B apply → A dispose leaves B Fetch/capability/de
 test('host lease: clearBridgeCapability is ownership-gated', () => {
   const owned = _internal.issueBridgeCapability()
   assert.equal(_internal.clearBridgeCapability('not-the-owner'), false)
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, owned)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, owned)
   assert.equal(_internal.clearBridgeCapability(owned), true)
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, undefined)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, undefined)
 })
 
 test('host lease: B dispose clears shared resources; cleanup is idempotent', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
   const a = await applyHost()
   const b = await applyHost()
@@ -89,18 +89,18 @@ test('host lease: B dispose clears shared resources; cleanup is idempotent', asy
   await b.stop()
   await b.stop()
   assert.equal(peekSharedDebugRuntime(), null)
-  assert.equal(getVisionHost(), null)
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, undefined)
+  assert.equal(getCornHost(), null)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, undefined)
   assert.equal(b.connection.fetchDisposed, true)
 })
 
 test('host lease: failed B apply does not steal A capability/Host/runtime', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
 
   const a = await applyHost()
-  const epochA = getVisionHostEpoch()
-  const capA = process.env.VISION_BENCH_CAPABILITY
+  const epochA = getCornHostEpoch()
+  const capA = process.env.CORN_BENCH_CAPABILITY
   const runtimeA = peekSharedDebugRuntime()
   const leaseA = _internal.getActiveHostLease()?.epoch
   assert.ok(epochA)
@@ -115,8 +115,8 @@ test('host lease: failed B apply does not steal A capability/Host/runtime', asyn
   const b = createHostContext(connectionB)
   assert.throws(() => apply(b.ctx), /duplicate route/)
 
-  assert.equal(getVisionHostEpoch(), epochA, 'Host registration must stay on A')
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, capA, 'capability must stay on A')
+  assert.equal(getCornHostEpoch(), epochA, 'Host registration must stay on A')
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, capA, 'capability must stay on A')
   assert.equal(_internal.capabilityMatches(capA), true)
   assert.equal(_internal.getActiveHostLease()?.epoch, leaseA)
   assert.equal(peekSharedDebugRuntime(), runtimeA)
@@ -126,7 +126,7 @@ test('host lease: failed B apply does not steal A capability/Host/runtime', asyn
   const live = await a.connection.invokeFetch('state', {})
   assert.equal(live.status, 200)
 
-  const ping = await dispatchVisionCommand({
+  const ping = await dispatchCornCommand({
     action: 'system.ping',
     cwd: '/tmp/host-lease-fail-b',
     source: 'agent',
@@ -134,13 +134,13 @@ test('host lease: failed B apply does not steal A capability/Host/runtime', asyn
   assert.equal(ping.ok, true, ping.error || ping.errorCode)
 
   await a.stop()
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, undefined)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, undefined)
   assert.equal(peekSharedDebugRuntime(), null)
-  assert.equal(getVisionHost(), null)
+  assert.equal(getCornHost(), null)
 })
 
 test('host lease: first-load apply failure clears newly created DebugRuntime', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
 
   const connection = mockRpcHost()
@@ -152,12 +152,12 @@ test('host lease: first-load apply failure clears newly created DebugRuntime', a
 
   assert.equal(peekSharedDebugRuntime(), null, 'leaked DebugRuntime after failed first apply')
   assert.equal(_internal.getActiveHostLease(), null)
-  assert.equal(getVisionHost(), null)
-  assert.equal(process.env.VISION_BENCH_CAPABILITY, undefined)
+  assert.equal(getCornHost(), null)
+  assert.equal(process.env.CORN_BENCH_CAPABILITY, undefined)
 })
 
 test('host lease: A dispose after B still leaves shared DebugRuntime alive until B stops', async () => {
-  unregisterVisionHost()
+  unregisterCornHost()
   setSharedDebugRuntime(null)
   const a = await applyHost()
   const shared = getSharedDebugRuntime()

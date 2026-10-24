@@ -15,7 +15,7 @@ export {
   typeLabel,
   field,
   statusBar,
-  visionCollabBar,
+  cornCollabBar,
   journalPanel,
   lineKind,
 } from './src/ui/common/ui-format.mjs'

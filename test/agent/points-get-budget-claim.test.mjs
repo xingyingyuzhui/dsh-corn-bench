@@ -4,12 +4,12 @@ import test from 'node:test'
 import { loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
 import { AGENT_TEXT_CAPS } from '../../src/application/commands/agent-result-caps.mjs'
 import { projectAgentResult, utf8ByteLength } from '../../src/application/commands/agent-result-projection.mjs'
-import { visionBenchTool } from '../../src/interfaces/agent/vision-bench-tool.mjs'
+import { cornBenchTool } from '../../src/interfaces/agent/corn-bench-tool.mjs'
 import {
-  registerVisionHost,
-  unregisterVisionHost,
-} from '../../src/infrastructure/host/vision-host-client.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+  registerCornHost,
+  unregisterCornHost,
+} from '../../src/infrastructure/host/corn-host-client.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 import { runtimeFingerprint } from './points-value-isolation-helpers.mjs'
 
@@ -89,9 +89,9 @@ test('Agent tool get overrun: honest returned + omittedIds via Host projection',
   // that matches production row shape (including valueStatus).
   const points = fatPoints(32)
   const ids = points.map((p) => p.id)
-  unregisterVisionHost()
+  unregisterCornHost()
   let hostCalls = 0
-  const stop = registerVisionHost({
+  const stop = registerCornHost({
     dispatch(cmd) {
       hostCalls += 1
       assert.equal(cmd.action, 'points')
@@ -110,9 +110,9 @@ test('Agent tool get overrun: honest returned + omittedIds via Host projection',
   })
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool('/tmp')
+  const tool = cornBenchTool('/tmp')
   const ran = await tool.execute(
     { action: 'points', op: 'get', ids, commandId: 'cmd-get-budget' },
     { agent: { session: { header: { cwd: '/tmp', id: 's1' } } } },
@@ -150,7 +150,7 @@ test('points list on legacy workspace does not persist claim', async (t) => {
   assert.equal(before.privateClaimSessionId, '')
   assert.equal(before.flatPointCount, 8)
 
-  const listed = await runVisionBench(
+  const listed = await runCornBench(
     home,
     { action: 'points', op: 'list' },
     cwd,

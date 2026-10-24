@@ -6,7 +6,7 @@ Accepted (0.26.0). Supplements ADR-008 for navigation; does not change visualiza
 
 ## Context
 
-DSH CLI on this machine is `@deepseek-ai/dsh@0.1.2-alpha.3` (`/opt/homebrew/lib/node_modules/@deepseek-ai/dsh`). Conversation View owner props no longer include `useSessions` cwd maps or `slots.select`. Vision 0.25 still read those, so pages mounted with an empty cwd.
+DSH CLI on this machine is `@deepseek-ai/dsh@0.1.2-alpha.3` (`/opt/homebrew/lib/node_modules/@deepseek-ai/dsh`). Conversation View owner props no longer include `useSessions` cwd maps or `slots.select`. Corn 0.25 still read those, so pages mounted with an empty cwd.
 
 Upstream types used as the contract (from the installed alpha.3 tree, not memory):
 

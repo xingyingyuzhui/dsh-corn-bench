@@ -1,5 +1,5 @@
 /**
- * CustomSelect - Reusable styled dropdown selector for DSH Vision Bench.
+ * CustomSelect - Reusable styled dropdown selector for DSH Corn Bench.
  * Aligns with the DSH design system popover and selection design.
  */
 

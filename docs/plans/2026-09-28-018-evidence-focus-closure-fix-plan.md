@@ -1,4 +1,4 @@
-# Vision 证据与焦点会话隔离收口计划（018）
+# Corn 证据与焦点会话隔离收口计划（018）
 
 ## 基线与目标
 
@@ -42,7 +42,7 @@
 
 1. `requestFocus(home,cwd,body,origin)` 不再默认 `originOf(body)`；若省略 origin，按 `{source:'user',sessionId:''}` 的匿名旧调用处理，**绝不读 `body.source/body.sessionId`**。Agent 入口必须显式传 Host command origin；UI RPC 显式传页面 session scope。分区工作区省略 origin 返回 `SESSION_REQUIRED`，零写入；未分区匿名调用保留兼容。
 2. `body.evidence === undefined` 表示空列表。显式 `null`、对象、字符串等非数组返回 `INVALID_FIELD`；数组长于 20 返回 `INVALID_FIELD` 与 `details.maxItems=20`，不得先 `slice(0,20)` 使第 21 条逃过校验。长度 0～20 每项都在同一 `updateRuntime` 锁内验证；第二十条失败整批失败。保持成功时最多保存 20 行的磁盘上限。
-3. `src/interfaces/rpc/vision-rpc-workspace.mjs::rpcRequestFocus` 与 `handlers/evidence-command-handler.mjs` 不把请求体的 sid/source 当成覆盖独立 origin 的参数。更新 `focus-explicit` 等直接调用 `requestFocus` 且靠 body.source 推出 Agent 角标的测试，显式传 `{source:'agent',sessionId}`，保持原断言不放宽；`focus-routing` 主要是纯路由测试，先重跑再决定是否需要改，不机械修改。对确实依赖匿名兼容的用例写清预期。
+3. `src/interfaces/rpc/corn-rpc-workspace.mjs::rpcRequestFocus` 与 `handlers/evidence-command-handler.mjs` 不把请求体的 sid/source 当成覆盖独立 origin 的参数。更新 `focus-explicit` 等直接调用 `requestFocus` 且靠 body.source 推出 Agent 角标的测试，显式传 `{source:'agent',sessionId}`，保持原断言不放宽；`focus-routing` 主要是纯路由测试，先重跑再决定是否需要改，不机械修改。对确实依赖匿名兼容的用例写清预期。
 
 红测覆盖 `body.sessionId='B'` 而独立 origin 为 A、完全省略 origin 的分区调用、非数组/null evidence、21 项中第 21 项非法、20 项中末项非法、20 项合法、并发 focus/append。拒绝均为 0 磁盘改动，Agent 错误经 tool→Host 投影保留 `commandId/errorCode`。
 

@@ -1,8 +1,8 @@
-# Vision 公共层清单（P1-1）
+# Corn 公共层清单（P1-1）
 
 状态：**已完成**（2026-09-15）
-所属计划：`docs/VISION_COMPONENT_REUSE_AND_ENGINEERING_PLAN.md` §P1-1
-基线：`dsh-vision-bench` `8117dbb`（0.29.0）
+所属计划：`docs/CORN_COMPONENT_REUSE_AND_ENGINEERING_PLAN.md` §P1-1
+基线：`dsh-corn-bench` `8117dbb`（0.29.0）
 
 本清单只记录**有真实文件和调用方证据**的结论。class 名相似不等于行为重复；本文件明确区分
 「复用」「领域特有」「重复待合并」「不值得抽取」四类，后续 P2/P3 任务只能从本清单取项。
@@ -202,7 +202,7 @@ P3-3 允许 `patterns/drawer` 复用 Dialog 的**焦点/关闭/ARIA 契约**，�
 ## 5. 证据复现
 
 ```sh
-cd dsh-vision-bench
+cd dsh-corn-bench
 # 调用方计数
 grep -rn "components/<name>.mjs" src --include='*.mjs'
 # class 家族分布

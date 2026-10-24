@@ -2,12 +2,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace } from '../../bench-store.mjs'
-import { visionBenchTool } from '../../bench-tool.mjs'
+import { cornBenchTool } from '../../bench-tool.mjs'
 import { AGENT_TEXT_CAPS, utf8ByteLength } from '../../src/application/commands/agent-result-caps.mjs'
 import { projectAgentResult } from '../../src/application/commands/agent-result-projection.mjs'
-import { registerVisionHost, unregisterVisionHost } from '../../src/infrastructure/host/vision-host-client.mjs'
-import { createVisionCommandDispatcher } from '../../src/interfaces/http/vision-command-routes.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { registerCornHost, unregisterCornHost } from '../../src/infrastructure/host/corn-host-client.mjs'
+import { createCornCommandDispatcher } from '../../src/interfaces/http/corn-command-routes.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 /**
@@ -36,13 +36,13 @@ async function toolRunner(t, timeline) {
     },
     timeline,
   })
-  unregisterVisionHost()
-  const stop = registerVisionHost(createVisionCommandDispatcher(home))
+  unregisterCornHost()
+  const stop = registerCornHost(createCornCommandDispatcher(home))
   t.after(() => {
     stop()
-    unregisterVisionHost()
+    unregisterCornHost()
   })
-  const tool = visionBenchTool(home)
+  const tool = cornBenchTool(home)
   const run = (/** @type {any} */ args) =>
     tool.execute(args, { agent: { session: { header: { cwd, id: 'session-a' } } } })
   return { home, cwd, run }
@@ -66,7 +66,7 @@ test('timeline events always expose summaryTruncated; normal paging is not budge
   assert.equal(page.truncated, true, 'legacy truncated still means more pages remain')
   assert.equal(page.budgetTruncated, false, 'limit paging alone is not a budget shrink')
 
-  const host = await runVisionBench(home, { action: 'timeline.list', limit: 1 }, cwd, {
+  const host = await runCornBench(home, { action: 'timeline.list', limit: 1 }, cwd, {
     source: 'agent',
     sessionId: 'session-a',
   })
@@ -95,7 +95,7 @@ test('budgetTruncated is true only when the Agent projection shrinks a Host page
     summary,
   }))
   const { home, cwd } = await toolRunner(t, timeline)
-  const host = await runVisionBench(home, { action: 'timeline.list', limit: 50 }, cwd, {
+  const host = await runCornBench(home, { action: 'timeline.list', limit: 50 }, cwd, {
     source: 'agent',
     sessionId: 'session-a',
   })

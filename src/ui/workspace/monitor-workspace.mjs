@@ -4,8 +4,8 @@ import { createAlarmPage } from '../monitor/alarms/alarm-page.mjs'
 import { createFramesPage } from '../monitor/frames/frames-page.mjs'
 import { createLogPage } from '../monitor/journal/journal-page.mjs'
 import { createVisualizationPage } from '../monitor/visualization/visualization-page.mjs'
-import { getNav, navigate, subscribeNav } from './vision-navigation-store.mjs'
-import { MONITOR_SECTIONS, VIEW_MONITOR, isMonitorSection } from './vision-route.mjs'
+import { getNav, navigate, subscribeNav } from './corn-navigation-store.mjs'
+import { MONITOR_SECTIONS, VIEW_MONITOR, isMonitorSection } from './corn-route.mjs'
 import { renderWorkspaceTabs } from './workspace-tabs.mjs'
 
 function initialSection(sessionId, cwd) {
@@ -13,7 +13,7 @@ function initialSection(sessionId, cwd) {
   if (nav && nav.viewId === VIEW_MONITOR && isMonitorSection(nav.section)) return nav.section
   if (getPreserveNavPreference() && typeof window !== 'undefined' && window.sessionStorage) {
     try {
-      const saved = window.sessionStorage.getItem(`dsh-vision-bench:last-monitor-section:${sessionId || cwd || ''}`)
+      const saved = window.sessionStorage.getItem(`dsh-corn-bench:last-monitor-section:${sessionId || cwd || ''}`)
       if (saved && isMonitorSection(saved)) return saved
     } catch {}
   }
@@ -54,7 +54,7 @@ export function createMonitorWorkspace(React, t, post, hooks) {
       return localeSubscribe(() => setLocaleTick((n) => n + 1))
     }, [])
     void localeTick
-    // Resolve labels at render time — factory-time t() can freeze browser-provisional
+    // Resolve labels at render time — factory-time t() can freeze browser-procornal
     // English before the host preference (zh) lands; primary tabs use label() callbacks.
     const labels = {
       [MONITOR_SECTIONS.VISUALIZATION]: t('liveChart'),
@@ -81,7 +81,7 @@ export function createMonitorWorkspace(React, t, post, hooks) {
           navigate(sessionId, cwd, { viewId: VIEW_MONITOR, section: id }, { source: 'manual' })
           if (getPreserveNavPreference() && typeof window !== 'undefined' && window.sessionStorage) {
             try {
-              window.sessionStorage.setItem(`dsh-vision-bench:last-monitor-section:${sessionId || cwd || ''}`, id)
+              window.sessionStorage.setItem(`dsh-corn-bench:last-monitor-section:${sessionId || cwd || ''}`, id)
             } catch {}
           }
         },

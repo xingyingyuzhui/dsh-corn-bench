@@ -2,7 +2,7 @@
 
 日期：2026-10-08。基线：`ea3057d964249553433b6ec672068a486e87c5de`（0.29.28）。
 
-依据：[当前审查报告](../reviews/2026-10-08-current-vision-review.md)、[Harness 第 5–8 轮实测](/Users/qin/DSH/vision-plugin-rounds5-8-verification.md)。本文件裁定实施语义；本次仅制定计划，未修改业务代码、提交或推送。
+依据：[当前审查报告](../reviews/2026-10-08-current-corn-review.md)、[Harness 第 5–8 轮实测](/Users/qin/DSH/corn-plugin-rounds5-8-verification.md)。本文件裁定实施语义；本次仅制定计划，未修改业务代码、提交或推送。
 
 ## 1. 范围与十一项裁定
 
@@ -54,7 +54,7 @@
 2. 未预料执行异常为 error；正常执行但存在不可验证项也为 error，后者 result.errorCode=VERIFY_UNVERIFIABLE。
 3. 没有不可验证项，存在有效比较失败则 fail，否则 pass。空 assertions 继续沿用现有场景校验拒绝，不产生“零项全部通过”。
 4. passedCount 仍统计 pass=true；failedCount 为 totalCount-passedCount，保持既有兼容。unverifiableCount 是 failedCount 的子集，真实比较失败数为 failedCount-unverifiableCount。摘要必须同时列“比较失败”和“无法验证”，避免混淆。
-5. RPC ok=true 仅表示返回了执行结果，不表示验证通过；通过只看 result.status=pass。请求层错误（如 SESSION_REQUIRED）仍为 ok=false。Agent `vision_debug verify` 保持现有 `ok = (status === 'pass')`，fail/error/timeout/cancelled 均 ok=false；外层补 failedCount、unverifiableCount 和存在时的 errorCode，完整 verifyResult 保留每条 outcome/reason。两入口的 ok 契约不同，文档和测试明确区分，不强行统一。
+5. RPC ok=true 仅表示返回了执行结果，不表示验证通过；通过只看 result.status=pass。请求层错误（如 SESSION_REQUIRED）仍为 ok=false。Agent `corn_debug verify` 保持现有 `ok = (status === 'pass')`，fail/error/timeout/cancelled 均 ok=false；外层补 failedCount、unverifiableCount 和存在时的 errorCode，完整 verifyResult 保留每条 outcome/reason。两入口的 ok 契约不同，文档和测试明确区分，不强行统一。
 
 changed 初值优先沿用规范化后的 spec.value（createScenario 已处理 expected 别名）；缺初值为 BASELINE_MISSING，不新增自动采集初值功能。undefined/null、NaN/Infinity、坏质量、过旧数据均不能成为有效数值；0/false 合法。range/stable 的数值转换前必须先判空；stable 采样期间出现不可用样本即不可验证，不能删掉坏样本后拿剩余样本判 pass，也不能缩短 duration 后宣称满足原时长。
 
@@ -118,7 +118,7 @@ res.ok=true 不能证明有采样。缺行、重复目标行、provenance 错配
 { workspaceCwd, ownerSessionId, verificationRunId, scenarioId }
 ```
 
-RPC params 增加 cwd 的明确契约，并从路由的受控 workspace/page origin 取值；不得从 run 的 owner 字段反推调用者 scope，Agent 来源不得接受业务 payload 冒充身份。串起 `vision-rpc-router.mjs` 与实际调用者，不只修 isolated handler 测试。
+RPC params 增加 cwd 的明确契约，并从路由的受控 workspace/page origin 取值；不得从 run 的 owner 字段反推调用者 scope，Agent 来源不得接受业务 payload 冒充身份。串起 `corn-rpc-router.mjs` 与实际调用者，不只修 isolated handler 测试。
 
 active/completed record 均保存 cwd+ownerSessionId。匿名 owner 用空字符串，不使用与真实 sid 可能重名的 'anon' 哨兵。按 scenario 查询索引为 JSON tuple `[cwd, sid, scenarioId]`；runId 只是定位字段，命中后仍比较 scope。未分区匿名只能访问同 cwd 的匿名 run，有 sid 调用者不能认领；工作区后来分区时匿名访问按 SESSION_REQUIRED 关闭。
 

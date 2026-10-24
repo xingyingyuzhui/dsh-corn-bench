@@ -10,7 +10,7 @@ export function usePendingWrites(React, post, cwd, sessionId, setPending, setJou
     if (!requestId || resolvingRef.current) return
     resolvingRef.current = requestId
     setResolvingId(requestId)
-    post('/dsh-vision-bench/modbus/write/approve', { cwd, sessionId: sid, id, approved }, 120000)
+    post('/dsh-corn-bench/modbus/write/approve', { cwd, sessionId: sid, id, approved }, 120000)
       .then((data) => {
         if (data && data.ok === false && data.errorCode === ERROR_CODES.SESSION_MISMATCH) {
           // The request belongs to another session; leave the local list alone
@@ -20,7 +20,7 @@ export function usePendingWrites(React, post, cwd, sessionId, setPending, setJou
           setPending((prev) => prev.filter((item) => item.id !== id))
           if (data && data.ok === false && !data.rejected) setError(formatErrorMessage(data.error) || t('fail'))
         }
-        return post('/dsh-vision-bench/state', sid ? { cwd, sessionId: sid } : { cwd })
+        return post('/dsh-corn-bench/state', sid ? { cwd, sessionId: sid } : { cwd })
       })
       .then((data) => {
         if (!data) return

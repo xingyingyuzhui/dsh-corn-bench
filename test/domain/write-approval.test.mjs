@@ -2,12 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { listPendingWrites, resolvePendingWrite } from '../../bench-actions.mjs'
 import { journalView, loadWorkspace, saveWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { projectModbusForSession } from '../../src/application/modbus/config-scope-service.mjs'
 import { saveSessionModbusPatch } from '../../src/application/modbus/workspace-session-view.mjs'
 import { createBench, pointSeries } from '../helpers/workspace-factory.mjs'
 
-test('runVisionBench write action requires user approval then executes', async (t) => {
+test('runCornBench write action requires user approval then executes', async (t) => {
   const bench = await createBench(t, { prefix: 'dvb-tool-write-' })
   const { home, cwd } = bench
   saveWorkspace(home, cwd, {
@@ -16,7 +16,7 @@ test('runVisionBench write action requires user approval then executes', async (
       points: pointSeries('保持', 10),
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',
@@ -63,7 +63,7 @@ test('rejecting a pending agent write leaves the device untouched', async (t) =>
       segments: [{ name: '保持', function: 3, address: 0, count: 10 }],
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',
@@ -101,7 +101,7 @@ test('approving a pending write whose device vanished fails cleanly', async (t) 
       activeId: 'm1',
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',
@@ -149,7 +149,7 @@ test('approval refuses when the device endpoint drifted', async (t) => {
       activeId: 'm1',
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',
@@ -194,7 +194,7 @@ test('same-endpoint approval still executes', async (t) => {
       activeId: 'm1',
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',
@@ -230,7 +230,7 @@ test('missing approved field fails closed instead of approving', async (t) => {
       activeId: 'm1',
     },
   })
-  const first = await runVisionBench(
+  const first = await runCornBench(
     home,
     {
       action: 'write',

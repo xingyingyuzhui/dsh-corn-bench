@@ -38,7 +38,7 @@ export function buildSignalFunctionScript(scenario) {
     throw new Error('需要有效的 scenario 配置对象')
   }
 
-  const fnName = scenario.name || 'VisionSimScenario'
+  const fnName = scenario.name || 'CornSimScenario'
   validateScriptIdentifier(fnName, 'scenario.name')
 
   const lines = []

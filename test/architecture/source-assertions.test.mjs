@@ -73,7 +73,7 @@ test('source-like classification separates source from temp fixtures', () => {
   assert.equal(classifyLiteral('../../src/ui/foo.mjs'), 'source')
   assert.equal(classifyLiteral('../bench-notify.mjs'), 'facade')
   assert.equal(classifyLiteral('host.js'), 'entry')
-  assert.equal(classifyLiteral('runtime/vision-io-worker.mjs'), 'runtime')
+  assert.equal(classifyLiteral('runtime/corn-io-worker.mjs'), 'runtime')
   assert.equal(classifyLiteral('runtime/modbus_read.py'), 'runtime-asset')
   assert.equal(classifyLiteral('client.js'), 'generated')
   assert.equal(classifyLiteral('package.json'), 'release')

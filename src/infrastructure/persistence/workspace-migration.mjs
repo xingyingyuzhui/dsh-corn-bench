@@ -125,7 +125,7 @@ export function mergeWorkspaceParts(config, runtime) {
  * @returns {any}
  */
 export function workspaceDir(home, key) {
-  return join(home, 'vision-bench', 'workspaces', key)
+  return join(home, 'corn-bench', 'workspaces', key)
 }
 
 /**
@@ -134,7 +134,7 @@ export function workspaceDir(home, key) {
  * @returns {any}
  */
 export function legacyWorkspaceFile(home, key) {
-  return join(home, 'vision-bench', 'workspaces', `${key}.json`)
+  return join(home, 'corn-bench', 'workspaces', `${key}.json`)
 }
 
 /**
@@ -287,7 +287,7 @@ export function backupPreVisualizationV2(dir, currentWorkspace) {
  * @returns {any}
  */
 export function listWorkspaceKeys(home) {
-  const root = join(home, 'vision-bench', 'workspaces')
+  const root = join(home, 'corn-bench', 'workspaces')
   if (!existsSync(root)) return []
   const out = new Set()
   for (const name of readdirSync(root)) {

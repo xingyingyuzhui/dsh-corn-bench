@@ -8,7 +8,7 @@ import { probeOpenOcdHealth } from '../flash/openocd-health-service.mjs'
 import { listSerialPorts } from '../../infrastructure/modbus/serial-ports.mjs'
 import { loadBindings, probeBindings } from '../../infrastructure/store/bindings-store.mjs'
 import { loadWorkspace } from '../../infrastructure/store/workspace-store.mjs'
-import { describeHostBridge, pingVisionHost } from '../../infrastructure/host/vision-host-client.mjs'
+import { describeHostBridge, pingCornHost } from '../../infrastructure/host/corn-host-client.mjs'
 
 const firstLine = (text) =>
   String(text || '')
@@ -33,7 +33,7 @@ export const runSelfCheck = async (home, cwd, opts = {}) => {
   push('bind-gdb', health.gdb.bound && health.gdb.exists, bindings.gdb || '外部 arm-none-eabi-gdb 可执行文件')
   const presetHealth = await inspectPresetHealth(home)
   push(
-    'vision-preset',
+    'corn-preset',
     presetHealth.ok,
     presetHealth.ok
       ? `Corn模式 · generation ${presetHealth.generation || 'ready'} · 新建 Session 后生效`
@@ -135,7 +135,7 @@ export const runSelfCheck = async (home, cwd, opts = {}) => {
   }
   const bridge = describeHostBridge()
   const t0 = Date.now()
-  const ping = await pingVisionHost({ cwd: cwd || '', timeoutMs: 3000 })
+  const ping = await pingCornHost({ cwd: cwd || '', timeoutMs: 3000 })
   const roundtripMs = Number.isFinite(ping.roundtripMs) ? ping.roundtripMs : Date.now() - t0
   const transport = ping.data?.transport || (bridge.inProcess ? '同进程' : 'HTTP')
   push(

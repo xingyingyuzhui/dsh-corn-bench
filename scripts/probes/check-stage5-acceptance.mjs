@@ -2,14 +2,14 @@
 /**
  * Stage-5 acceptance slice: aggregate prior automated gates + Desktop evidence.
  *
- * Desktop B2 / Vision Fetch / Fetch carrier must either:
- *   1) be executed in this process (`VISION_STAGE5_RUN_DESKTOP=1`), or
+ * Desktop B2 / Corn Fetch / Fetch carrier must either:
+ *   1) be executed in this process (`CORN_STAGE5_RUN_DESKTOP=1`), or
  *   2) be present as fresh schemaVersion=2 evidence under scripts/probes/evidence/
  *      with required source fields + saved tarball artifact hash match.
  *
  * Report fields:
- *   - labOk: gates + evidence conclusions (dirty allowed when VISION_STAGE5_ALLOW_DIRTY=1)
- *   - releaseOk: labOk AND both Vision/Desktop trees clean (evidence + live)
+ *   - labOk: gates + evidence conclusions (dirty allowed when CORN_STAGE5_ALLOW_DIRTY=1)
+ *   - releaseOk: labOk AND both Corn/Desktop trees clean (evidence + live)
  * Exit code always follows releaseOk (formal merge gate).
  *
  * Usage: node scripts/probes/check-stage5-acceptance.mjs
@@ -30,7 +30,7 @@ const evidenceDir = join(probesDir, 'evidence')
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
 const harnessRoot = resolve(root, '../../../deepseek-harness-desktop-official')
 const harnessDesktop = join(harnessRoot, 'apps', 'desktop')
-const allowDirty = process.env.VISION_STAGE5_ALLOW_DIRTY === '1'
+const allowDirty = process.env.CORN_STAGE5_ALLOW_DIRTY === '1'
 const b2ProbePath = join(probesDir, 'run-desktop-b2-identity.mts')
 const carrierProbePath = join(probesDir, 'run-desktop-dispatch-smoke.mts')
 
@@ -110,9 +110,9 @@ function loadEvidence(file, kind) {
     kind === 'b2' ? b2TarballArtifactRel(pkg.name, pkg.version) : ''
   const validated = validateStage5Evidence(data, {
     kind,
-    visionCommit: gitHead(root),
+    cornCommit: gitHead(root),
     desktopCommit: gitHead(harnessRoot),
-    visionDirtyNow: gitDirty(root),
+    cornDirtyNow: gitDirty(root),
     desktopDirtyNow: gitDirty(harnessRoot),
     packageName: pkg.name,
     packageVersion: pkg.version,
@@ -163,7 +163,7 @@ check(
   'lease commit after fallible mounts; first-load runtime rollback',
 )
 
-const hostClient = read('src/infrastructure/host/vision-host-client.mjs')
+const hostClient = read('src/infrastructure/host/corn-host-client.mjs')
 check(
   'agent.noDefault3080',
   !/['"`]https?:\/\/(?:127\.0\.0\.1|localhost):3080['"`]/.test(hostClient),
@@ -171,12 +171,12 @@ check(
 )
 check('agent.HOST_UNAVAILABLE', hostClient.includes('HOST_UNAVAILABLE'))
 
-const contract = read('src/shared/vision-rpc-contract.mjs')
+const contract = read('src/shared/corn-rpc-contract.mjs')
 check(
   'fetch.dispatchPath',
-  contract.includes("VISION_FETCH_DISPATCH_PATH = '/api/vision-bench/dispatch'"),
+  contract.includes("CORN_FETCH_DISPATCH_PATH = '/api/corn-bench/dispatch'"),
 )
-check('rpc.channelCompat', contract.includes("VISION_RPC_CHANNEL = '/vision-bench'"))
+check('rpc.channelCompat', contract.includes("CORN_RPC_CHANNEL = '/corn-bench'"))
 
 const dshContract = read('src/infrastructure/harness/dsh-contract.mjs')
 check(
@@ -199,7 +199,7 @@ check(
   b2Src.includes('agentPresets.mount') &&
     b2Src.includes('composedPreset(handle.agent.ctx)') &&
     b2Src.includes('runtime-identity-lab') &&
-    b2Src.includes('vision.tools.start'),
+    b2Src.includes('corn.tools.start'),
   'Desktop B2 mounts via agentPresets + composedPreset(ctx)',
 )
 check(
@@ -216,7 +216,7 @@ const stage4 = runNode('scripts/probes/run-stage4-lifecycle.mjs')
 const unitB2 = runNode('scripts/probes/run-b2-identity.mjs')
 const quality = spawnSync('npm', ['run', 'quality'], { cwd: root, encoding: 'utf8' })
 
-const runDesktop = process.env.VISION_STAGE5_RUN_DESKTOP === '1'
+const runDesktop = process.env.CORN_STAGE5_RUN_DESKTOP === '1'
 /** @type {Record<string, unknown>} */
 let desktopB2 = loadEvidence('desktop-b2-identity.json', 'b2')
 /** @type {Record<string, unknown>} */
@@ -235,7 +235,7 @@ if (runDesktop) {
   desktopFetchCarrier.run = fetchRun
 }
 
-const visionDirty = gitDirty(root)
+const cornDirty = gitDirty(root)
 const desktopDirty = gitDirty(harnessRoot)
 const desktopOk = desktopB2.ok === true && desktopFetchCarrier.ok === true
 const coreOk =
@@ -247,7 +247,7 @@ const coreOk =
   desktopOk
 
 const treesClean =
-  visionDirty === false &&
+  cornDirty === false &&
   desktopDirty === false &&
   desktopB2.treesClean === true &&
   desktopFetchCarrier.treesClean === true
@@ -256,10 +256,10 @@ const labOk = coreOk
 const releaseOk = labOk && treesClean
 
 const report = {
-  event: 'vision.stage5.acceptance',
+  event: 'corn.stage5.acceptance',
   package: `${pkg.name}@${pkg.version}`,
   gitCommit: gitHead(root),
-  visionDirty,
+  cornDirty,
   desktopGitCommit: gitHead(harnessRoot),
   desktopDirty,
   packageFingerprint: packageFingerprint(root),
@@ -276,14 +276,14 @@ const report = {
   },
   capabilityClaim: {
     uiFetchTcpSim: 'manual',
-    noVisionListenPort: true,
+    noCornListenPort: true,
     desktopRtuNative: false,
     registryProductInstall: 'manual',
     windowsHardware: 'docs/WINDOWS_ACCEPTANCE_0.27.md',
     soak10to15min: 'deferred',
     desktopB2Identity:
       desktopB2.ok === true ? 'runtime-identity-lab' : desktopB2.status || 'unverified',
-    desktopVisionFetch: desktopB2.ok === true ? 'pass' : desktopB2.status || 'unverified',
+    desktopCornFetch: desktopB2.ok === true ? 'pass' : desktopB2.status || 'unverified',
     desktopFetchCarrier:
       desktopFetchCarrier.ok === true ? 'pass' : desktopFetchCarrier.status || 'unverified',
   },

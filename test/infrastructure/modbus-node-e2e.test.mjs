@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { createVisionIoBroker } from '../../bench-io-broker.mjs'
+import { createCornIoBroker } from '../../bench-io-broker.mjs'
 import { createModbusTransport } from '../../bench-modbus-transport.mjs'
 import { modbusRead } from '../../bench-modbus.mjs'
 import { saveWorkspace } from '../../bench-store.mjs'
@@ -17,7 +17,7 @@ test('all:true across two connections keeps batch identity', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-e2e-'))
   const cwd = join(home, 'board')
   await mkdir(cwd)
-  const broker = createVisionIoBroker({ workerPath: fakeWorker })
+  const broker = createCornIoBroker({ workerPath: fakeWorker })
   const transport = createModbusTransport({ broker })
   try {
     saveWorkspace(home, cwd, {
@@ -94,7 +94,7 @@ test('local TCP server round-trip through Node transport', async () => {
   })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
-  const broker = createVisionIoBroker()
+  const broker = createCornIoBroker()
   const transport = createModbusTransport({ broker })
   const base = {
     v: 1,
@@ -141,7 +141,7 @@ test('failed TCP read still returns transactionId and frames', async () => {
   })
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
   const port = server.address().port
-  const broker = createVisionIoBroker()
+  const broker = createCornIoBroker()
   const transport = createModbusTransport({ broker })
   try {
     const ran = await transport.read(

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { saveWorkspace, loadWorkspace } from '../../bench-store.mjs'
-import { runVisionBench } from '../helpers/run-vision-bench.mjs'
+import { runCornBench } from '../helpers/run-corn-bench.mjs'
 import { connection, createBench } from '../helpers/workspace-factory.mjs'
 
 test('focus.get returns only this session focus; foreign is inactive', async (t) => {
@@ -49,7 +49,7 @@ test('focus.get returns only this session focus; foreign is inactive', async (t)
     },
   })
   const before = JSON.stringify(loadWorkspace(home, cwd).modbus.sessionConfigs)
-  const a = await runVisionBench(home, { action: 'focus.get' }, cwd, {
+  const a = await runCornBench(home, { action: 'focus.get' }, cwd, {
     source: 'agent',
     sessionId: 'session-a',
   })
@@ -79,7 +79,7 @@ test('focus.get returns only this session focus; foreign is inactive', async (t)
       evidence: [{ id: 'nope' }],
     },
   })
-  const owned = await runVisionBench(home, { action: 'focus.get' }, cwd, {
+  const owned = await runCornBench(home, { action: 'focus.get' }, cwd, {
     source: 'agent',
     sessionId: 'session-a',
   })
@@ -129,7 +129,7 @@ test('timeline.list filters by session; cursor expiry; no disk claim migrate', a
     timeline: events,
   })
   const claimBefore = loadWorkspace(home, cwd).modbus.privateClaimSessionId
-  const page1 = await runVisionBench(home, { action: 'timeline.list', limit: 1 }, cwd, {
+  const page1 = await runCornBench(home, { action: 'timeline.list', limit: 1 }, cwd, {
     source: 'agent',
     sessionId: 'session-a',
   })
@@ -140,7 +140,7 @@ test('timeline.list filters by session; cursor expiry; no disk claim migrate', a
   assert.equal(page1.events[0].summary, 'a3')
   assert.equal(page1.nextCursor, 'e3')
 
-  const page2 = await runVisionBench(
+  const page2 = await runCornBench(
     home,
     { action: 'timeline.list', limit: 1, cursor: page1.nextCursor },
     cwd,
@@ -150,7 +150,7 @@ test('timeline.list filters by session; cursor expiry; no disk claim migrate', a
   assert.equal(page2.events[0].id, 'e0')
   assert.equal(page2.nextCursor, null)
 
-  const expired = await runVisionBench(
+  const expired = await runCornBench(
     home,
     { action: 'timeline.list', cursor: 'missing-id' },
     cwd,
@@ -159,7 +159,7 @@ test('timeline.list filters by session; cursor expiry; no disk claim migrate', a
   assert.equal(expired.ok, false)
   assert.equal(expired.errorCode, 'CURSOR_EXPIRED')
 
-  const b = await runVisionBench(home, { action: 'timeline.list' }, cwd, {
+  const b = await runCornBench(home, { action: 'timeline.list' }, cwd, {
     source: 'agent',
     sessionId: 'session-b',
   })
