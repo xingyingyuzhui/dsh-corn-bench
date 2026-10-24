@@ -42,7 +42,7 @@ export function agentNote(cwd, workspace, result) {
   const download = result?.download ? result.download : {}
   const metrics = result?.metrics ? result.metrics : {}
   return [
-    '[Vision]',
+    '[Corn]',
     `工作区: ${cwd || ''}`,
     `工程: ${keil.project || ''}`,
     `Target: ${keil.target || ''}`,

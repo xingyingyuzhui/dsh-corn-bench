@@ -92,7 +92,7 @@ test('legacy mode keeps the directory health contract', async () => {
   const home = await mkdtemp(join(tmpdir(), 'dvb-health-'))
   const health = await inspectPresetHealth(home)
   assert.equal(health.ok, false)
-  assert.match(String(health.error), /Vision预设尚未安装|无法解析|找不到/)
+  assert.match(String(health.error), /Corn预设尚未安装|无法解析|找不到/)
 })
 
 async function homeWithLegacyPreset() {
@@ -161,7 +161,7 @@ test('live standard drift recorded at registration wins over the release compari
     at: '2026-10-22T08:00:00.000Z',
     migrationWarning: '',
     snapshot: STANDARD_PRESET_SNAPSHOT_CONTRACT,
-    snapshotDrift: 'Vision模式 工具集与当前 standard 预设不一致：缺少 standard 中的 @x/new-tool。请升级插件。',
+    snapshotDrift: 'Corn模式 工具集与当前 standard 预设不一致：缺少 standard 中的 @x/new-tool。请升级插件。',
   })
   const health = await inspectPresetHealth('/unused/home', { dshPaths: ['/nonexistent'] })
   assert.equal(health.ok, true)

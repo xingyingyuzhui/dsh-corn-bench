@@ -19,8 +19,8 @@ import { checkOwnership } from './preset-overlay.mjs'
 import { _existsSync, _renameSync } from './preset-transaction.mjs'
 
 export const PRESET_ID = 'vision-bench'
-export const PRESET_TITLE = 'Vision模式'
-export const PRESET_DESCRIPTION = '标准编码能力，外加 Vision 调试与上位机接口：查询现场工程、编译、Modbus 读点和受控写点。'
+export const PRESET_TITLE = 'Corn模式'
+export const PRESET_DESCRIPTION = '标准编码能力，外加 Corn 调试与上位机接口：查询现场工程、编译、Modbus 读点和受控写点。'
 /** Roster position behind the shipped presets (standard 1 … cordis 4). */
 export const PRESET_ORDER = 10
 /** Preset composition `name` — a package subpath, not the host plugin id. */
@@ -28,7 +28,7 @@ export const AGENT_PLUGIN_SPEC = 'dsh-vision-bench/agent'
 export const HOST_PLUGIN_NAME = 'dsh-vision-bench'
 
 export const REBUILD_INSTRUCTIONS_DECLARATIVE =
-  '安全重建：Vision模式预设由插件声明注册（id: vision-bench，出现在 Agent presets roster）。' +
+  '安全重建：Corn模式预设由插件声明注册（id: vision-bench，出现在 Agent presets roster）。' +
   '若 roster 行显示 broken，按其诊断修复插件包后重装/重载 dsh-vision-bench；' +
   '旧目录式预设在声明生效后会被整体改名备份到 .vision-bench.backup.<ISO>，请勿手工删除或复用该 id。'
 
@@ -268,7 +268,7 @@ export function migrateLegacyPresetDir(home) {
   const ownership = checkOwnership(dir)
   if (ownership.error) return { ok: false, migrated: false, error: ownership.error }
   if (!ownership.exists) {
-    return { ok: false, migrated: false, error: 'Vision预设 id 已被其他预设占用（旧目录无归属标记）' }
+    return { ok: false, migrated: false, error: 'Corn预设 id 已被其他预设占用（旧目录无归属标记）' }
   }
   const backupDir = join(dirname(dir), `.${PRESET_ID}.backup.${new Date().toISOString().replace(/[:.]/g, '-')}`)
   try {
@@ -310,7 +310,7 @@ export async function activateVisionPresetDeclaration(agentPresets, home, option
   setDeclarationState({ mode: 'declarative', phase: 'pending', via: '', at: '', error: '', migrationWarning: '', backupDir: '' }, epoch)
   const registration = await registerVisionPreset(agentPresets, options)
   if (!registration.ok) {
-    setDeclarationState({ phase: 'failed', via: registration.via, error: registration.error || 'Vision预设声明注册失败' }, epoch)
+    setDeclarationState({ phase: 'failed', via: registration.via, error: registration.error || 'Corn预设声明注册失败' }, epoch)
     return {
       ok: false,
       via: registration.via,

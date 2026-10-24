@@ -105,7 +105,7 @@ export function validateManagedVisionComposition(seq, schema = localPersonaConfi
     return { ok: false, error: `缺少 ${AGENT_PLUGIN_SPEC} 工具行` }
   }
   if (toolRows > 1) {
-    return { ok: false, error: 'Vision 工具行重复' }
+    return { ok: false, error: 'Corn 工具行重复' }
   }
   return { ok: true }
 }

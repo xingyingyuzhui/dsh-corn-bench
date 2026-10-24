@@ -1,3 +1,9 @@
+## Unreleased
+
+- 品牌改为 **Corn**（原 Vision）：设置分区、Agent 预设（「Corn模式」）、自检、通知和报错文案统一显示 Corn。包名 `dsh-vision-bench`、预设 id `vision-bench`、工具名 `vision_bench`、Fetch 路由与 `$DSH_HOME/vision-bench/` 数据目录不变，原地升级即可；旧目录式预设在下次 overlay 时把名称改成 Corn模式。
+- 设置 → Corn 顶部加玉米图标、作者 [xingyingyuzhui](https://github.com/xingyingyuzhui) 与仓库、授权链接。DSH 的 `settings.section` / `conversation.view` 插槽没有图标字段，所以图标只出现在插件自己的页面里；源图在 `assets/corn-icon.png`。
+- 授权从 MIT 改为 **PolyForm Noncommercial 1.0.0**（`LICENSE.md`，含 Required Notice）。`package.json` 的 `license` 改为 `PolyForm-Noncommercial-1.0.0`，补 `author` / `homepage` / `bugs`。0.30.2 及更早版本仍是 MIT。
+
 ## 0.30.2
 
 需要 DSH 0.2.1-rc.2。

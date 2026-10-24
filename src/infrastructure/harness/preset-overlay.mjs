@@ -81,9 +81,9 @@ export function checkOwnership(dir) {
   try {
     raw = _readFileSync(markerPath, 'utf8').trim()
   } catch {
-    return { exists: true, error: 'Vision预设 id 已被其他预设占用', reason: 'marker-unreadable' }
+    return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-unreadable' }
   }
-  if (!raw) return { exists: true, error: 'Vision预设 id 已被其他预设占用', reason: 'marker-empty' }
+  if (!raw) return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-empty' }
   if (raw === 'dsh-vision-bench') return { exists: true, owned: true, legacy: true }
   let obj = null
   try {
@@ -92,7 +92,7 @@ export function checkOwnership(dir) {
     /* invalid JSON fails closed below */
   }
   if (!obj || typeof obj !== 'object' || obj.owner !== 'dsh-vision-bench') {
-    return { exists: true, error: 'Vision预设 id 已被其他预设占用', reason: 'marker-invalid-or-foreign' }
+    return { exists: true, error: 'Corn预设 id 已被其他预设占用', reason: 'marker-invalid-or-foreign' }
   }
   return { exists: true, owned: true, legacy: false, payload: obj }
 }

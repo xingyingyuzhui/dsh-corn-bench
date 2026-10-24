@@ -5,7 +5,7 @@ export const STANDARD_PERSONA =
 export const PRESET_PERSONA = STANDARD_PERSONA
 
 export const VISION_GUIDANCE = [
-  'Vision bench guidance (vision-bench:guidance):',
+  'Corn bench guidance (vision-bench:guidance):',
   '- Local bench is real or simulated; verify project/connection/device/point/value/frame/task via vision_bench tools with minimal queries.',
   '- Reference stable IDs (connectionId/deviceId/pointId) not UI focus; status→map only when needed.',
   '- HMI and Debug share live state; Agent actions must appear in tasks/timeline and page echoes.',
@@ -16,7 +16,7 @@ export const VISION_GUIDANCE = [
   '- 数量、连接/点位状态和“已恢复”结论必须取工具返回的实际字段（status / points list / visualization get），禁止凭记忆或把两种读法拼成更大的数字。',
   '- 静态配置对象清理与 configVersion / 任务 / 事件 / 告警历史回滚要分开描述；版本推进或历史留痕不等于配置未还原。',
   '- 收到 CONFIG_DRIFT 后必须先重新调用对应 list/get（或 status）拿到最新 configVersion 与对象集合，再重算变更；禁止只用错误里的 actualVersion 直接重放旧提交。',
-  '- Vision 配置结果通知不是新任务。看到「Vision 已生效」或 plugin notice 时不要再执行一遍增删改。',
+  '- Corn 配置结果通知不是新任务。看到「Corn 已生效」或 plugin notice 时不要再执行一遍增删改。',
   '- 真实设备写入、烧录和复位仍需要用户批准。Host 会自动绑定端点与配置版本，配置变化后需重新发起。',
   '- Diagnostics cite build log, point quality, frames (transactionId), trend intervals or operation results.',
   '- Do not stream high-frequency values or bulk frames into system prompt.',

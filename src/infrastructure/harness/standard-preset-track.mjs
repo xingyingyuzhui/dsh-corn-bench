@@ -103,5 +103,5 @@ export function describeStandardDrift(drift) {
   const parts = []
   if (drift.missing.length) parts.push(`缺少 standard 中的 ${drift.missing.join(', ')}`)
   if (drift.extra.length) parts.push(`多出 standard 已移除的 ${drift.extra.join(', ')}`)
-  return parts.length ? `Vision模式 工具集与当前 standard 预设不一致：${parts.join('；')}。请升级插件。` : ''
+  return parts.length ? `Corn模式 工具集与当前 standard 预设不一致：${parts.join('；')}。请升级插件。` : ''
 }

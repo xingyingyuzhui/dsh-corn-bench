@@ -36,8 +36,8 @@ export const runSelfCheck = async (home, cwd, opts = {}) => {
     'vision-preset',
     presetHealth.ok,
     presetHealth.ok
-      ? `Vision模式 · generation ${presetHealth.generation || 'ready'} · 新建 Session 后生效`
-      : presetHealth.error || 'Vision预设未更新',
+      ? `Corn模式 · generation ${presetHealth.generation || 'ready'} · 新建 Session 后生效`
+      : presetHealth.error || 'Corn预设未更新',
   )
 
   if (health.python.bound && health.python.exists) {

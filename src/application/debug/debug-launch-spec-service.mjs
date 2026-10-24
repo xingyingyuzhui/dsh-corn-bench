@@ -234,7 +234,7 @@ export async function resolveDebugLaunchSpec(request, deps = {}) {
   // Without this note the failure is indistinguishable from "user configured
   // nothing", which is exactly how the binding feature stayed broken unnoticed.
   if (!home) {
-    bindingsError = bindingsError || '未提供 home，无法读取 Vision 绑定配置'
+    bindingsError = bindingsError || '未提供 home，无法读取 Corn 绑定配置'
   }
 
   // 1. Current workspace project & target

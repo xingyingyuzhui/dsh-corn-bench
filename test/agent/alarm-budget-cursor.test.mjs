@@ -85,7 +85,7 @@ test('a single oversized alarm is RESULT_TOO_LARGE and is not consumed', () => {
   assert.equal(detail.nextCursor, null)
   assert.equal(detail.alarmId, id)
   assert.equal(detail.commandId, 'cmd-1')
-  assert.match(detail.error, /Vision UI/)
+  assert.match(detail.error, /Corn UI/)
   assert.equal(detail.alarms, undefined)
 
   const page = projectAgentResult({ action: 'alarm', limit: 40 }, raw)

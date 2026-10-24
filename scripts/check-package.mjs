@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-const REQUIRED = ['host.js', 'tools.js', 'client.js', 'README.md', 'LICENSE']
+const REQUIRED = ['host.js', 'tools.js', 'client.js', 'README.md', 'LICENSE.md']
 
 const BANNED = ['__pycache__', '.pyc', 'coverage/', 'node_modules/', 'annotate-jsdoc', 'split-modbus-context']
 
