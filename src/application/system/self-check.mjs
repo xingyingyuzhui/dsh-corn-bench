@@ -119,10 +119,9 @@ export const runSelfCheck = async (home, cwd, opts = {}) => {
       ready: caps.serialMonitor === 'ready',
       reason: caps.serialMonitor === 'ready' ? '' : ioHealth.rtuError || 'serialport native binding 不可用',
     },
-    keilProject: {
-      ready: !!(health.python.bound && health.python.exists),
-      reason: health.python.bound ? '' : '未绑定 Python',
-    },
+    // Project scanning and parsing run in Node (uvprojx-parser / keil-project-scanner);
+    // Python was retired from Settings → Corn, so it must not gate this capability.
+    keilProject: { ready: true, reason: '' },
     keilBuild: { ready: !!(health.uv4.bound && health.uv4.exists), reason: health.uv4.bound ? '' : '未绑定 UV4' },
     openocdFlash: {
       ready: openocdReady,

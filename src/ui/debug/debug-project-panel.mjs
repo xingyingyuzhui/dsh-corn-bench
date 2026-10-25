@@ -21,7 +21,6 @@ export function createDebugProjectPanel(React, t, CustomSelect) {
       workspace,
       targets,
       busy,
-      pythonReady,
       uv4Ready,
       buildBusy,
       buildLabel,
@@ -118,7 +117,7 @@ export function createDebugProjectPanel(React, t, CustomSelect) {
           {
             type: 'button',
             className: 'dvb-btn dvb-btn-primary',
-            disabled: !cwd || !pythonReady || !uv4Ready || !workspace.keil.project || buildBusy,
+            disabled: !cwd || !uv4Ready || !workspace.keil.project || buildBusy,
             title: !cwd ? t('needWorkspace') : buildBlock || undefined,
             onClick: build,
           },

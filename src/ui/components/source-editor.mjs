@@ -120,10 +120,13 @@ export function createSourceEditor(React) {
         CM.EditorState.readOnly.of(true),
         CM.EditorView.theme({
           '&': { height: '100%', fontSize: 'var(--dvb-font-size-sm, 12px)' },
+          // The preview card is a flex column: the editor must take the height its
+          // host gives it and scroll inside. A fixed 320px cap here left the lower
+          // half of the card blank, with the rest of the file unreachable.
           '.cm-scroller': {
             overflow: 'auto',
-            maxHeight: debugMode ? 'none' : '320px',
-            height: debugMode ? '100%' : undefined,
+            maxHeight: debugMode ? 'none' : undefined,
+            height: '100%',
             fontFamily: 'var(--dvb-font-family-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)',
           },
           '.dvb-cm-exec': { backgroundColor: 'var(--dvb-color-exec-line, rgba(250, 204, 21, 0.35))' },
@@ -186,7 +189,7 @@ export function createSourceEditor(React) {
           className: 'dvb-log dvb-map-preview',
           role: 'region',
           'aria-label': props.ariaLabel,
-          style: { maxHeight: '320px', overflow: 'auto', whiteSpace: 'pre' },
+          style: { maxHeight: 'none', height: '100%', overflow: 'auto', whiteSpace: 'pre' },
           'data-jump-line': jumpLine > 0 ? String(jumpLine) : undefined,
         },
         text,
