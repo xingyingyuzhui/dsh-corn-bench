@@ -79,7 +79,6 @@ export function createDebugView(React, t, post, openProject) {
       buildBusy,
       buildLabel,
       buildBlock,
-      pythonReady,
       uv4Ready,
     } = buildActions
 
@@ -97,7 +96,6 @@ export function createDebugView(React, t, post, openProject) {
           workspace,
           targets,
           busy,
-          pythonReady,
           uv4Ready,
           buildBusy,
           buildLabel,

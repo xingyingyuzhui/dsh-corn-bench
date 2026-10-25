@@ -43,7 +43,9 @@ function makeFakeCodeMirror() {
       }
     }
     static create(config) {
-      return new EditorState(config)
+      const state = new EditorState(config)
+      state.__extensions = config.extensions || []
+      return state
     }
     static readOnly = { of: () => ({ __readonly: true }) }
   }
@@ -54,7 +56,7 @@ function makeFakeCodeMirror() {
       this.state = config.state
       this.parent = config.parent
       stats.live.add(this)
-      stats.built.push({ doc: config.state.doc.lines })
+      stats.built.push({ doc: config.state.doc.lines, extensions: config.state.__extensions || [] })
     }
     dispatch(transaction) {
       stats.dispatches += 1
@@ -216,6 +218,52 @@ test('debugGutters toggle changes the build inputs and rebuilds', () => {
     assert.equal(stats.constructed, 1)
     rerender(React.createElement(SourceEditor, { text: 'a', rel: 'a.c', debugGutters: true }))
     assert.equal(stats.constructed, 2, 'debugGutters is part of the build effect deps')
+  } finally {
+    setCodeMirrorRuntime(null)
+  }
+})
+
+// The project-structure preview card is a flex column. A fixed `maxHeight` on the
+// CodeMirror scroller (formerly 320px) stopped the source part-way down the card
+// and left the lower half blank, with the rest of the file unreachable.
+test('the read-only preview scroller fills its host instead of capping at 320px', () => {
+  const { CM, stats } = makeFakeCodeMirror()
+  setCodeMirrorRuntime(CM)
+  try {
+    render(React.createElement(SourceEditor, { text: 'a\nb', rel: 'a.c' }))
+    const theme = stats.built[0].extensions.find((ext) => ext && ext.__theme)
+    assert.ok(theme, 'the editor theme extension is installed')
+    const scroller = theme.__theme['.cm-scroller']
+    assert.equal(scroller.maxHeight, undefined, 'no fixed max height on the preview scroller')
+    assert.equal(scroller.height, '100%', 'the scroller takes the host height')
+    assert.equal(scroller.overflow, 'auto', 'long files scroll inside the card')
+  } finally {
+    setCodeMirrorRuntime(null)
+  }
+})
+
+test('the debug source panel keeps its uncapped gutter layout', () => {
+  const { CM, stats } = makeFakeCodeMirror()
+  setCodeMirrorRuntime(CM)
+  try {
+    render(React.createElement(SourceEditor, { text: 'a\nb', rel: 'a.c', debugGutters: true }))
+    const theme = stats.built[0].extensions.find((ext) => ext && ext.__theme)
+    const scroller = theme.__theme['.cm-scroller']
+    assert.equal(scroller.maxHeight, 'none')
+    assert.equal(scroller.height, '100%')
+  } finally {
+    setCodeMirrorRuntime(null)
+  }
+})
+
+test('the no-CodeMirror fallback also fills its host and scrolls', () => {
+  setCodeMirrorRuntime(null)
+  try {
+    const { container } = render(React.createElement(SourceEditor, { text: 'a\nb', rel: 'a.c' }))
+    const pre = container.querySelector('pre')
+    assert.equal(pre.style.maxHeight, 'none')
+    assert.equal(pre.style.height, '100%')
+    assert.equal(pre.style.overflow, 'auto')
   } finally {
     setCodeMirrorRuntime(null)
   }

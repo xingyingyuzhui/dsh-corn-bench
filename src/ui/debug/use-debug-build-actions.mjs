@@ -172,7 +172,9 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
     }
   }
 
-  const pythonReady = statusKind(health.python) === 'ready'
+  // The build runs through the bundled Node UV4 runner; Python was retired from
+  // Settings → Corn, so gating on it left UV4-bound workspaces permanently
+  // showing 「未绑定 Keil UV4」 and a disabled 编译 button.
   const uv4Ready = statusKind(health.uv4) === 'ready'
   const buildRunning = runningOf(journal, 'build')
   const buildBusy = !!busy || buildRunning
@@ -186,7 +188,7 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
           : t('build')
   const buildBlock = !cwd
     ? ''
-    : !pythonReady || !uv4Ready
+    : !uv4Ready
       ? t('needBindingsBuild')
       : !workspace.keil.project
         ? t('needProject')
@@ -213,7 +215,6 @@ export function useDebugBuildActions(React, t, post, cwd, sessionId, ctx) {
     buildBusy,
     buildLabel,
     buildBlock,
-    pythonReady,
     uv4Ready,
   }
 }

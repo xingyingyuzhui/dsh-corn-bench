@@ -73,7 +73,7 @@ test('runSelfCheck reports structured results without bindings', async () => {
         true,
       )
       assert.ok(ran.capabilities)
-      assert.equal(ran.capabilities.keilProject.ready, false)
+      assert.equal(ran.capabilities.keilProject.ready, true, 'project scanning no longer needs Python')
       assert.equal(typeof ran.requiredOk, 'boolean')
       const host = ran.checks.find((item) => item.name === 'host-bridge')
       assert.equal(host.ok, false)
@@ -118,13 +118,13 @@ test('openocdFlash.ready 不依赖 Python，且探测失败则为 false', async 
       const missing = await runSelfCheck(home, cwd)
       assert.equal(missing.capabilities.openocdFlash.ready, false)
       assert.match(missing.capabilities.openocdFlash.reason, /不存在/)
-      assert.equal(missing.capabilities.keilProject.ready, false)
+      assert.equal(missing.capabilities.keilProject.ready, true)
 
       saveBindings(home, { python: '', uv4: '', openocd: process.execPath })
       const nodeish = await runSelfCheck(home, cwd)
       assert.equal(nodeish.capabilities.openocdFlash.ready, false)
       assert.match(nodeish.capabilities.openocdFlash.reason, /不是 OpenOCD|探测失败|失败/)
-      assert.equal(nodeish.capabilities.keilProject.ready, false)
+      assert.equal(nodeish.capabilities.keilProject.ready, true)
 
       const identNonzero = await runSelfCheck(home, cwd, {
         runExecFile: async () => ({
@@ -147,7 +147,7 @@ test('openocdFlash.ready 不依赖 Python，且探测失败则为 false', async 
         }),
       })
       assert.equal(ready.capabilities.openocdFlash.ready, true)
-      assert.equal(ready.capabilities.keilProject.ready, false)
+      assert.equal(ready.capabilities.keilProject.ready, true)
       const failed = await runSelfCheck(home, cwd, {
         runExecFile: async () => {
           throw new Error('not executable')
